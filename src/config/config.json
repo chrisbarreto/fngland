@@ -1,0 +1,32 @@
+{
+  "site": {
+    "title": "DocKit",
+    "logo": "/src/assets/logo-light.svg",
+    "logo_darkmode": "/src/assets/logos/logo-dark.svg",
+    "logo_width": "198",
+    "logo_height": "49",
+    "logo_text": "DocKit"
+  },
+
+  "settings": {
+    "search": true,
+    "theme_switcher": false
+  },
+
+  "params": {
+    "footer_contact": {
+      "enable": true,
+      "action": "#"
+    },
+    "copyright": "Designed and Developed by <a class=\"text-primary hover:underline no-underline\" href=\"https://themefisher.com\" target=\"_blank\" rel=\"noopener\" aria-label=\"Themefisher\">Themefisher</a> Copyright &copy; 2025."
+  },
+
+  "navigation_button": {
+    "enable": true,
+    "label": "Sé parte del equipo",
+    "translations": {
+      "fr": "Erste Schritte"
+    },
+    "link": "/getting-started/introduction/overview/"
+  }
+}

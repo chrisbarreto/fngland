@@ -1,0 +1,397 @@
+---
+const { icon, title, iconColor, size = "large" } = Astro.props;
+
+// Ilustraciones SVG animadas personalizadas para cada servicio
+const icons: Record<string, string> = {
+  "car-wash": `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+      <!-- Auto deportivo -->
+      <g class="car-body">
+        <!-- Carrocería principal -->
+        <path d="M45 110 L50 100 L65 95 L80 92 L120 92 L135 95 L150 100 L155 110 L155 125 L150 130 L50 130 L45 125 Z" fill="#FF8585" opacity="0.9" stroke="#f92606" stroke-width="1.5"/>
+        <!-- Techo deportivo inclinado -->
+        <path d="M70 92 L75 82 L95 78 L115 78 L130 82 L135 92" fill="#FFB3B3" opacity="0.8" stroke="#f92606" stroke-width="1"/>
+        <!-- Ventanas -->
+        <path d="M77 90 L82 82 L95 80 L95 90 Z" fill="#4FC3F7" opacity="0.3"/>
+        <path d="M105 80 L118 82 L123 90 L105 90 Z" fill="#4FC3F7" opacity="0.3"/>
+        <!-- Parachoques deportivo -->
+        <rect x="45" y="125" width="110" height="3" rx="1.5" fill="#f92606" opacity="0.8"/>
+        <!-- Ruedas deportivas -->
+        <g>
+          <circle cx="70" cy="132" r="13" fill="#1a1a1a" stroke="#f92606" stroke-width="2.5"/>
+          <circle cx="70" cy="132" r="7" fill="#333" stroke="#666" stroke-width="2"/>
+          <circle cx="130" cy="132" r="13" fill="#1a1a1a" stroke="#f92606" stroke-width="2.5"/>
+          <circle cx="130" cy="132" r="7" fill="#333" stroke="#666" stroke-width="2"/>
+        </g>
+        <!-- Detalles aerodinámicos -->
+        <line x1="155" y1="110" x2="160" y2="113" stroke="#f92606" stroke-width="2" stroke-linecap="round"/>
+        <line x1="155" y1="115" x2="160" y2="118" stroke="#f92606" stroke-width="2" stroke-linecap="round"/>
+        <line x1="155" y1="120" x2="160" y2="123" stroke="#f92606" stroke-width="2" stroke-linecap="round"/>
+      </g>
+      <!-- Espuma animada -->
+      <g class="foam-bubbles">
+        <circle cx="60" cy="65" r="8" fill="#7BE1A4" opacity="0.7" class="bubble bubble-1"/>
+        <circle cx="85" cy="60" r="6" fill="#7BE1A4" opacity="0.7" class="bubble bubble-2"/>
+        <circle cx="110" cy="63" r="9" fill="#7BE1A4" opacity="0.7" class="bubble bubble-3"/>
+        <circle cx="135" cy="67" r="7" fill="#7BE1A4" opacity="0.7" class="bubble bubble-4"/>
+        <circle cx="75" cy="45" r="5" fill="#7BE1A4" opacity="0.5" class="bubble bubble-5"/>
+        <circle cx="120" cy="50" r="6" fill="#7BE1A4" opacity="0.5" class="bubble bubble-6"/>
+      </g>
+      <!-- Gotas de agua -->
+      <g class="water-drops">
+        <path d="M50 30 L50 50" stroke="#4FC3F7" stroke-width="2" stroke-linecap="round" class="drop drop-1"/>
+        <path d="M100 25 L100 45" stroke="#4FC3F7" stroke-width="2" stroke-linecap="round" class="drop drop-2"/>
+        <path d="M145 33 L145 53" stroke="#4FC3F7" stroke-width="2" stroke-linecap="round" class="drop drop-3"/>
+      </g>
+    </svg>
+  `,
+  "shine-protection": `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+      <!-- Escudo de protección -->
+      <g class="shield-base">
+        <path d="M100 40 L140 60 L140 110 Q140 140 100 160 Q60 140 60 110 L60 60 Z" fill="url(#shieldGradient)" stroke="#f92606" stroke-width="2"/>
+        <defs>
+          <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#7BE1A4;stop-opacity:0.8" />
+            <stop offset="100%" style="stop-color:#4FC3F7;stop-opacity:0.8" />
+          </linearGradient>
+        </defs>
+      </g>
+      <!-- Check mark -->
+      <path d="M80 100 L95 115 L120 85" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="check-mark"/>
+      <!-- Destellos -->
+      <g class="sparkles">
+        <path d="M50 70 L55 75 L50 80 L45 75 Z" fill="#FFD97B" class="sparkle sparkle-1"/>
+        <path d="M150 90 L155 95 L150 100 L145 95 Z" fill="#FFD97B" class="sparkle sparkle-2"/>
+        <path d="M100 30 L105 35 L100 40 L95 35 Z" fill="#FFD97B" class="sparkle sparkle-3"/>
+        <circle cx="40" cy="120" r="3" fill="#FFD97B" class="sparkle sparkle-4"/>
+        <circle cx="160" cy="130" r="3" fill="#FFD97B" class="sparkle sparkle-5"/>
+      </g>
+    </svg>
+  `,
+  "driver-service": `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+      <!-- Marcador de ubicación -->
+      <g class="location-pin">
+        <path d="M100 50 Q120 50 130 65 Q135 75 135 85 Q135 100 100 140 Q65 100 65 85 Q65 75 70 65 Q80 50 100 50 Z" fill="#FFD97B" stroke="#f92606" stroke-width="2"/>
+        <circle cx="100" cy="80" r="12" fill="#fff"/>
+        <circle cx="100" cy="80" r="6" fill="#f92606" class="pin-center"/>
+      </g>
+      <!-- Ondas de ubicación -->
+      <g class="location-waves">
+        <circle cx="100" cy="140" r="15" stroke="#FFD97B" stroke-width="2" fill="none" opacity="0.8" class="wave wave-1"/>
+        <circle cx="100" cy="140" r="25" stroke="#FFD97B" stroke-width="2" fill="none" opacity="0.6" class="wave wave-2"/>
+        <circle cx="100" cy="140" r="35" stroke="#FFD97B" stroke-width="2" fill="none" opacity="0.4" class="wave wave-3"/>
+      </g>
+      <!-- Ruta animada -->
+      <path d="M60 160 Q80 150 100 155 Q120 160 140 150" stroke="#979BFF" stroke-width="3" stroke-dasharray="5,5" stroke-linecap="round" class="route-path"/>
+    </svg>
+  `,
+  "interior-care": `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+      <!-- Grupo del asiento y aspiradora centrado -->
+      <g transform="translate(100, 100)">
+        <g transform="translate(-64, -64) scale(1.2)">
+          <!-- Base del asiento -->
+          <path d="M30,80 C30,85.5228475 34.4771525,90 40,90 L90,90 C95.5228475,90 100,85.5228475 100,80 L100,70 L30,70 L30,80 Z" 
+                fill="#545454" stroke="#f92606" stroke-width="3"/>
+          
+          <!-- Respaldo del asiento -->
+          <path d="M35,70 L45,20 C45,15 48,10 55,10 L75,10 C82,10 85,15 85,20 L95,70 L35,70 Z" 
+                fill="#545454" stroke="#f92606" stroke-width="3"/>
+          
+          <!-- Reposacabeza -->
+          <rect x="48" y="0" width="34" height="10" rx="2" fill="#545454" stroke="#f92606" stroke-width="3"/>
+          
+          <!-- Detalle lateral -->
+          <circle cx="30" cy="70" r="8" fill="#545454" stroke="#f92606" stroke-width="3"/>
+
+          <!-- Burbujas/partículas de limpieza -->
+          <g class="clean-particles">
+            <circle cx="55" cy="40" r="5" fill="#aed6f1" stroke="#fff" stroke-width="2" class="particle particle-1"/>
+            <circle cx="75" cy="30" r="4" fill="#aed6f1" stroke="#fff" stroke-width="2" class="particle particle-2"/>
+            <circle cx="65" cy="55" r="6" fill="#aed6f1" stroke="#fff" stroke-width="2" class="particle particle-3"/>
+            <circle cx="85" cy="45" r="5" fill="#aed6f1" stroke="#fff" stroke-width="2" class="particle particle-4"/>
+            <circle cx="45" cy="50" r="4" fill="#aed6f1" stroke="#fff" stroke-width="2" class="particle particle-5"/>
+            <circle cx="70" cy="65" r="5" fill="#aed6f1" stroke="#fff" stroke-width="2" class="particle particle-6"/>
+          </g>
+          
+          <!-- Espuma en la base -->
+          <path d="M35,65 C40,55 50,55 55,60 C60,55 70,55 75,60 C80,55 90,55 95,65 L95,70 L35,70 L35,65 Z" 
+                fill="#aed6f1" stroke="#fff" stroke-width="2" opacity="0.8"/>
+
+          <!-- Aspiradora/escoba rotada -->
+          <g transform="translate(60, 0) rotate(-30)" class="vacuum">
+            <!-- Cepillo/cerdas -->
+            <path d="M5,15 L0,35 L10,35 L5,15 Z" fill="#e67e22" class="bristle bristle-1"/>
+            <path d="M15,15 L10,35 L20,35 L15,15 Z" fill="#e67e22" class="bristle bristle-2"/>
+            <path d="M25,15 L20,35 L30,35 L25,15 Z" fill="#e67e22" class="bristle bristle-3"/>
+            <path d="M35,15 L30,35 L40,35 L35,15 Z" fill="#e67e22" class="bristle bristle-4"/>
+            
+            <!-- Base del cepillo -->
+            <rect x="0" y="15" width="40" height="10" rx="2" fill="#f1c40f" stroke="#d35400" stroke-width="2"/>
+            
+            <!-- Mango -->
+            <rect x="15" y="0" width="10" height="15" fill="#7f8c8d" stroke="#2c3e50" stroke-width="2"/>
+          </g>
+        </g>
+      </g>
+    </svg>
+  `,
+};
+
+const iconSvg = icon ? icons[icon] || "" : "";
+---
+
+<article
+  class={`card bg-dark group ${size === "sm" ? "p-4" : "py-10 px-8"}`}
+>
+  {
+    iconSvg && (
+      <span
+        class="icon"
+        style={`color: ${iconColor}; font-size: ${size === "sm" ? "1.4rem" : "2rem"};`}
+        set:html={iconSvg}
+      />
+    )
+  }
+  <p class="title mt-9 mb-3">
+    <span set:html={title} />
+  </p>
+  <div class="body"><slot /></div>
+  {
+    size === "sm" ? (
+      ""
+    ) : (
+      <div class="mt-12">
+        <span>
+          <svg
+            class="transition-transform duration-300 group-hover:-rotate-45"
+            width="18"
+            height="18"
+            viewBox="0 0 18 18"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M10.3209 0.715753L17.3509 7.84376C17.7823 8.28117 17.7823 8.99035 17.3509 9.42776L10.3209 16.5558C9.88952 16.9932 9.1901 16.9932 8.7587 16.5558C8.32731 16.1184 8.32731 15.4092 8.7587 14.9718L13.9029 9.75582H1.10465C0.494569 9.75582 0 9.25435 0 8.63576C0 8.01717 0.494569 7.5157 1.10465 7.5157H13.9029L8.7587 2.29975C8.32731 1.86234 8.32731 1.15316 8.7587 0.715753C9.1901 0.278343 9.88952 0.278343 10.3209 0.715753Z"
+              class="fill-light"
+            />
+          </svg>
+        </span>
+      </div>
+    )
+  }
+</article>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 1rem;
+    position: relative;
+    transition: all 0.5s ease;
+    border: 1px solid #f92606;
+    box-shadow: 0 0 15px rgba(249, 38, 6, 0.3);
+  }
+ 
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    background: var(--color-primary-gradient);
+    border-radius: inherit;
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+
+  .card:hover::before {
+    opacity: 1;
+  }
+
+  .icon {
+    display: inline-flex;
+    width: 113px;
+    height: 113px;
+    margin: 0 auto;
+  }
+
+  .icon :global(svg) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .title {
+    font-size: var(--sl-text-h4);
+    color: var(--sl-color-white);
+    line-height: var(--sl-line-height-headings);
+    gap: 1rem;
+    align-items: center;
+    text-align: center;
+  }
+
+  .card .body {
+    margin: 0;
+    font-size: clamp(var(--sl-text-body));
+    text-align: center;
+  }
+
+  /* Animaciones para Car Wash */
+  .icon :global(.bubble) {
+    animation: floatUp 2s ease-in-out infinite;
+  }
+  .icon :global(.bubble-1) { animation-delay: 0s; }
+  .icon :global(.bubble-2) { animation-delay: 0.3s; }
+  .icon :global(.bubble-3) { animation-delay: 0.6s; }
+  .icon :global(.bubble-4) { animation-delay: 0.9s; }
+  .icon :global(.bubble-5) { animation-delay: 1.2s; }
+  .icon :global(.bubble-6) { animation-delay: 1.5s; }
+
+  .icon :global(.drop) {
+    animation: dropFall 1.5s ease-in infinite;
+  }
+  .icon :global(.drop-1) { animation-delay: 0s; }
+  .icon :global(.drop-2) { animation-delay: 0.5s; }
+  .icon :global(.drop-3) { animation-delay: 1s; }
+
+  .icon :global(.car-body) {
+    animation: carShake 3s ease-in-out infinite;
+  }
+
+  /* Animaciones para Shield Protection */
+  .icon :global(.sparkle) {
+    animation: sparkleShine 1.5s ease-in-out infinite;
+  }
+  .icon :global(.sparkle-1) { animation-delay: 0s; }
+  .icon :global(.sparkle-2) { animation-delay: 0.3s; }
+  .icon :global(.sparkle-3) { animation-delay: 0.6s; }
+  .icon :global(.sparkle-4) { animation-delay: 0.9s; }
+  .icon :global(.sparkle-5) { animation-delay: 1.2s; }
+
+  .icon :global(.check-mark) {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: checkDraw 2s ease-in-out infinite;
+  }
+
+  .icon :global(.shield-base) {
+    animation: shieldPulse 2s ease-in-out infinite;
+  }
+
+  /* Animaciones para Driver Service */
+  .icon :global(.wave) {
+    animation: waveExpand 2s ease-out infinite;
+  }
+  .icon :global(.wave-1) { animation-delay: 0s; }
+  .icon :global(.wave-2) { animation-delay: 0.4s; }
+  .icon :global(.wave-3) { animation-delay: 0.8s; }
+
+  .icon :global(.pin-center) {
+    animation: pinPulse 1.5s ease-in-out infinite;
+  }
+
+  .icon :global(.route-path) {
+    stroke-dasharray: 10;
+    animation: routeMove 2s linear infinite;
+  }
+
+  /* Animaciones para Interior Care */
+  .icon :global(.particle) {
+    animation: bubbleFloat 2s ease-in-out infinite;
+  }
+  .icon :global(.particle-1) { animation-delay: 0s; }
+  .icon :global(.particle-2) { animation-delay: 0.3s; }
+  .icon :global(.particle-3) { animation-delay: 0.6s; }
+  .icon :global(.particle-4) { animation-delay: 0.9s; }
+  .icon :global(.particle-5) { animation-delay: 1.2s; }
+  .icon :global(.particle-6) { animation-delay: 1.5s; }
+
+  .icon :global(.vacuum) {
+    animation: vacuumSweep 3s ease-in-out infinite;
+  }
+
+  .icon :global(.bristle) {
+    animation: bristleWave 1s ease-in-out infinite;
+  }
+  .icon :global(.bristle-1) { animation-delay: 0s; }
+  .icon :global(.bristle-2) { animation-delay: 0.1s; }
+  .icon :global(.bristle-3) { animation-delay: 0.2s; }
+  .icon :global(.bristle-4) { animation-delay: 0.3s; }
+
+  /* Keyframes */
+  @keyframes floatUp {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0.7; }
+    50% { transform: translateY(-15px) scale(1.1); opacity: 0.3; }
+  }
+
+  @keyframes dropFall {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(20px); opacity: 0; }
+  }
+
+  @keyframes carShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-1px); }
+    75% { transform: translateX(1px); }
+  }
+
+  @keyframes sparkleShine {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  @keyframes checkDraw {
+    0% { stroke-dashoffset: 100; }
+    50%, 100% { stroke-dashoffset: 0; }
+  }
+
+  @keyframes shieldPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  }
+
+  @keyframes waveExpand {
+    0% { transform: scale(0.8); opacity: 0.8; }
+    100% { transform: scale(1.3); opacity: 0; }
+  }
+
+  @keyframes pinPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+  }
+
+  @keyframes routeMove {
+    0% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 20; }
+  }
+
+  @keyframes bubbleFloat {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0.8; }
+    50% { transform: translateY(-8px) scale(1.1); opacity: 1; }
+  }
+
+  @keyframes vacuumSweep {
+    0%, 100% { transform: rotate(-30deg) translateX(0); }
+    50% { transform: rotate(-30deg) translateX(3px); }
+  }
+
+  @keyframes bristleWave {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+  }
+
+  @media (max-width: 768px) {
+    .icon {
+      width: 97px;
+      height: 97px;
+    }
+  }
+</style>

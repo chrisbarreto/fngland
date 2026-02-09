@@ -1,0 +1,160 @@
+---
+---
+
+<div
+  class="hero flex flex-col items-center justify-center mx-auto px-4 sm:px-6 lg:px-8"
+  style="min-height: calc(100vh + 40px);"
+>
+  <div class="hero-content max-w-4xl text-center">
+    <!-- Título Principal - SEO + Gancho -->
+    <h1 class="hero-title">
+      <span class="hero-title-main">Membresía de Lavados Ilimitados</span>
+      <span class="hero-title-sub">Estrena tu vehículo cada mañana.</span>
+    </h1>
+    
+    <!-- Subtítulo - Refuerzo Psicológico -->
+    <p class="hero-subtitle">
+      Únete al club exclusivo de detailing donde la perfección es el estándar diario. Sin límites, sin turnos y con el cuidado que tu inversión merece.
+    </p>
+    
+    <!-- Botón de Acción -->
+    <div class="hero-cta">
+      <a href="#" class="btn btn-primary">QUIERO MI AUTO IMPECABLE</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const heroSection = document.querySelector(".hero");
+  const header = document.querySelector(".header");
+  const heroBG = document.querySelector(".hero-bg") as HTMLElement;
+
+  const totalHeight =
+    (heroSection?.clientHeight || 0) + (header?.clientHeight || 0);
+
+  if (heroBG) {
+    heroBG.style.height = `${totalHeight}px`;
+  }
+</script>
+
+<style>
+  .hero {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    animation: fadeInUp 0.8s ease-out;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .hero-title {
+    font-size: 4.8rem;
+    line-height: 4.7rem;
+    letter-spacing: -3px;
+    font-weight: 700;
+    color: var(--sl-color-white);
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .hero-title-main {
+    color: var(--sl-color-white);
+    display: block;
+  }
+  
+  .hero-title-sub {
+    color: var(--sl-color-text);
+    opacity: 0.5;
+    display: block;
+    font-size: 0.9em;
+  }
+  
+  /* Desktop: títulos en una sola línea */
+  @media (min-width: 1041px) {
+    .hero-title-main,
+    .hero-title-sub {
+      white-space: nowrap;
+    }
+  }
+  
+  .hero-subtitle {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    letter-spacing: -0.2px;
+    font-weight: 400;
+    color: var(--sl-color-gray-2);
+    margin: 0;
+    max-width: 700px;
+  }
+  
+  .hero-cta {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    color: white;
+    padding: 1rem 2.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(249, 38, 6, 0.3);
+    border: 2px solid transparent;
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(249, 38, 6, 0.5);
+    border-color: rgba(249, 38, 6, 0.5);
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @media (max-width: 1040px) {
+    .hero-title {
+      font-size: 3.8rem;
+      line-height: 3.7rem;
+      letter-spacing: -2px;
+    }
+  }
+  
+  @media (max-width: 548px) {
+    .hero-title {
+      font-size: 2.8rem;
+      line-height: 2.7rem;
+      letter-spacing: -1px;
+    }
+    
+    .hero-content {
+      gap: 1rem;
+    }
+    
+    .hero-cta {
+      margin-top: 0.5rem;
+    }
+  }
+</style>

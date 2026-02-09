@@ -1,0 +1,66 @@
+---
+import Button from "../ui/Button.astro";
+import Section from "./Section.astro";
+
+const title = "Ready to explore <span class='light-text'>Dockit experience? </span>";
+const description = "Discover tips, resources, and guidance to maximize experience with our documentation.";
+---
+
+<div class="cta-container">
+  <div class="cta-bg">
+    <img src="/cta-bg.webp" alt="" class="cta-bg-img" />
+    <div class="cta-bg-overlay"></div>
+  </div>
+  <Section title={title} description={description}>
+    <Button
+      label="Únete a nosotros"
+      link="/getting-started/introduction/overview/"
+      variant="primary"
+    />
+    <Button
+      label="View Docs"
+      link="/getting-started/introduction/overview/"
+      variant="outline-primary"
+    />
+  </Section>
+</div>
+
+<style>
+  .cta-container {
+    padding: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  .cta-bg-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .cta-bg-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+  }
+  .cta-container :global(.section) {
+    position: relative;
+    z-index: 1;
+  }
+</style>
+
+<script>
+  const ctaContainerButton = document.querySelector(".cta-container a");
+
+  const buttonParent = ctaContainerButton?.parentElement;
+
+  if (buttonParent) {
+    buttonParent.style.display = "flex";
+    buttonParent.style.justifyContent = "center";
+    buttonParent.style.gap = "1rem";
+  }
+</script>

@@ -1,0 +1,69 @@
+@layer base, theme, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@plugin "../tailwind/tw-theme";
+@plugin "../tailwind/tw-bs-grid";
+
+/* Dark mode only - Fixed theme colors */
+:root {
+  --sl-color-accent-low: color-mix(in srgb, var(--color-primary), #000 90%);
+  --sl-color-accent: var(--color-primary);
+  --sl-color-accent-high: color-mix(in srgb, var(--color-primary), #fff 70%);
+
+  --sl-color-white: var(--color-light);
+  --sl-color-gray-1: color-mix(
+    in srgb,
+    var(--color-dark) 6%,
+    var(--color-light) 94%
+  ); /* #eeeeee */
+  --sl-color-gray-2: color-mix(
+    in srgb,
+    var(--color-dark) 24%,
+    var(--color-light) 76%
+  ); /* #c2c2c2 */
+  --sl-color-gray-3: color-mix(
+    in srgb,
+    var(--color-dark) 45%,
+    var(--color-light) 55%
+  ); /* #8b8b8b */
+  --sl-color-gray-4: color-mix(
+    in srgb,
+    var(--color-dark) 65%,
+    var(--color-light) 35%
+  ); /* #585858 */
+  --sl-color-gray-5: color-mix(
+    in srgb,
+    var(--color-dark) 78%,
+    var(--color-light) 22%
+  ); /* #383838 */
+  --sl-color-gray-6: color-mix(
+    in srgb,
+    var(--color-dark) 85%,
+    var(--color-light) 15%
+  ); /* #272727 */
+
+  /* color-dark: #040404 */
+  --sl-color-black: var(--color-dark);
+  --sl-color-hairline: color-mix(
+    in srgb,
+    var(--sl-color-white) 10%,
+    transparent
+  );
+  --sl-color-hairline-light: #252525;
+}
+
+@theme {
+  --color-primary-gradient: linear-gradient(
+    35.65deg,
+    #3a1c71 -10.94%,
+    var(--color-primary) 61.04%,
+    #ffca7b 133.01%
+  );
+}
+
+@import "./base.css";
+@import "./navigation.css";
+@import "./components.css";
+@import "./button.css";

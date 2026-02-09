@@ -1,11 +1,307 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Header from "@/components/Header.astro";
+import Hero from "@/components/Hero.astro";
+import Footer from "@/components/Footer.astro";
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import Section from "@/components/sections/Section.astro";
+import Card from "@/components/ui/Card.astro";
+import Grid from "@/components/ui/Grid.astro";
+import GoogleReviews from "@/components/sections/GoogleReviews.astro";
+import AccordionContainer from "@/components/sections/AccordionContainer.astro";
+import Accordion from "@/components/sections/Accordion.astro";
+import CTA from "@/components/sections/CTA.astro";
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<BaseLayout>
+  <div class="page">
+    <!-- Hero background video -->
+    <div class="hero-bg">
+      <video
+        autoplay
+        muted
+        loop
+        playsinline
+        class="w-full h-full object-cover hero-video-desktop"
+      >
+        <source src="/hero-bg.webm" type="video/webm" />
+      </video>
+      <video
+        autoplay
+        muted
+        loop
+        playsinline
+        class="w-full h-full object-cover hero-video-mobile"
+      >
+        <source src="/movil-bg.webm" type="video/webm" />
+      </video>
+      <!-- Overlay oscuro sobre todo el video -->
+      <div class="hero-bg-overlay"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header no-sidebar">
+      <Header />
+    </header>
+
+    <!-- Hero -->
+    <Hero />
+
+    <!-- Main content -->
+    <div class="sl-markdown-content" style="position: relative; z-index: 2; background-color: var(--sl-color-black); margin-top: -120px; padding-top: 40px;">
+
+      {/* Features Section */}
+      <Section
+        id="beneficios"
+        title="Beneficios <span class='light-text'>de tu membresía</span>"
+        description="Todo lo que incluye tu plan Premium mensual"
+      >
+        <Grid columns={4}>
+          <Card title="Lavado Ilimitado" icon="car-wash" iconColor="#FF8585">
+            Accede a lavados exteriores con cañón de espuma, aspirado profundo y desinfección total durante 30 días.
+          </Card>
+          <Card title="Protección & Brillo" icon="shine-protection" iconColor="#7BE1A4">
+            Incluye una aplicación de cera líquida con protección de 4 meses y un lavado de motor profesional por mes.
+          </Card>
+          <Card title="Servicio de Chofer" icon="driver-service" iconColor="#FFD97B">
+            Disfruta de máxima comodidad con dos traslados gratuitos (retiro y entrega) agendados previamente.
+          </Card>
+          <Card title="Cuidado Interior" icon="interior-care" iconColor="#979BFF">
+            Mantén tu habitáculo impecable con hidratación de plásticos, revitalización de neumáticos y limpieza de vidrios.
+          </Card>
+        </Grid>
+      </Section>
+
+
+      {/* Google Reviews Section */}
+      <GoogleReviews />
+
+      {/* FAQ Section */}
+      <Section
+        id="preguntas"
+        title="Preguntas <span class='light-text'>frecuentes</span>"
+        description="Todo lo que necesitas saber sobre nuestros servicios y membresía."
+      >
+        <AccordionContainer tabList={[
+          {
+            type: 'membresia',
+            title: 'Membresía y Beneficios',
+            subtitle: 'Qué incluye tu plan y cómo aprovecharlo.',
+            icon: 'rocket'
+          },
+          {
+            type: 'pagos',
+            title: 'Pagos y Suscripción',
+            subtitle: 'Pagos seguros procesados por PagoPar.',
+            icon: 'payment'
+          },
+          {
+            type: 'agenda',
+            title: 'Agenda y Logística',
+            subtitle: 'Turnos, puntualidad y servicio de chofer.',
+            icon: 'calendar'
+          },
+          {
+            type: 'responsabilidad',
+            title: 'Responsabilidad y Seguridad',
+            subtitle: 'Cuidado de tu vehículo y pertenencias.',
+            icon: 'shield'
+          }
+        ]}>
+          {/* Membresía y Beneficios */}
+          <Accordion
+            question="¿Qué incluye la Membresía Premium de Gs. 200.000?"
+            answer="Incluye lavados ilimitados durante los 30 días de vigencia (máximo un lavado diario por vehículo). El servicio contempla: lavado exterior con cañón de espuma, aspirado profundo, limpieza de vidrios, desinfección, revitalización de neumáticos e hidratación de plásticos. Además, incluye una aplicación de cera líquida y un lavado de motor profesional al mes."
+            type="membresia"
+          />
+          <Accordion
+            question="¿Puedo usar la membresía para más de un vehículo?"
+            answer="No, la membresía es personal e intransferible, vinculada exclusivamente a la placa y características del vehículo registrado. Se permite el cambio del vehículo asociado solo una vez al mes por motivos de venta o reparación mecánica justificada."
+            type="membresia"
+          />
+          <Accordion
+            question="¿Qué servicios tienen un costo adicional?"
+            answer="Servicios de detailing profundo como limpieza de tapizados, techos o alfombras, pulidos técnicos, tratamientos cerámicos, remoción de lluvia ácida o de asfalto tienen un costo extra. También se aplica un cargo de Gs. 30.000 para vehículos con exceso de barro o tierra pesada debido al uso de productos especializados marca Vonixx."
+            type="membresia"
+          />
+
+          {/* Pagos y Suscripción */}
+          <Accordion
+            question="¿Cómo se realizan los pagos de la membresía?"
+            answer="El sistema funciona exclusivamente a través de la plataforma PagoPar. Al suscribirte, autorizas el débito automático recurrente en tu tarjeta de crédito o débito para garantizar la continuidad del servicio sin interrupciones."
+            type="pagos"
+          />
+          <Accordion
+            question="¿Cómo puedo cancelar mi suscripción por débito automático?"
+            answer="La solicitud de cancelación debe realizarse de manera presencial en las oficinas de Fórmula NG. Es necesario dar un aviso previo mínimo de 60 días corridos."
+            type="pagos"
+          />
+          <Accordion
+            question="¿Qué sucede durante el periodo de preaviso de cancelación?"
+            answer="Durante esos 60 días, los débitos seguirán realizándose normalmente y podrás continuar disfrutando de todos los beneficios de tu membresía hasta que se cumpla el plazo y finalice el proceso administrativo."
+            type="pagos"
+          />
+          <Accordion
+            question="¿Hay reembolsos si no uso el servicio?"
+            answer="No se realizan reembolsos, cambios ni compensaciones si no utilizas parcial o totalmente la membresía durante el periodo contratado."
+            type="pagos"
+          />
+          <div class="accordion pagopar-badge" data-tab="pagos" style="display:none;">
+            <div class="pagopar-content">
+              <img src="/logo-pagopar.svg" alt="PagoPar" class="pagopar-logo" />
+              <span>Pagos seguros y automáticos procesados por PagoPar&reg;</span>
+            </div>
+          </div>
+          <Accordion
+            question="¿Cómo agendo mi turno?"
+            answer="Todos los servicios se realizan únicamente con agenda previa a través de WhatsApp o los canales oficiales de Fórmula NG."
+            type="agenda"
+          />
+          <Accordion
+            question="¿Cuál es la tolerancia de puntualidad?"
+            answer="Contamos con una tolerancia máxima de 10 minutos. Pasado ese tiempo, el turno se reagendará automáticamente para evitar retrasos en el servicio de otros socios."
+            type="agenda"
+          />
+          <Accordion
+            question="¿Cómo funciona el servicio de chofer?"
+            answer="La membresía incluye hasta dos traslados gratuitos por mes, sujetos a disponibilidad y previa agenda con 24 horas de antelación. El vehículo debe estar disponible 60 minutos antes del turno asignado. Si el chofer llega y el vehículo no está disponible, el traslado se considerará como utilizado."
+            type="agenda"
+          />
+
+          {/* Responsabilidad y Seguridad */}
+          <Accordion
+            question="¿Debo retirar mis pertenencias del auto?"
+            answer="Sí. Fórmula NG no se hace responsable por la pérdida o daño de objetos personales dejados dentro del vehículo. Solicitamos retirar todas las pertenencias antes de iniciar el servicio."
+            type="responsabilidad"
+          />
+          <Accordion
+            question="¿Qué documentos debe tener mi vehículo para el traslado?"
+            answer="El vehículo debe estar debidamente habilitado para circular con toda su documentación en regla. Fórmula NG no asume responsabilidad por multas o retenciones derivadas de irregularidades en la documentación del vehículo durante los traslados."
+            type="responsabilidad"
+          />
+        </AccordionContainer>
+      </Section>
+
+      {/* CTA Section */}
+      <CTA />
+    </div>
+
+    {/* Footer */}
+    <Footer />
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  .hero-bg-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+  }
+  .header {
+    z-index: 10;
+    position: sticky;
+    inset-inline-start: 0;
+    inset-block-start: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    background-color: color-mix(in srgb, var(--sl-color-black) 60%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--sl-color-white) 10%, transparent);
+    padding: 0;
+    transition: background-color 0.3s ease;
+  }
+  .header.header-solid {
+    background-color: var(--sl-color-black);
+  }
+  .header :global(.container) {
+    max-width: 100%;
+    padding-inline: clamp(1rem, 3vw, 3rem);
+    box-sizing: border-box;
+  }
+  @media (max-width: 800px) {
+    .header {
+      padding: 6px 0;
+    }
+  }
+  .pagopar-badge {
+    padding: 1.25rem 2rem;
+    border-radius: 16px;
+  }
+  .pagopar-badge.show-accordion {
+    display: block !important;
+  }
+  .pagopar-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .pagopar-logo {
+    height: 32px;
+    width: auto;
+  }
+  .pagopar-content span {
+    font-size: 0.95rem;
+    color: var(--sl-color-gray-3);
+  }
+  .hero-video-mobile {
+    display: none;
+  }
+  @media (max-width: 768px) {
+    .hero-video-desktop {
+      display: none;
+    }
+    .hero-video-mobile {
+      display: block;
+    }
+  }
+</style>
+
+<script>
+  // Make header fully opaque once user scrolls past the hero
+  {
+    const headerEl = document.querySelector(".header") as HTMLElement;
+    const heroEl = document.querySelector(".hero") as HTMLElement;
+
+    if (headerEl && heroEl) {
+      const updateHeader = () => {
+        const heroBottom = heroEl.getBoundingClientRect().bottom;
+        if (heroBottom <= headerEl.offsetHeight) {
+          headerEl.classList.add("header-solid");
+        } else {
+          headerEl.classList.remove("header-solid");
+        }
+      };
+      window.addEventListener("scroll", updateHeader, { passive: true });
+      updateHeader();
+    }
+  }
+
+  // accordion toggle
+  const accordions = document.querySelectorAll(
+    ".accordion"
+  ) as NodeListOf<HTMLElement>;
+
+  accordions.forEach((accordion) => {
+    accordion.addEventListener("click", () => {
+      accordions.forEach((otherAccordion) => {
+        if (otherAccordion !== accordion) {
+          otherAccordion.classList.remove("active");
+        }
+      });
+      accordion.classList.toggle("active");
+    });
+  });
+</script>

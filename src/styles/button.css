@@ -1,0 +1,29 @@
+.btn {
+  @apply inline-block no-underline  px-5 py-2 font-medium capitalize transition;
+}
+
+.btn-primary {
+  background: var(--color-primary-gradient);
+  @apply text-white hover:brightness-105 rounded-xl py-3;
+}
+.btn-outline-primary {
+  @apply relative rounded-xl py-3 px-6 border-none text-text hover:text-text;
+  color: var(--sl-color-white);
+}
+.btn-outline-primary:hover {
+  background: linear-gradient(135deg, #f92606, #ff4d2a);
+  color: #fff !important;
+  box-shadow: 0 0 15px rgba(249, 38, 6, 0.5);
+}
+
+.btn-outline-primary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  background: linear-gradient(135deg, #f92606, #ff6b3d, #f92606);
+  border-radius: inherit;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+}

@@ -1,0 +1,47 @@
+---
+import { AstroFont } from "astro-font";
+import "@/styles/global.css";
+import theme from "@/config/theme.json";
+import config from "@/config/config.json";
+
+const { title } = config.site;
+
+// Font setup
+const pf = theme.fonts.font_family.primary;
+let fontPrimary: string | undefined;
+if (pf) {
+  fontPrimary = pf
+    .replace(/\+/g, " ")
+    .replace(/:[ital,]*[ital@]*[wght@]*[0-9,;.]+/gi, "");
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content="Discover tips, resources, and guidance to maximize experience with DocKit." />
+
+    <!-- Google Font -->
+    <AstroFont
+      config={[
+        {
+          src: [],
+          preload: false,
+          display: "swap",
+          name: fontPrimary!,
+          fallback: "sans-serif",
+          cssVariable: "font-primary",
+          googleFontsURL: `https://fonts.googleapis.com/css2?family=${pf}&display=swap`,
+        },
+      ]}
+    />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
