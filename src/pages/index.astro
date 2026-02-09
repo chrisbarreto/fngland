@@ -31,9 +31,10 @@ import CTA from "@/components/sections/CTA.astro";
         muted
         loop
         playsinline
+        poster="/movil-bg-im.webp"
         class="w-full h-full object-cover hero-video-mobile"
       >
-        <source src="/movil-bg.mp4" type="video/mp4" />
+        <source src="/movil-bg.webm" type="video/webm" />
       </video>
       <!-- Overlay oscuro sobre todo el video -->
       <div class="hero-bg-overlay"></div>
@@ -233,6 +234,10 @@ import CTA from "@/components/sections/CTA.astro";
   @media (max-width: 800px) {
     .header {
       padding: 6px 0;
+      background-color: transparent !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border-bottom: none !important;
     }
   }
   .pagopar-badge {

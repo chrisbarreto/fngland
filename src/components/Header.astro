@@ -13,7 +13,7 @@ const pathname = Astro.request.url;
 
 <nav class="navbar container">
   <!-- logo -->
-  <div class="order-0">
+  <div class="order-0 logo-desktop">
     <SiteTitle />
   </div>
   <!-- navbar toggler -->
@@ -123,6 +123,14 @@ const pathname = Astro.request.url;
     }
   </div>
 </nav>
+
+<style>
+  @media (max-width: 800px) {
+    .logo-desktop {
+      display: none;
+    }
+  }
+</style>
 
 <script>
   // header stays transparent on scroll (no background added)

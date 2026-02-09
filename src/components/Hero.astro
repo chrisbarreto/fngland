@@ -1,4 +1,5 @@
 ---
+import logoDark from "@/assets/logos/logo-dark.svg";
 ---
 
 <div
@@ -6,6 +7,9 @@
   style="min-height: calc(100vh + 40px);"
 >
   <div class="hero-content max-w-4xl text-center">
+    <!-- Logo móvil -->
+    <img src={logoDark.src} alt="Fórmula NG" class="hero-logo-mobile" />
+    
     <!-- Título Principal - SEO + Gancho -->
     <h1 class="hero-title">
       <span class="hero-title-main">Membresía de Lavados Ilimitados</span>
@@ -134,6 +138,10 @@
     }
   }
   
+  .hero-logo-mobile {
+    display: none;
+  }
+  
   @media (max-width: 1040px) {
     .hero-title {
       font-size: 3.8rem;
@@ -142,19 +150,54 @@
     }
   }
   
-  @media (max-width: 548px) {
-    .hero-title {
-      font-size: 2.8rem;
-      line-height: 2.7rem;
-      letter-spacing: -1px;
+  @media (max-width: 800px) {
+    .hero {
+      justify-content: flex-start;
+      padding-top: 15vh;
     }
     
     .hero-content {
-      gap: 1rem;
+      flex: 1;
+    }
+    
+    .hero-logo-mobile {
+      display: block;
+      width: 77%;
+      max-width: 286px;
+      margin: 0 auto 4rem;
+      margin-top: -3rem;
+    }
+    
+    .hero-subtitle {
+      margin-top: 5rem;
+    }
+    
+    .hero-cta {
+      margin-top: auto;
+      padding-bottom: 10vh;
+    }
+  }
+  
+  @media (max-width: 548px) {
+    .hero-title {
+      font-size: 2.2rem;
+      line-height: 2.3rem;
+      letter-spacing: -0.5px;
+      margin-top: -1rem;
+    }
+    
+    .hero-subtitle {
+      font-size: 0.95rem;
+      line-height: 1.5rem;
+    }
+    
+    .hero-content {
+      gap: 0.75rem;
     }
     
     .hero-cta {
       margin-top: 0.5rem;
     }
   }
+  
 </style>
