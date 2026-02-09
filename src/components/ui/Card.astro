@@ -389,9 +389,21 @@ const iconSvg = icon ? icons[icon] || "" : "";
   }
 
   @media (max-width: 768px) {
+    .card {
+      padding: 1.5rem 1rem;
+    }
     .icon {
-      width: 97px;
-      height: 97px;
+      width: 70px;
+      height: 70px;
+    }
+    .title {
+      font-size: 1.1rem;
+      margin-top: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .card .body {
+      font-size: 0.875rem;
+      line-height: 1.4;
     }
   }
 </style>

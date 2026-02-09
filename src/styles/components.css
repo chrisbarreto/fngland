@@ -52,6 +52,10 @@
     line-height: 2.7rem;
     letter-spacing: -1px;
   }
+  .section-description {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
 }
 /* hero tabs */
 .list-body {
