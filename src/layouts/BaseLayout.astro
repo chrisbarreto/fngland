@@ -83,14 +83,16 @@ if (pf) {
         name: "Fórmula NG",
         alternateName: "Formula NG Detailing",
         description:
-          "Servicio de detailing y estética automotriz por membresía en Asunción, Paraguay. Lavado exterior, aspirado, cera, lavado de motor y servicio de chofer.",
+          "Membresía de estética automotriz en Asunción, Paraguay. Lavados ilimitados, detailing premium, lavado exterior, aspirado, cera líquida, lavado de motor y servicio de chofer.",
         url: "https://formulang.com.py",
         telephone: "+595992789328",
         email: "info@formulang.com.py",
         address: {
           "@type": "PostalAddress",
-          streetAddress: "23 De Octubre 633",
+          streetAddress: "23 de Octubre 687 c/ Toribio Pacheco",
           addressLocality: "Asunción",
+          addressRegion: "Central",
+          postalCode: "",
           addressCountry: "PY",
         },
         geo: {
@@ -98,13 +100,39 @@ if (pf) {
           latitude: -25.2637,
           longitude: -57.5759,
         },
+        openingHoursSpecification: {
+          "@type": "OpeningHoursSpecification",
+          dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+          opens: "08:00",
+          closes: "18:00",
+        },
+        priceRange: "$$",
+        currenciesAccepted: "PYG",
+        paymentAccepted: "Credit Card, Debit Card, PagoPar",
+        image: ogImageUrl,
         sameAs: [
           "https://www.instagram.com/formulang.py/",
           "https://www.facebook.com/p/Formula-NG-Detailing-61575717490017/",
           "https://wa.me/595992789328",
+          "https://maps.app.goo.gl/5LLTf7d9pWUXao6fA",
         ],
-        priceRange: "$$",
-        image: ogImageUrl,
+        hasOfferCatalog: {
+          "@type": "OfferCatalog",
+          name: "Membresía Fórmula NG",
+          itemListElement: [
+            {
+              "@type": "Offer",
+              itemOffered: {
+                "@type": "Service",
+                name: "Membresía Premium",
+                description: "Lavados ilimitados durante 30 días, cera líquida, lavado de motor, hidratación de plásticos y 2 traslados gratis.",
+              },
+              price: "200000",
+              priceCurrency: "PYG",
+              availability: "https://schema.org/InStock",
+            },
+          ],
+        },
       })}
     </script>
 
