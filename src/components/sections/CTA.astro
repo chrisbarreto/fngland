@@ -1,9 +1,8 @@
 ---
-import Button from "../ui/Button.astro";
 import Section from "./Section.astro";
 
-const title = "Ready to explore <span class='light-text'>Dockit experience? </span>";
-const description = "Discover tips, resources, and guidance to maximize experience with our documentation.";
+const title = "¿Listo para tener tu auto <span class='light-text'>siempre impecable?</span>";
+
 ---
 
 <div class="cta-container">
@@ -11,17 +10,16 @@ const description = "Discover tips, resources, and guidance to maximize experien
     <img src="/cta-bg.webp" alt="" class="cta-bg-img" />
     <div class="cta-bg-overlay"></div>
   </div>
-  <Section title={title} description={description}>
-    <Button
-      label="Únete a nosotros"
-      link="/getting-started/introduction/overview/"
-      variant="primary"
-    />
-    <Button
-      label="View Docs"
-      link="/getting-started/introduction/overview/"
-      variant="outline-primary"
-    />
+  <Section title={title}>
+    <div class="cta-buttons">
+      <button
+        type="button"
+        class="cta-btn"
+        id="cta-registro-btn"
+      >
+        QUIERO MI AUTO IMPECABLE
+      </button>
+    </div>
   </Section>
 </div>
 
@@ -51,16 +49,39 @@ const description = "Discover tips, resources, and guidance to maximize experien
     position: relative;
     z-index: 1;
   }
+
+  .cta-btn {
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    color: white;
+    padding: 1rem 2.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(249, 38, 6, 0.3);
+    border: 2px solid transparent;
+    cursor: pointer;
+  }
+
+  .cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(249, 38, 6, 0.5);
+    border-color: rgba(249, 38, 6, 0.5);
+  }
+
+  .cta-buttons {
+    display: flex;
+    justify-content: center;
+  }
 </style>
 
 <script>
-  const ctaContainerButton = document.querySelector(".cta-container a");
-
-  const buttonParent = ctaContainerButton?.parentElement;
-
-  if (buttonParent) {
-    buttonParent.style.display = "flex";
-    buttonParent.style.justifyContent = "center";
-    buttonParent.style.gap = "1rem";
-  }
+  const ctaBtn = document.getElementById("cta-registro-btn");
+  ctaBtn?.addEventListener("click", () => {
+    if (typeof (window as any).__openRegistroModal === "function") {
+      (window as any).__openRegistroModal();
+    }
+  });
 </script>

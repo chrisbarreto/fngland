@@ -1,0 +1,371 @@
+---
+export const prerender = true;
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+
+const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
+---
+
+<BaseLayout
+  title="Sugerencias y Mejoras | Fórmula NG"
+  description="Compartí tus ideas y sugerencias para mejorar el servicio de detailing de Fórmula NG en Asunción."
+>
+  <div class="page">
+    <header class="header no-sidebar">
+      <Header />
+    </header>
+
+    <main class="content">
+      <section class="hero">
+        <div class="hero-content">
+          <p class="eyebrow">Tu opinion importa</p>
+          <h1>Sugerencias y mejoras</h1>
+          <p class="subtitle">
+            Ayudanos a mejorar tu experiencia con nuestras membresias.
+          </p>
+        </div>
+        <div class="hero-glow"></div>
+      </section>
+
+      <section class="form-section">
+        <div class="form-card">
+          <div class="form-header">
+            <h2>Enviar sugerencia</h2>
+            <p>Compartinos ideas, comentarios o recomendaciones.</p>
+          </div>
+
+          <form id="sugerencia-form" novalidate>
+            <div class="field">
+              <label for="codigoMembresia">Codigo de membresia</label>
+              <input
+                id="codigoMembresia"
+                name="codigoMembresia"
+                type="text"
+                placeholder="Ej: NG0001"
+                autocomplete="off"
+                required
+                maxlength="20"
+              />
+              <span class="field-hint">Se encuentra en tu tarjeta o contrato.</span>
+            </div>
+
+            <div class="field">
+              <label for="descripcion">Descripcion de la sugerencia</label>
+              <textarea
+                id="descripcion"
+                name="descripcion"
+                rows="5"
+                placeholder="Ej: Seria genial extender el horario los domingos..."
+                required
+                maxlength="1000"
+              ></textarea>
+              <span class="field-hint">Maximo 1000 caracteres.</span>
+            </div>
+
+            <div class="field">
+              <label>Verificacion</label>
+              <div class="turnstile">
+                <div
+                  class="cf-turnstile"
+                  data-sitekey={siteKey}
+                  data-theme="dark"
+                ></div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="sugerencia-submit">
+                Enviar sugerencia
+              </button>
+              <span class="form-status" id="sugerencia-status"></span>
+            </div>
+          </form>
+
+          <div class="form-success" id="sugerencia-success" style="display:none;">
+            <h3>Sugerencia enviada</h3>
+            <p>Gracias por ayudarnos a mejorar cada detalle.</p>
+          </div>
+        </div>
+
+        <aside class="info-card">
+          <h3>Construyamos juntos</h3>
+          <ul>
+            <li>Cada sugerencia llega directamente al equipo de atencion.</li>
+            <li>Nos ayuda a priorizar nuevas mejoras en el servicio.</li>
+            <li>Gracias por confiar en Formula NG.</li>
+          </ul>
+        </aside>
+      </section>
+    </main>
+
+    <Footer />
+  </div>
+</BaseLayout>
+
+<style>
+  :global(:root) {
+    --reclamos-bg: #0d0c0f;
+    --reclamos-card: #15131a;
+    --reclamos-border: rgba(255, 255, 255, 0.08);
+    --reclamos-accent: #ff6b3d;
+    --reclamos-text: #f5f3f7;
+    --reclamos-muted: #b5afbd;
+  }
+
+  .page {
+    min-height: 100vh;
+    background: radial-gradient(circle at top, rgba(255, 107, 61, 0.15), transparent 50%),
+      var(--reclamos-bg);
+    color: var(--reclamos-text);
+  }
+
+  .header {
+    z-index: 10;
+    position: sticky;
+    inset-block-start: 0;
+    background: rgba(13, 12, 15, 0.7);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--reclamos-border);
+  }
+
+  .content {
+    padding: 3.5rem clamp(1.5rem, 4vw, 4rem) 4rem;
+  }
+
+  .hero {
+    position: relative;
+    padding: 2.5rem 0 3rem;
+  }
+
+  .hero-content {
+    max-width: 560px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.7rem;
+    color: var(--reclamos-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    margin: 0 0 0.75rem;
+  }
+
+  .subtitle {
+    color: var(--reclamos-muted);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .hero-glow {
+    position: absolute;
+    top: 10%;
+    right: 5%;
+    width: 240px;
+    height: 240px;
+    background: radial-gradient(circle, rgba(255, 107, 61, 0.25), transparent 70%);
+    filter: blur(20px);
+    opacity: 0.7;
+  }
+
+  .form-section {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  }
+
+  .form-card,
+  .info-card {
+    background: var(--reclamos-card);
+    border: 1px solid var(--reclamos-border);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .form-header h2 {
+    margin: 0 0 0.5rem;
+  }
+
+  .form-header p {
+    margin: 0 0 1.5rem;
+    color: var(--reclamos-muted);
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
+  }
+
+  label {
+    font-size: 0.85rem;
+    color: var(--reclamos-muted);
+  }
+
+  input,
+  textarea {
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #100f14;
+    color: var(--reclamos-text);
+    padding: 0.85rem 1rem;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  input:focus,
+  textarea:focus {
+    border-color: var(--reclamos-accent);
+  }
+
+  .field-hint {
+    font-size: 0.75rem;
+    color: var(--reclamos-muted);
+  }
+
+  .turnstile {
+    display: inline-flex;
+    padding: 0.5rem;
+    border-radius: 12px;
+    background: #0f0e12;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+  }
+
+  .form-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .form-actions button {
+    border: none;
+    background: linear-gradient(135deg, #ff6b3d, #ff9a3d);
+    color: white;
+    padding: 0.85rem 1.8rem;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .form-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .form-actions button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(255, 107, 61, 0.35);
+  }
+
+  .form-status {
+    font-size: 0.85rem;
+    color: var(--reclamos-muted);
+  }
+
+  .form-success h3 {
+    margin: 0 0 0.5rem;
+  }
+
+  .form-success p {
+    margin: 0;
+    color: var(--reclamos-muted);
+  }
+
+  .info-card h3 {
+    margin-top: 0;
+  }
+
+  .info-card ul {
+    padding-left: 1rem;
+    color: var(--reclamos-muted);
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  @media (max-width: 960px) {
+    .form-section {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .content {
+      padding: 2.5rem 1.25rem 3rem;
+    }
+    .form-card,
+    .info-card {
+      padding: 1.5rem;
+    }
+  }
+</style>
+
+<script is:inline>
+  const form = document.getElementById("sugerencia-form");
+  const statusEl = document.getElementById("sugerencia-status");
+  const successEl = document.getElementById("sugerencia-success");
+  const submitBtn = document.getElementById("sugerencia-submit");
+
+  function getTurnstileToken() {
+    const tokenField = form?.querySelector("[name='cf-turnstile-response']");
+    return tokenField && "value" in tokenField ? tokenField.value : "";
+  }
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!form || !submitBtn || !statusEl || !successEl) return;
+
+    const codigo = form.querySelector("#codigoMembresia").value.trim();
+    const descripcion = form.querySelector("#descripcion").value.trim();
+    const token = getTurnstileToken();
+
+    if (!codigo || !descripcion) {
+      statusEl.textContent = "Completa todos los campos requeridos.";
+      return;
+    }
+    if (!token) {
+      statusEl.textContent = "Verifica el captcha para continuar.";
+      return;
+    }
+
+    submitBtn.disabled = true;
+    statusEl.textContent = "Enviando sugerencia...";
+
+    try {
+      const res = await fetch("/api/sugerencias", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          codigoMembresia: codigo,
+          descripcion,
+          turnstileToken: token,
+        }),
+      });
+
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        statusEl.textContent = body.error || "No pudimos enviar la sugerencia.";
+        submitBtn.disabled = false;
+        return;
+      }
+
+      form.style.display = "none";
+      successEl.style.display = "block";
+    } catch (err) {
+      statusEl.textContent = "Error de red. Intenta nuevamente.";
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>

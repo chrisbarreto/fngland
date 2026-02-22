@@ -4,7 +4,26 @@ import "@/styles/global.css";
 import theme from "@/config/theme.json";
 import config from "@/config/config.json";
 
-const { title } = config.site;
+const {
+  title: titleProp,
+  description: descriptionProp,
+  ogImage: ogImageProp,
+  canonicalPath,
+  noindex = false,
+} = Astro.props;
+
+const siteName = config.site?.title || "Fórmula NG";
+const defaultDescription =
+  "Membresía de lavados ilimitados en Asunción, Paraguay. Detailing premium con lavado exterior, aspirado profundo, cera líquida, lavado de motor y servicio de chofer.";
+const description = descriptionProp || defaultDescription;
+const pageTitle = titleProp ? `${titleProp}` : siteName;
+const siteUrl = Astro.site || new URL("https://formulang.com.py");
+const canonicalUrl = new URL(
+  canonicalPath || Astro.url.pathname,
+  siteUrl
+).toString();
+const ogImageUrl = new URL(ogImageProp || "/og-image.webp", siteUrl).toString();
+const robotsValue = noindex ? "noindex, nofollow" : "index, follow";
 
 // Font setup
 const pf = theme.fonts.font_family.primary;
@@ -17,14 +36,77 @@ if (pf) {
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="es-PY">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content={robotsValue} />
+    <meta name="author" content="Fórmula NG" />
+    <meta name="theme-color" content="#f92606" />
+    <meta name="keywords" content="formulang, formula ng, formula ng detailing, lavado de autos, lavado premium, membresía lavados ilimitados, detailing asunción, car wash paraguay, lavadero asunción, servicio de chofer, lavado de motor, cera líquida, limpieza interior" />
+    <meta name="geo.region" content="PY-ASU" />
+    <meta name="geo.placename" content="Asunción" />
+    <meta name="geo.position" content="-25.2637;-57.5759" />
+    <meta name="ICBM" content="-25.2637, -57.5759" />
+    <link rel="canonical" href={canonicalUrl} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta name="generator" content={Astro.generator} />
-    <title>{title}</title>
-    <meta name="description" content="Discover tips, resources, and guidance to maximize experience with DocKit." />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_PY" />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image:alt" content="Fórmula NG - Membresía de Lavados Ilimitados" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content="Fórmula NG - Membresía de Lavados Ilimitados" />
+
+    <script type="application/ld+json">
+      {JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "@id": "https://formulang.com.py",
+        name: "Fórmula NG",
+        alternateName: "Formula NG Detailing",
+        description:
+          "Servicio de detailing y lavado de vehículos por membresía ilimitada en Asunción, Paraguay. Lavado exterior, aspirado, cera, lavado de motor y servicio de chofer.",
+        url: "https://formulang.com.py",
+        telephone: "+595992789328",
+        email: "info@formulang.com.py",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "23 De Octubre 633",
+          addressLocality: "Asunción",
+          addressCountry: "PY",
+        },
+        geo: {
+          "@type": "GeoCoordinates",
+          latitude: -25.2637,
+          longitude: -57.5759,
+        },
+        sameAs: [
+          "https://www.instagram.com/formulang.py/",
+          "https://www.facebook.com/p/Formula-NG-Detailing-61575717490017/",
+          "https://wa.me/595992789328",
+        ],
+        priceRange: "$$",
+        image: ogImageUrl,
+      })}
+    </script>
 
     <!-- Google Font -->
     <AstroFont

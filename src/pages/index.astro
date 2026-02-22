@@ -1,4 +1,6 @@
 ---
+export const prerender = true;
+
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Header from "@/components/Header.astro";
 import Hero from "@/components/Hero.astro";
@@ -11,9 +13,13 @@ import GoogleReviews from "@/components/sections/GoogleReviews.astro";
 import AccordionContainer from "@/components/sections/AccordionContainer.astro";
 import Accordion from "@/components/sections/Accordion.astro";
 import CTA from "@/components/sections/CTA.astro";
+import RegistroModal from "@/components/RegistroModal.astro";
 ---
 
-<BaseLayout>
+<BaseLayout
+  title="Fórmula NG | Membresía de Lavados Ilimitados en Paraguay"
+  description="Membresía de lavados ilimitados en Asunción, Paraguay. Detailing premium con lavado exterior, aspirado profundo, cera líquida, lavado de motor y servicio de chofer. Estrená tu vehículo cada mañana."
+>
   <div class="page">
     <!-- Hero background video -->
     <div class="hero-bg">
@@ -190,6 +196,9 @@ import CTA from "@/components/sections/CTA.astro";
     {/* Footer */}
     <Footer />
   </div>
+
+  {/* Registration Modal */}
+  <RegistroModal />
 </BaseLayout>
 
 <style>

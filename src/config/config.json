@@ -1,11 +1,11 @@
 {
   "site": {
-    "title": "DocKit",
-    "logo": "/src/assets/logo-light.svg",
+    "title": "Fórmula NG",
+    "logo": "/src/assets/logos/logo-dark.svg",
     "logo_darkmode": "/src/assets/logos/logo-dark.svg",
     "logo_width": "198",
     "logo_height": "49",
-    "logo_text": "DocKit"
+    "logo_text": "Fórmula NG"
   },
 
   "settings": {
@@ -18,7 +18,7 @@
       "enable": true,
       "action": "#"
     },
-    "copyright": "Designed and Developed by <a class=\"text-primary hover:underline no-underline\" href=\"https://themefisher.com\" target=\"_blank\" rel=\"noopener\" aria-label=\"Themefisher\">Themefisher</a> Copyright &copy; 2025."
+    "copyright": "&copy; 2026 Fórmula NG. Todos los derechos reservados."
   },
 
   "navigation_button": {

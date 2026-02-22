@@ -1,0 +1,1199 @@
+---
+// This component renders a full-screen registration modal.
+// All logic is client-side JavaScript (no framework needed).
+---
+
+<!-- Registration Modal -->
+<div id="registro-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-container">
+    <button id="modal-close" class="modal-close" aria-label="Cerrar">&times;</button>
+    
+    <div class="modal-header">
+      <h2 class="modal-title">Registra tu vehículo</h2>
+      <p class="modal-subtitle">Completá tus datos y te contactaremos para activar tu membresía.</p>
+      <!-- Step indicators -->
+      <div class="steps-indicator">
+        <div class="step-dot active" data-step="1"><span>1</span></div>
+        <div class="step-line"></div>
+        <div class="step-dot" data-step="2"><span>2</span></div>
+        <div class="step-line"></div>
+        <div class="step-dot" data-step="3"><span>3</span></div>
+      </div>
+      <div class="steps-labels">
+        <span class="step-label active" data-step="1">Tus datos</span>
+        <span class="step-label" data-step="2">Tu vehículo</span>
+        <span class="step-label" data-step="3">Tu plan</span>
+      </div>
+    </div>
+
+    <form id="registro-form" novalidate>
+      <!-- Step 1: Personal Data -->
+      <div class="form-step active" data-step="1">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="nombre">Nombre completo <span class="required">*</span></label>
+            <input type="text" id="nombre" name="nombre" required placeholder="Ej: Juan Pérez" maxlength="200" />
+            <span class="field-error"></span>
+          </div>
+          <div class="form-group">
+            <label for="ruc">RUC / CI <span class="required">*</span></label>
+            <input type="text" id="ruc" name="ruc" required placeholder="Ej: 1234567-8" maxlength="20" />
+            <span class="field-error"></span>
+          </div>
+          <div class="form-group">
+            <label for="telefono">Teléfono / WhatsApp <span class="required">*</span></label>
+            <input type="tel" id="telefono" name="telefono" required placeholder="Ej: 0981 123 456" maxlength="20" />
+            <span class="field-error"></span>
+          </div>
+          <div class="form-group full">
+            <label for="email">Email <span id="email-optional-label" class="optional">(opcional)</span><span id="email-required-label" class="required" style="display:none;">*</span></label>
+            <input type="email" id="email" name="email" placeholder="tu@email.com" />
+            <span class="field-error"></span>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-next" data-next="2">Siguiente</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Vehicle Data -->
+      <div class="form-step" data-step="2">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="chapa">Chapa / Matrícula <span class="required">*</span></label>
+            <input type="text" id="chapa" name="chapa" required placeholder="Ej: ABC 1234" maxlength="15" style="text-transform: uppercase;" />
+            <span class="field-error"></span>
+          </div>
+          <div class="form-group">
+            <label for="anio">Año</label>
+            <input type="number" id="anio" name="anio" placeholder="Ej: 2024" min="1900" max="2100" />
+            <span class="field-error"></span>
+          </div>
+          <div class="form-group">
+            <label for="idMarca">Marca</label>
+            <select id="idMarca" name="idMarca">
+              <option value="">Seleccionar marca...</option>
+            </select>
+            <span class="field-error"></span>
+          </div>
+          <div class="form-group">
+            <label for="idModelo">Modelo</label>
+            <select id="idModelo" name="idModelo" disabled>
+              <option value="">Primero seleccioná la marca</option>
+            </select>
+            <span class="field-error"></span>
+          </div>
+          <div class="form-group">
+            <label for="color">Color</label>
+            <input type="text" id="color" name="color" placeholder="Ej: Blanco" maxlength="50" />
+            <span class="field-error"></span>
+          </div>
+          <div class="form-group">
+            <label for="tipoVehiculo">Tipo</label>
+            <select id="tipoVehiculo" name="tipoVehiculo">
+              <option value="">Seleccionar...</option>
+              <option value="auto">Auto</option>
+              <option value="camioneta">Camioneta</option>
+              <option value="suv">SUV</option>
+              <option value="pickup">Pickup</option>
+              <option value="van">Van</option>
+              <option value="moto">Moto</option>
+              <option value="otro">Otro</option>
+            </select>
+            <span class="field-error"></span>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-prev" data-prev="1">Atrás</button>
+          <button type="button" class="btn-next" data-next="3">Siguiente</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Plan Selection -->
+      <div class="form-step" data-step="3">
+        <div id="planes-container" class="planes-grid">
+          <div class="planes-loading">Cargando planes...</div>
+        </div>
+        <input type="hidden" id="idPlan" name="idPlan" />
+
+        <!-- Auto-debit section -->
+        <div class="auto-debit-section">
+          <label class="checkbox-label">
+            <input type="checkbox" id="autoDebit" name="autoDebit" />
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Autorizo débitos automáticos mensuales en mi tarjeta</span>
+          </label>
+
+          <div id="debit-day-wrapper" class="debit-day-wrapper" style="display:none;">
+            <label for="diaDebito">Día preferido de débito <span class="required">*</span></label>
+            <select id="diaDebito" name="diaDebito">
+              <option value="">Seleccionar día...</option>
+            </select>
+            <span class="debit-day-hint">Si el mes no tiene ese día, se cobrará el último día del mes.</span>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-prev" data-prev="2">Atrás</button>
+          <button type="submit" class="btn-submit" id="btn-submit">
+            <span class="btn-submit-text">Confirmar registro</span>
+            <span class="btn-submit-loading" style="display:none;">Enviando...</span>
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <!-- Success state -->
+    <div id="registro-success" class="success-message" style="display:none;">
+      <div class="success-icon">&#10003;</div>
+      <h3>Registro exitoso</h3>
+      <p>Nos comunicaremos contigo pronto para activar tu membresía.</p>
+      <button type="button" class="btn-next" id="success-close">Cerrar</button>
+    </div>
+
+    <!-- Bancard Checkout iframe container -->
+    <div id="bancard-checkout-container" style="display:none;">
+      <div class="checkout-header">
+        <h3>Registrar tarjeta de pago</h3>
+        <p>Ingresá los datos de tu tarjeta de crédito o débito para activar los débitos automáticos.</p>
+      </div>
+      <div id="bancard-iframe"></div>
+      <p class="checkout-secure-note">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Conexión segura. Tus datos de tarjeta son procesados directamente por Bancard.
+      </p>
+    </div>
+
+    <!-- Error state -->
+    <div id="registro-error" class="error-banner" style="display:none;">
+      <span id="error-message"></span>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Modal overlay */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: modalFadeIn 0.3s ease;
+    overflow-y: auto;
+  }
+
+  @keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal-container {
+    position: relative;
+    width: 100%;
+    max-width: 580px;
+    background: var(--sl-color-gray-6, #1a1a1a);
+    border: 1px solid var(--sl-color-hairline, rgba(255,255,255,0.1));
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    color: var(--sl-color-gray-3, #888);
+    font-size: 1.8rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.25rem;
+    transition: color 0.2s;
+  }
+  .modal-close:hover {
+    color: var(--sl-color-white, #fff);
+  }
+
+  /* Header */
+  .modal-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--sl-color-white, #fff);
+    margin: 0 0 0.5rem;
+  }
+  .modal-subtitle {
+    font-size: 0.9rem;
+    color: var(--sl-color-gray-3, #888);
+    margin: 0 0 1.5rem;
+  }
+
+  /* Steps */
+  .steps-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 0.5rem;
+  }
+  .step-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--sl-color-gray-4, #555);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--sl-color-gray-4, #555);
+    transition: all 0.3s;
+  }
+  .step-dot.active {
+    border-color: #f92606;
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    color: white;
+  }
+  .step-dot.completed {
+    border-color: #22c55e;
+    background: #22c55e;
+    color: white;
+  }
+  .step-line {
+    width: 40px;
+    height: 2px;
+    background: var(--sl-color-gray-5, #333);
+    margin: 0 4px;
+  }
+  .steps-labels {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+  }
+  .step-label {
+    font-size: 0.75rem;
+    color: var(--sl-color-gray-4, #555);
+    transition: color 0.3s;
+  }
+  .step-label.active {
+    color: var(--sl-color-white, #fff);
+  }
+
+  /* Form steps */
+  .form-step {
+    display: none;
+  }
+  .form-step.active {
+    display: block;
+    animation: stepFadeIn 0.3s ease;
+  }
+  @keyframes stepFadeIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Form grid */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .form-group.full {
+    grid-column: 1 / -1;
+  }
+  .form-group label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--sl-color-gray-2, #ccc);
+  }
+  .required {
+    color: #f92606;
+  }
+  .optional {
+    font-size: 0.75rem;
+    color: var(--sl-color-gray-4, #555);
+    font-weight: 400;
+  }
+  .form-group input,
+  .form-group select {
+    background: var(--sl-color-gray-5, #2a2a2a);
+    border: 1px solid var(--sl-color-hairline, rgba(255,255,255,0.1));
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    color: var(--sl-color-white, #fff);
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+    outline: none;
+    font-family: inherit;
+  }
+  .form-group input::placeholder {
+    color: var(--sl-color-gray-4, #555);
+  }
+  .form-group input:focus,
+  .form-group select:focus {
+    border-color: #f92606;
+  }
+  .form-group input.invalid,
+  .form-group select.invalid {
+    border-color: #ef4444;
+  }
+  .field-error {
+    font-size: 0.75rem;
+    color: #ef4444;
+    min-height: 1rem;
+  }
+
+  .form-group select option {
+    background: var(--sl-color-gray-5, #2a2a2a);
+    color: var(--sl-color-white, #fff);
+  }
+
+  /* Form actions */
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+  .btn-next, .btn-submit {
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    color: white;
+    padding: 0.75rem 2rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(249, 38, 6, 0.3);
+  }
+  .btn-next:hover, .btn-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(249, 38, 6, 0.5);
+  }
+  .btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .btn-prev {
+    background: transparent;
+    border: 1px solid var(--sl-color-gray-4, #555);
+    color: var(--sl-color-gray-2, #ccc);
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-prev:hover {
+    border-color: var(--sl-color-gray-2, #ccc);
+    color: var(--sl-color-white, #fff);
+  }
+
+  /* Plans grid — :global() needed because plan cards are rendered via innerHTML */
+  .planes-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  :global(.planes-loading) {
+    text-align: center;
+    color: var(--sl-color-gray-3, #888);
+    padding: 2rem;
+  }
+  :global(.plan-card) {
+    position: relative;
+    border: 2px solid var(--sl-color-hairline, rgba(255,255,255,0.1));
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: var(--sl-color-gray-5, #2a2a2a);
+  }
+  :global(.plan-card:hover) {
+    border-color: var(--sl-color-gray-3, #888);
+  }
+  :global(.plan-card.selected) {
+    border-color: #f92606;
+    background: rgba(249, 38, 6, 0.08);
+    box-shadow: 0 0 20px rgba(249, 38, 6, 0.15);
+  }
+  :global(.plan-card.destacado) {
+    border-color: #ff6b3d;
+  }
+  :global(.plan-card-badge) {
+    position: absolute;
+    top: -10px;
+    right: 16px;
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 12px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  :global(.plan-name) {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--sl-color-white, #fff);
+    margin-bottom: 0.25rem;
+  }
+  :global(.plan-price) {
+    font-size: 0.95rem;
+    color: #ff6b3d;
+    font-weight: 600;
+  }
+  :global(.plan-desc) {
+    font-size: 0.8rem;
+    color: var(--sl-color-gray-3, #888);
+    margin-top: 0.35rem;
+  }
+  :global(.plan-check) {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--sl-color-gray-4, #555);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: transparent;
+    transition: all 0.3s;
+  }
+  :global(.plan-card.selected .plan-check) {
+    background: #f92606;
+    border-color: #f92606;
+    color: white;
+  }
+
+  /* Success */
+  .success-message {
+    text-align: center;
+    padding: 2rem 0;
+  }
+  .success-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #22c55e;
+    color: white;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+  }
+  .success-message h3 {
+    font-size: 1.3rem;
+    color: var(--sl-color-white, #fff);
+    margin: 0 0 0.5rem;
+  }
+  .success-message p {
+    color: var(--sl-color-gray-3, #888);
+    margin: 0 0 2rem;
+  }
+
+  /* Error banner */
+
+  /* Bancard Checkout */
+  #bancard-checkout-container {
+    padding: 1rem 0;
+  }
+  .checkout-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  .checkout-header h3 {
+    font-size: 1.3rem;
+    color: var(--sl-color-white, #fff);
+    margin: 0 0 0.5rem;
+  }
+  .checkout-header p {
+    color: var(--sl-color-gray-3, #888);
+    margin: 0;
+    font-size: 0.9rem;
+  }
+  #bancard-iframe {
+    min-height: 400px;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  #bancard-iframe iframe {
+    width: 100% !important;
+    min-height: 400px !important;
+    border: none !important;
+  }
+  .checkout-secure-note {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+    color: var(--sl-color-gray-3, #888);
+    font-size: 0.8rem;
+    margin-top: 1rem;
+  }
+  .checkout-secure-note svg {
+    flex-shrink: 0;
+    color: #22c55e;
+  }
+  .error-banner {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    color: #ef4444;
+    font-size: 0.85rem;
+    margin-top: 1rem;
+    text-align: center;
+  }
+
+  /* Auto-debit section */
+  .auto-debit-section {
+    margin-top: 1.25rem;
+    padding: 1.25rem;
+    border: 1px solid var(--sl-color-hairline, rgba(255,255,255,0.1));
+    border-radius: 12px;
+    background: var(--sl-color-gray-5, #2a2a2a);
+  }
+  .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .checkbox-label input[type="checkbox"] {
+    display: none;
+  }
+  .checkbox-custom {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--sl-color-gray-4, #555);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-top: 1px;
+  }
+  .checkbox-custom::after {
+    content: "\2713";
+    color: white;
+    font-size: 0.7rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .checkbox-label input[type="checkbox"]:checked ~ .checkbox-custom {
+    background: #f92606;
+    border-color: #f92606;
+  }
+  .checkbox-label input[type="checkbox"]:checked ~ .checkbox-custom::after {
+    opacity: 1;
+  }
+  .checkbox-text {
+    font-size: 0.9rem;
+    color: var(--sl-color-gray-2, #ccc);
+    line-height: 1.4;
+  }
+  .debit-day-wrapper {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .debit-day-wrapper label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--sl-color-gray-2, #ccc);
+  }
+  .debit-day-wrapper select {
+    background: var(--sl-color-gray-6, #1a1a1a);
+    border: 1px solid var(--sl-color-hairline, rgba(255,255,255,0.1));
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    color: var(--sl-color-white, #fff);
+    font-size: 0.95rem;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .debit-day-wrapper select:focus {
+    border-color: #f92606;
+  }
+  .debit-day-wrapper select option {
+    background: var(--sl-color-gray-6, #1a1a1a);
+    color: var(--sl-color-white, #fff);
+  }
+  .debit-day-hint {
+    font-size: 0.75rem;
+    color: var(--sl-color-gray-4, #555);
+    font-style: italic;
+  }
+
+  /* Responsive */
+  @media (max-width: 548px) {
+    .modal-container {
+      padding: 1.5rem 1.25rem;
+      border-radius: 16px;
+    }
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    .form-group.full {
+      grid-column: 1;
+    }
+    .steps-labels {
+      gap: 1rem;
+    }
+    .step-line {
+      width: 24px;
+    }
+  }
+</style>
+
+<script>
+  {
+    // ---- DOM Elements ----
+    const modal = document.getElementById("registro-modal") as HTMLElement;
+    const form = document.getElementById("registro-form") as HTMLFormElement;
+    const closeBtn = document.getElementById("modal-close") as HTMLElement;
+    const successDiv = document.getElementById("registro-success") as HTMLElement;
+    const errorBanner = document.getElementById("registro-error") as HTMLElement;
+    const errorMsg = document.getElementById("error-message") as HTMLElement;
+    const successClose = document.getElementById("success-close") as HTMLElement;
+    const submitBtn = document.getElementById("btn-submit") as HTMLButtonElement;
+    const submitText = submitBtn?.querySelector(".btn-submit-text") as HTMLElement;
+    const submitLoading = submitBtn?.querySelector(".btn-submit-loading") as HTMLElement;
+
+    let currentStep = 1;
+    let marcasLoaded = false;
+    let planesLoaded = false;
+
+    // ---- Fetch with timeout ----
+    function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 30000): Promise<Response> {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      return fetch(url, { ...options, signal: controller.signal })
+        .catch((err) => {
+          if (err.name === "AbortError") {
+            throw new Error("La solicitud tardó demasiado. Verificá tu conexión e intentá de nuevo.");
+          }
+          throw err;
+        })
+        .finally(() => clearTimeout(timer));
+    }
+
+    // ---- Auto-debit toggle ----
+    const autoDebitCheckbox = document.getElementById("autoDebit") as HTMLInputElement;
+    const debitDayWrapper = document.getElementById("debit-day-wrapper") as HTMLElement;
+    const diaDebitoSelect = document.getElementById("diaDebito") as HTMLSelectElement;
+
+    // Populate day selector (1-31)
+    for (let d = 1; d <= 31; d++) {
+      const opt = document.createElement("option");
+      opt.value = String(d);
+      opt.textContent = String(d);
+      diaDebitoSelect.appendChild(opt);
+    }
+
+    autoDebitCheckbox?.addEventListener("change", () => {
+      debitDayWrapper.style.display = autoDebitCheckbox.checked ? "flex" : "none";
+      if (!autoDebitCheckbox.checked) {
+        diaDebitoSelect.value = "";
+      }
+      // Toggle email required indicator
+      const optLabel = document.getElementById("email-optional-label") as HTMLElement;
+      const reqLabel = document.getElementById("email-required-label") as HTMLElement;
+      if (optLabel && reqLabel) {
+        optLabel.style.display = autoDebitCheckbox.checked ? "none" : "inline";
+        reqLabel.style.display = autoDebitCheckbox.checked ? "inline" : "none";
+      }
+    });
+
+    // ---- Open / Close Modal ----
+    function openModal() {
+      modal.style.display = "flex";
+      document.body.style.overflow = "hidden";
+      if (!marcasLoaded) loadMarcas();
+      if (!planesLoaded) loadPlanes();
+    }
+
+    function closeModal() {
+      modal.style.display = "none";
+      document.body.style.overflow = "";
+    }
+
+    // Expose globally so Hero can call it
+    (window as any).__openRegistroModal = openModal;
+
+    closeBtn?.addEventListener("click", closeModal);
+    successClose?.addEventListener("click", closeModal);
+    modal?.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    // ESC key
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal.style.display === "flex") closeModal();
+    });
+
+    // ---- Step Navigation ----
+    function goToStep(step: number) {
+      currentStep = step;
+      document.querySelectorAll(".form-step").forEach((el) => {
+        (el as HTMLElement).classList.toggle("active", el.getAttribute("data-step") === String(step));
+      });
+      document.querySelectorAll(".step-dot").forEach((el) => {
+        const s = Number(el.getAttribute("data-step"));
+        el.classList.toggle("active", s === step);
+        el.classList.toggle("completed", s < step);
+      });
+      document.querySelectorAll(".step-label").forEach((el) => {
+        el.classList.toggle("active", el.getAttribute("data-step") === String(step));
+      });
+    }
+
+    // Next buttons
+    document.querySelectorAll(".btn-next[data-next]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const nextStep = Number((btn as HTMLElement).getAttribute("data-next"));
+        if (validateStep(currentStep)) {
+          goToStep(nextStep);
+        }
+      });
+    });
+
+    // Prev buttons
+    document.querySelectorAll(".btn-prev[data-prev]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const prevStep = Number((btn as HTMLElement).getAttribute("data-prev"));
+        goToStep(prevStep);
+      });
+    });
+
+    // ---- Validation ----
+    function validateStep(step: number): boolean {
+      clearErrors();
+      let valid = true;
+
+      if (step === 1) {
+        const nombre = (document.getElementById("nombre") as HTMLInputElement).value.trim();
+        const ruc = (document.getElementById("ruc") as HTMLInputElement).value.trim();
+        const telefono = (document.getElementById("telefono") as HTMLInputElement).value.trim();
+        const email = (document.getElementById("email") as HTMLInputElement).value.trim();
+        const wantsAutoDebit = autoDebitCheckbox?.checked;
+
+        if (!nombre) { showFieldError("nombre", "El nombre es requerido"); valid = false; }
+        if (!ruc) { showFieldError("ruc", "El RUC/CI es requerido"); valid = false; }
+        if (!telefono) { showFieldError("telefono", "El teléfono es requerido"); valid = false; }
+        if (wantsAutoDebit && !email) {
+          showFieldError("email", "El email es requerido para débitos automáticos");
+          valid = false;
+        } else if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+          showFieldError("email", "Email inválido");
+          valid = false;
+        }
+      }
+
+      if (step === 2) {
+        const chapa = (document.getElementById("chapa") as HTMLInputElement).value.trim();
+        if (!chapa || chapa.length < 3) { showFieldError("chapa", "La chapa es requerida (mín. 3 caracteres)"); valid = false; }
+      }
+
+      return valid;
+    }
+
+    function showFieldError(fieldId: string, message: string) {
+      const field = document.getElementById(fieldId);
+      if (field) {
+        field.classList.add("invalid");
+        const errorSpan = field.parentElement?.querySelector(".field-error");
+        if (errorSpan) errorSpan.textContent = message;
+      }
+    }
+
+    function clearErrors() {
+      document.querySelectorAll(".invalid").forEach(el => el.classList.remove("invalid"));
+      document.querySelectorAll(".field-error").forEach(el => el.textContent = "");
+      errorBanner.style.display = "none";
+    }
+
+    // ---- Load Marcas ----
+    async function loadMarcas() {
+      const select = document.getElementById("idMarca") as HTMLSelectElement;
+      try {
+        const res = await fetchWithTimeout("/api/marcas", {}, 15000);
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          throw new Error(errBody.error || `Error ${res.status} al cargar marcas`);
+        }
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          select.innerHTML = '<option value="">Seleccionar marca...</option>';
+          data.forEach((marca: any) => {
+            const opt = document.createElement("option");
+            opt.value = marca.idMarca;
+            opt.textContent = marca.nombre;
+            select.appendChild(opt);
+          });
+          marcasLoaded = true;
+        } else {
+          select.innerHTML = '<option value="">Error: respuesta inválida</option>';
+        }
+      } catch (err: any) {
+        console.error("Error loading marcas:", err);
+        select.innerHTML = `<option value="">Error al cargar marcas</option>`;
+      }
+    }
+
+    // ---- Load Modelos (cascading) ----
+    const marcaSelect = document.getElementById("idMarca") as HTMLSelectElement;
+    const modeloSelect = document.getElementById("idModelo") as HTMLSelectElement;
+
+    marcaSelect?.addEventListener("change", async () => {
+      const idMarca = marcaSelect.value;
+      modeloSelect.innerHTML = '<option value="">Cargando...</option>';
+      modeloSelect.disabled = true;
+
+      if (!idMarca) {
+        modeloSelect.innerHTML = '<option value="">Primero seleccioná la marca</option>';
+        return;
+      }
+
+      try {
+        const res = await fetchWithTimeout(`/api/modelos?idMarca=${idMarca}`, {}, 15000);
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          throw new Error(errBody.error || `Error ${res.status} al cargar modelos`);
+        }
+        const data = await res.json();
+        modeloSelect.innerHTML = '<option value="">Seleccionar modelo...</option>';
+        if (Array.isArray(data)) {
+          data.forEach((modelo: any) => {
+            const opt = document.createElement("option");
+            opt.value = modelo.idModelo;
+            opt.textContent = modelo.nombre;
+            modeloSelect.appendChild(opt);
+          });
+        }
+        modeloSelect.disabled = false;
+      } catch (err: any) {
+        modeloSelect.innerHTML = `<option value="">Error al cargar modelos</option>`;
+        console.error("Error loading modelos:", err);
+      }
+    });
+
+    // ---- Load Planes ----
+    async function loadPlanes() {
+      const container = document.getElementById("planes-container") as HTMLElement;
+      try {
+        const res = await fetchWithTimeout("/api/planes", {}, 15000);
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          throw new Error(errBody.error || `Error ${res.status} al cargar planes`);
+        }
+        const data = await res.json();
+
+        if (Array.isArray(data) && data.length > 0) {
+          container.innerHTML = data.map((plan: any) => `
+            <div class="plan-card ${plan.destacado ? 'destacado' : ''}" data-plan-id="${plan.idPlan}">
+              ${plan.destacado ? '<div class="plan-card-badge">Recomendado</div>' : ''}
+              <div class="plan-name">${plan.nombre}</div>
+              <div class="plan-price">Gs. ${Number(plan.precio).toLocaleString("es-PY")}/mes</div>
+              ${plan.descripcion ? `<div class="plan-desc">${plan.descripcion}</div>` : ''}
+              <div class="plan-check">&#10003;</div>
+            </div>
+          `).join("");
+
+          // Plan selection click
+          container.querySelectorAll(".plan-card").forEach((card) => {
+            card.addEventListener("click", () => {
+              container.querySelectorAll(".plan-card").forEach(c => c.classList.remove("selected"));
+              card.classList.add("selected");
+              (document.getElementById("idPlan") as HTMLInputElement).value = 
+                (card as HTMLElement).getAttribute("data-plan-id") || "";
+            });
+          });
+
+          // Auto-select the highlighted plan
+          const destacado = container.querySelector(".plan-card.destacado") as HTMLElement;
+          if (destacado) destacado.click();
+
+          planesLoaded = true;
+        } else {
+          container.innerHTML = '<div class="planes-loading">No hay planes disponibles en este momento.</div>';
+        }
+      } catch (err) {
+        const container = document.getElementById("planes-container") as HTMLElement;
+        container.innerHTML = '<div class="planes-loading">Error al cargar planes. Intente más tarde.</div>';
+        console.error("Error loading planes:", err);
+      }
+    }
+
+    // ---- Form Submission ----
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!validateStep(currentStep)) return;
+
+      // Validate auto-debit day if checkbox is checked
+      const wantsAutoDebit = autoDebitCheckbox?.checked;
+      if (wantsAutoDebit && !diaDebitoSelect.value) {
+        errorMsg.textContent = "Seleccioná un día de débito para activar los cobros automáticos.";
+        errorBanner.style.display = "block";
+        return;
+      }
+
+      // Validate email is present when auto-debit is enabled (PagoPar requires it)
+      if (wantsAutoDebit) {
+        const emailVal = (document.getElementById("email") as HTMLInputElement).value.trim();
+        if (!emailVal) {
+          errorMsg.textContent = "El email es requerido para activar débitos automáticos. Volvé al paso 1 para completarlo.";
+          errorBanner.style.display = "block";
+          goToStep(1);
+          showFieldError("email", "El email es requerido para débitos automáticos");
+          return;
+        }
+        if (!emailVal.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+          errorMsg.textContent = "El email ingresado no es válido. Volvé al paso 1 para corregirlo.";
+          errorBanner.style.display = "block";
+          goToStep(1);
+          showFieldError("email", "Email inválido");
+          return;
+        }
+      }
+
+      // Disable submit
+      submitBtn.disabled = true;
+      submitText.style.display = "none";
+      submitLoading.style.display = "inline";
+      errorBanner.style.display = "none";
+
+      // Collect form data
+      const formData: any = {
+        nombre: (document.getElementById("nombre") as HTMLInputElement).value.trim(),
+        ruc: (document.getElementById("ruc") as HTMLInputElement).value.trim(),
+        telefono: (document.getElementById("telefono") as HTMLInputElement).value.trim(),
+      };
+
+      // Optional fields
+      const email = (document.getElementById("email") as HTMLInputElement).value.trim();
+      if (email) formData.email = email;
+
+      const chapa = (document.getElementById("chapa") as HTMLInputElement).value.trim();
+      formData.chapa = chapa;
+
+      const idMarcaVal = (document.getElementById("idMarca") as HTMLSelectElement).value;
+      if (idMarcaVal) formData.idMarca = Number(idMarcaVal);
+
+      const idModeloVal = (document.getElementById("idModelo") as HTMLSelectElement).value;
+      if (idModeloVal) formData.idModelo = Number(idModeloVal);
+
+      const anio = (document.getElementById("anio") as HTMLInputElement).value;
+      if (anio) formData.anio = Number(anio);
+
+      const color = (document.getElementById("color") as HTMLInputElement).value.trim();
+      if (color) formData.color = color;
+
+      const tipoVehiculo = (document.getElementById("tipoVehiculo") as HTMLSelectElement).value;
+      if (tipoVehiculo) formData.tipoVehiculo = tipoVehiculo;
+
+      const idPlan = (document.getElementById("idPlan") as HTMLInputElement).value;
+      if (idPlan) formData.idPlan = idPlan;
+
+      try {
+        // Step 1: Register client + vehicle + membership
+        const res = await fetchWithTimeout("/api/registro", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        }, 30000);
+
+        const body = await res.json().catch(() => {
+          throw new Error("Error al procesar la respuesta del servidor. Intentá de nuevo.");
+        });
+
+        if (!res.ok) {
+          const serverMsg = body.error || body.message || "";
+          // Show user-friendly error based on status code
+          if (res.status === 409) {
+            throw new Error(serverMsg || "Este RUC o chapa ya está registrado. Si ya sos cliente, comunicate con nosotros.");
+          } else if (res.status === 400) {
+            throw new Error(serverMsg || "Datos inválidos. Revisá los campos e intentá de nuevo.");
+          } else {
+            throw new Error(serverMsg || "Error inesperado al registrar. Intentá de nuevo más tarde.");
+          }
+        }
+
+        // Step 2: If auto-debit enabled, initiate Pagopar checkout
+        const idCliente = body.data?.idCliente || body.idCliente;
+        if (wantsAutoDebit && idCliente) {
+          submitLoading.textContent = "Redirigiendo a Pagopar...";
+
+          // Store idCliente for callback confirmation
+          sessionStorage.setItem("formulang_idCliente", idCliente);
+
+          const checkoutRes = await fetchWithTimeout("/api/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              idCliente: idCliente,
+              diaDebito: Number(diaDebitoSelect.value),
+            }),
+          }, 30000);
+
+          const checkoutBody = await checkoutRes.json().catch(() => {
+            throw new Error("Error al procesar la respuesta del checkout. Intentá de nuevo.");
+          });
+
+          if (!checkoutRes.ok) {
+            // Registration succeeded but checkout failed — show partial success
+            form.style.display = "none";
+            (document.querySelector(".success-message h3") as HTMLElement).textContent = "Registro exitoso";
+            (document.querySelector(".success-message p") as HTMLElement).textContent =
+              "Tu registro fue exitoso, pero no pudimos iniciar el pago automático. Contactanos para activarlo manualmente.";
+            successDiv.style.display = "block";
+            return;
+          }
+
+          // processId received — render Bancard iframe for card enrollment
+          const processId = checkoutBody.processId;
+          if (processId) {
+            form.style.display = "none";
+            const bancardContainer = document.getElementById("bancard-checkout-container")!;
+            bancardContainer.style.display = "block";
+
+            // Load Bancard Checkout JS SDK if not already loaded
+            if (!(window as any).Bancard) {
+              await new Promise<void>((resolve, reject) => {
+                const script = document.createElement("script");
+                script.src = "/bancard-checkout-5.0.1.js";
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error("Error al cargar Bancard SDK"));
+                document.head.appendChild(script);
+              });
+            }
+
+            // Render the Bancard card enrollment form
+            (window as any).Bancard.Cards.createForm("bancard-iframe", processId, {
+              styles: {
+                "input-background-color": "#ffffff",
+                "input-text-color": "#333333",
+                "input-placeholder-color": "#999999",
+                "input-border-color": "#dddddd",
+                "button-background-color": "#4f46e5",
+                "button-text-color": "#ffffff",
+                "form-background-color": "#ffffff",
+              },
+            });
+          } else {
+            // No processId — show partial success
+            form.style.display = "none";
+            (document.querySelector(".success-message h3") as HTMLElement).textContent = "Registro exitoso";
+            (document.querySelector(".success-message p") as HTMLElement).textContent =
+              "Tu registro fue exitoso. Contactanos para configurar los débitos automáticos.";
+            successDiv.style.display = "block";
+          }
+          return;
+        }
+
+        // No auto-debit — simple success
+        form.style.display = "none";
+        successDiv.style.display = "block";
+      } catch (err: any) {
+        // Filter out raw technical errors (SyntaxError, TypeError, etc.)
+        const isTechnical = err instanceof SyntaxError || err instanceof TypeError ||
+          (err.message && (err.message.includes("Unexpected token") || err.message.includes("undefined")));
+        errorMsg.textContent = isTechnical
+          ? "Error inesperado. Intente más tarde."
+          : (err.message || "Error inesperado. Intente más tarde.");
+        errorBanner.style.display = "block";
+      } finally {
+        submitBtn.disabled = false;
+        submitText.style.display = "inline";
+        submitLoading.style.display = "none";
+        submitLoading.textContent = "Enviando...";
+      }
+    });
+    // ---- Handle Pagopar Checkout Callback ----
+    // When Pagopar redirects back via /api/callback, it sets ?checkout=ok|error on the landing
+    (async function handleCheckoutCallback() {
+      const params = new URLSearchParams(window.location.search);
+      const checkoutStatus = params.get("checkout");
+      if (!checkoutStatus) return;
+
+      // Clean URL without reloading
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, "", cleanUrl);
+
+      if (checkoutStatus === "ok") {
+        // Show success notification
+        openModal();
+        form.style.display = "none";
+        (document.querySelector(".success-message h3") as HTMLElement).textContent = "Tarjeta registrada";
+        (document.querySelector(".success-message p") as HTMLElement).textContent =
+          "Tu tarjeta fue registrada exitosamente. Los débitos automáticos están activos.";
+        successDiv.style.display = "block";
+
+        // Confirm tarjeta in the backend (await result to ensure consistency)
+        const storedClienteId = sessionStorage.getItem("formulang_idCliente");
+        if (storedClienteId) {
+          try {
+            const confirmRes = await fetch("/api/confirmar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ idCliente: storedClienteId }),
+            });
+            if (!confirmRes.ok) {
+              const confirmBody = await confirmRes.json().catch(() => ({}));
+              console.error("Error confirming card:", confirmBody);
+              (document.querySelector(".success-message p") as HTMLElement).textContent =
+                "Tu tarjeta fue registrada, pero hubo un problema activando los débitos automáticos. Contactanos para asistencia.";
+            }
+          } catch (err) {
+            console.error("Error confirming card:", err);
+            (document.querySelector(".success-message p") as HTMLElement).textContent =
+              "Tu tarjeta fue registrada, pero no pudimos confirmar los débitos automáticos. Contactanos para asistencia.";
+          } finally {
+            sessionStorage.removeItem("formulang_idCliente");
+          }
+        }
+      } else {
+        // Show error
+        const msg = params.get("checkout_msg") || "No se pudo registrar la tarjeta. Intentá de nuevo más tarde.";
+        openModal();
+        form.style.display = "none";
+        (document.querySelector(".success-message h3") as HTMLElement).textContent = "Error al registrar tarjeta";
+        (document.querySelector(".success-message p") as HTMLElement).textContent = msg;
+        (document.querySelector(".success-icon") as HTMLElement).textContent = "\u2717";
+        (document.querySelector(".success-icon") as HTMLElement).style.background = "#ef4444";
+        successDiv.style.display = "block";
+      }
+    })();
+  }
+</script>

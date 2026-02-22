@@ -23,7 +23,7 @@ import logoDark from "@/assets/logos/logo-dark.svg";
     
     <!-- Botón de Acción -->
     <div class="hero-cta">
-      <a href="#" class="btn btn-primary">QUIERO MI AUTO IMPECABLE</a>
+      <button type="button" class="btn btn-primary" id="hero-cta-btn">QUIERO MI AUTO IMPECABLE</button>
     </div>
   </div>
 </div>
@@ -39,6 +39,14 @@ import logoDark from "@/assets/logos/logo-dark.svg";
   if (heroBG) {
     heroBG.style.height = `${totalHeight}px`;
   }
+
+  // Open registration modal
+  const heroCtaBtn = document.getElementById("hero-cta-btn");
+  heroCtaBtn?.addEventListener("click", () => {
+    if (typeof (window as any).__openRegistroModal === "function") {
+      (window as any).__openRegistroModal();
+    }
+  });
 </script>
 
 <style>

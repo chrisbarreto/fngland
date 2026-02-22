@@ -9,6 +9,7 @@
 .btn-outline-primary {
   @apply relative rounded-xl py-3 px-6 border-none text-text hover:text-text;
   color: var(--sl-color-white);
+  background: transparent;
 }
 .btn-outline-primary:hover {
   background: linear-gradient(135deg, #f92606, #ff4d2a);
@@ -26,4 +27,5 @@
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   -webkit-mask-composite: xor;
+  pointer-events: none;
 }

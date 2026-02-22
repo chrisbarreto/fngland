@@ -1,0 +1,16 @@
+{
+  "name": "Fórmula NG - Detailing Premium",
+  "short_name": "Fórmula NG",
+  "description": "Membresía de lavados ilimitados en Asunción, Paraguay",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#f92606",
+  "background_color": "#0d0d0d",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ]
+}

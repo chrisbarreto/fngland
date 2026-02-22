@@ -98,8 +98,8 @@ const pathname = Astro.request.url;
       navigation_button.enable && (
         <li class="mt-4 inline-block lg:hidden">
           <a
+            href="#contacto"
             class="btn btn-outline-primary btn-sm"
-            href={navigation_button.link}
           >
             {navigation_button.label}
           </a>
@@ -114,8 +114,8 @@ const pathname = Astro.request.url;
     {
       navigation_button.enable && (
         <a
+          href="#contacto"
           class="btn btn-outline-primary hidden! lg:inline-block!"
-          href={navigation_button.link}
         >
           {navigation_button.label}
         </a>
@@ -148,4 +148,6 @@ const pathname = Astro.request.url;
         ?.classList.toggle("active");
     });
   });
+
+
 </script>
