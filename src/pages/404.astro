@@ -1,0 +1,198 @@
+---
+export const prerender = true;
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import logoDark from "@/assets/logos/logo-dark.svg";
+---
+
+<BaseLayout
+  title="Página no encontrada | Fórmula NG"
+  description="Lo sentimos, la página que buscas no existe o ha sido movida."
+>
+  <div class="error-page">
+    <Header />
+    
+    <main class="error-content">
+      <img src={logoDark.src} alt="Fórmula NG" class="error-logo" />
+      
+      <h1 class="error-title">404</h1>
+      <h2 class="error-subtitle">Página no encontrada</h2>
+      
+      <p class="error-message">
+        Lo sentimos, la página que buscas no existe o ha sido movida.
+      </p>
+      
+      <div class="error-actions">
+        <a href="/" class="btn btn-primary">
+          Volver al inicio
+        </a>
+        <a href="https://wa.me/595992789328" class="btn btn-outline" target="_blank" rel="noopener noreferrer">
+          Contactar por WhatsApp
+        </a>
+      </div>
+      
+      <div class="error-links">
+        <p>Enlaces útiles:</p>
+        <ul>
+          <li><a href="/#beneficios">Beneficios de la membresía</a></li>
+          <li><a href="/#preguntas">Preguntas frecuentes</a></li>
+          <li><a href="/#contacto">Contacto</a></li>
+        </ul>
+      </div>
+    </main>
+    
+    <Footer />
+  </div>
+</BaseLayout>
+
+<style>
+  .error-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--sl-color-black);
+  }
+  
+  .error-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    padding-top: 80px;
+  }
+  
+  .error-logo {
+    width: 180px;
+    max-width: 80%;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+  }
+  
+  .error-title {
+    font-size: 8rem;
+    font-weight: 800;
+    margin: 0;
+    line-height: 1;
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .error-subtitle {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--sl-color-white);
+    margin: 1rem 0;
+  }
+  
+  .error-message {
+    font-size: 1.1rem;
+    color: var(--sl-color-gray-3);
+    max-width: 400px;
+    margin-bottom: 2rem;
+  }
+  
+  .error-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 2.5rem;
+  }
+  
+  .btn {
+    padding: 0.875rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    color: white;
+    box-shadow: 0 4px 20px rgba(249, 38, 6, 0.3);
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(249, 38, 6, 0.5);
+  }
+  
+  .btn-outline {
+    background: transparent;
+    color: var(--sl-color-white);
+    border: 2px solid rgba(249, 38, 6, 0.5);
+  }
+  
+  .btn-outline:hover {
+    border-color: #f92606;
+    background: rgba(249, 38, 6, 0.1);
+  }
+  
+  .error-links {
+    color: var(--sl-color-gray-4);
+    font-size: 0.9rem;
+  }
+  
+  .error-links p {
+    margin-bottom: 0.5rem;
+  }
+  
+  .error-links ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .error-links a {
+    color: var(--sl-color-gray-3);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+  
+  .error-links a:hover {
+    color: #f92606;
+  }
+  
+  @media (max-width: 600px) {
+    .error-title {
+      font-size: 5rem;
+    }
+    
+    .error-subtitle {
+      font-size: 1.25rem;
+    }
+    
+    .error-message {
+      font-size: 1rem;
+    }
+    
+    .error-actions {
+      flex-direction: column;
+      width: 100%;
+      max-width: 280px;
+    }
+    
+    .btn {
+      width: 100%;
+      text-align: center;
+    }
+    
+    .error-links ul {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+</style>
