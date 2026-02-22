@@ -14,7 +14,7 @@ const {
 
 const siteName = config.site?.title || "Fórmula NG";
 const defaultDescription =
-  "Membresía de lavados ilimitados en Asunción, Paraguay. Detailing premium con lavado exterior, aspirado profundo, cera líquida, lavado de motor y servicio de chofer.";
+  "Membresía de estética automotriz en Asunción, Paraguay. Detailing premium con lavado exterior y aspirado. Estrená tu vehículo cada mañana.";
 const description = descriptionProp || defaultDescription;
 const pageTitle = titleProp ? `${titleProp}` : siteName;
 const siteUrl = Astro.site || new URL("https://formulang.com.py");
@@ -67,13 +67,13 @@ if (pf) {
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:type" content="image/webp" />
-    <meta property="og:image:alt" content="Fórmula NG - Membresía de Lavados Ilimitados" />
+    <meta property="og:image:alt" content="Fórmula NG - Membresía de Estética Automotriz" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
-    <meta name="twitter:image:alt" content="Fórmula NG - Membresía de Lavados Ilimitados" />
+    <meta name="twitter:image:alt" content="Fórmula NG - Membresía de Estética Automotriz" />
 
     <script type="application/ld+json">
       {JSON.stringify({
@@ -83,7 +83,7 @@ if (pf) {
         name: "Fórmula NG",
         alternateName: "Formula NG Detailing",
         description:
-          "Servicio de detailing y lavado de vehículos por membresía ilimitada en Asunción, Paraguay. Lavado exterior, aspirado, cera, lavado de motor y servicio de chofer.",
+          "Servicio de detailing y estética automotriz por membresía en Asunción, Paraguay. Lavado exterior, aspirado, cera, lavado de motor y servicio de chofer.",
         url: "https://formulang.com.py",
         telephone: "+595992789328",
         email: "info@formulang.com.py",

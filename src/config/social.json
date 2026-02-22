@@ -19,6 +19,11 @@
       "icon": "email",
       "label": "Email",
       "href": "mailto:info@formulang.com.py"
+    },
+    {
+      "icon": "googlemaps",
+      "label": "Ubicación",
+      "href": "https://maps.app.goo.gl/5LLTf7d9pWUXao6fA"
     }
   ]
 }
