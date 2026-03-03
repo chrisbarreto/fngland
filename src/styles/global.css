@@ -17,34 +17,33 @@
     in srgb,
     var(--color-dark) 6%,
     var(--color-light) 94%
-  ); /* #eeeeee */
+  );
   --sl-color-gray-2: color-mix(
     in srgb,
     var(--color-dark) 24%,
     var(--color-light) 76%
-  ); /* #c2c2c2 */
+  );
   --sl-color-gray-3: color-mix(
     in srgb,
     var(--color-dark) 45%,
     var(--color-light) 55%
-  ); /* #8b8b8b */
+  );
   --sl-color-gray-4: color-mix(
     in srgb,
     var(--color-dark) 65%,
     var(--color-light) 35%
-  ); /* #585858 */
+  );
   --sl-color-gray-5: color-mix(
     in srgb,
     var(--color-dark) 78%,
     var(--color-light) 22%
-  ); /* #383838 */
+  );
   --sl-color-gray-6: color-mix(
     in srgb,
     var(--color-dark) 85%,
     var(--color-light) 15%
-  ); /* #272727 */
+  );
 
-  /* color-dark: #040404 */
   --sl-color-black: var(--color-dark);
   --sl-color-hairline: color-mix(
     in srgb,

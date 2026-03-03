@@ -1,0 +1,1004 @@
+---
+export const prerender = true;
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Footer from "@/components/Footer.astro";
+
+const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
+---
+
+<BaseLayout
+  title="Agendar Turno | Fórmula NG"
+  description="Agendá tu turno en Fórmula NG. Elegí sede, servicio, fecha y horario disponible."
+>
+  <div class="page">
+    <main class="content">
+      <section class="hero">
+        <div class="hero-content">
+          <p class="eyebrow">Agenda tu turno</p>
+          <h1>Reservá tu horario</h1>
+          <p class="subtitle">
+            Elegí la sede, el servicio y el horario que más te convenga.
+            Necesitás tu código de membresía para agendar. Solo se permite una cita por día por membresía.
+          </p>
+        </div>
+        <div class="hero-glow"></div>
+      </section>
+
+      <section class="form-section">
+        <div class="form-card">
+          <div class="form-header">
+            <h2>Agendar turno</h2>
+            <p>Completá los datos para reservar tu horario.</p>
+          </div>
+
+          <div class="agenda-rules">
+            <strong>Reglas de agendamiento</strong>
+            <ul>
+              <li>Solo se permite <strong>1 cita por día</strong> por membresía.</li>
+              <li>Los servicios limitados (extras) requieren <strong>mínimo 24 horas</strong> de anticipación.</li>
+              <li>Si no seleccionás extras, se aplican automáticamente los servicios ilimitados de tu plan.</li>
+            </ul>
+          </div>
+
+          <form id="agenda-form" novalidate>
+            <!-- Código de membresía -->
+            <div class="field">
+              <label for="codigoMembresia">Código de membresía</label>
+              <input
+                id="codigoMembresia"
+                name="codigoMembresia"
+                type="text"
+                placeholder="Ej: NG001"
+                autocomplete="off"
+                required
+                maxlength="20"
+              />
+              <span class="field-hint">Se encuentra en tu tarjeta o contrato.</span>
+            </div>
+
+            <!-- Sede -->
+            <div class="field">
+              <label for="idSede">Sede</label>
+              <select id="idSede" name="idSede" required>
+                <option value="">Cargando sedes...</option>
+              </select>
+            </div>
+
+            <!-- Servicios (selección múltiple) -->
+            <div class="field">
+              <label>Servicios</label>
+              <div id="servicios-list" class="servicios-list">
+                <span class="field-hint">Cargando servicios...</span>
+              </div>
+              <span class="field-hint" id="servicios-hint">Ingresá tu código de membresía para cargar tus servicios incluidos.</span>
+              <div class="servicios-extra-alert" id="servicios-extra-alert" style="display:none;"></div>
+            </div>
+
+            <!-- Fecha -->
+            <div class="field">
+              <label for="fechaCita">Fecha</label>
+              <input
+                id="fechaCita"
+                name="fechaCita"
+                type="date"
+                required
+              />
+              <span class="field-hint">Lunes a sábado. Seleccioná una fecha para ver los horarios.</span>
+            </div>
+
+            <!-- Slots -->
+            <div class="field" id="slots-container" style="display:none;">
+              <label>Horario disponible</label>
+              <div id="slots-grid" class="slots-grid"></div>
+              <span class="field-hint" id="slots-hint"></span>
+            </div>
+            <input type="hidden" id="horaInicio" name="horaInicio" />
+
+            <!-- Observaciones -->
+            <div class="field">
+              <label for="observaciones">Observaciones (opcional)</label>
+              <textarea
+                id="observaciones"
+                name="observaciones"
+                rows="3"
+                placeholder="Algún detalle que quieras comentarnos..."
+                maxlength="500"
+              ></textarea>
+            </div>
+
+            <!-- Turnstile -->
+            <div class="field">
+              <label>Verificación</label>
+              <div class="turnstile">
+                <div
+                  class="cf-turnstile"
+                  data-sitekey={siteKey}
+                  data-theme="dark"
+                ></div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="agenda-submit" disabled>
+                Agendar turno
+              </button>
+              <span class="form-status" id="agenda-status"></span>
+            </div>
+          </form>
+
+          <!-- Success state -->
+          <div class="form-success" id="agenda-success" style="display:none;">
+            <h3>Turno agendado</h3>
+            <div id="success-details"></div>
+            <p style="margin-top:1rem;">
+              <a href="/mis-citas" class="link-citas">Ver mis citas →</a>
+            </p>
+          </div>
+        </div>
+
+        <aside class="info-card">
+          <h3>Información útil</h3>
+          <ul>
+            <li>Los turnos son de 1 hora (ej: 08:00 a 09:00).</li>
+            <li>Horario de atención: 08:00 a 20:00, lunes a sábado.</li>
+            <li>Máximo 4 turnos por horario.</li>
+            <li>Una membresía no puede agendar más de una vez el mismo día.</li>
+            <li>Los servicios limitados solo se agendan con 24 horas de anticipación.</li>
+            <li>Podés ver tus citas agendadas en <a href="/mis-citas" style="color:var(--agenda-accent);">Mis Citas</a>.</li>
+          </ul>
+        </aside>
+      </section>
+    </main>
+
+    <Footer />
+  </div>
+</BaseLayout>
+
+<style>
+  :global(:root) {
+    --agenda-bg: #0d0c0f;
+    --agenda-card: #15131a;
+    --agenda-border: rgba(255, 255, 255, 0.08);
+    --agenda-accent: #f92606;
+    --agenda-text: #f5f3f7;
+    --agenda-muted: #b5afbd;
+    --agenda-success: #34d399;
+  }
+
+  .page {
+    min-height: 100vh;
+    background: radial-gradient(circle at top, rgba(249, 38, 6, 0.12), transparent 45%),
+      var(--agenda-bg);
+    color: var(--agenda-text);
+  }
+
+  .header {
+    z-index: 10;
+    position: sticky;
+    inset-block-start: 0;
+    background: rgba(13, 12, 15, 0.7);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--agenda-border);
+  }
+
+  .content {
+    padding: 3.5rem clamp(1.5rem, 4vw, 4rem) 4rem;
+  }
+
+  .hero {
+    position: relative;
+    padding: 2.5rem 0 3rem;
+  }
+
+  .hero-content {
+    max-width: 560px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.7rem;
+    color: var(--agenda-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    margin: 0 0 0.75rem;
+  }
+
+  .subtitle {
+    color: var(--agenda-muted);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .hero-glow {
+    position: absolute;
+    top: 10%;
+    right: 5%;
+    width: 240px;
+    height: 240px;
+    background: radial-gradient(circle, rgba(249, 38, 6, 0.25), transparent 70%);
+    filter: blur(20px);
+    opacity: 0.7;
+  }
+
+  .form-section {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  }
+
+  .form-card,
+  .info-card {
+    background: var(--agenda-card);
+    border: 1px solid var(--agenda-border);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .form-header h2 {
+    margin: 0 0 0.5rem;
+  }
+
+  .form-header p {
+    margin: 0 0 1.5rem;
+    color: var(--agenda-muted);
+  }
+
+  .agenda-rules {
+    margin: -0.2rem 0 1.3rem;
+    border-radius: 12px;
+    border: 1px solid rgba(249, 38, 6, 0.28);
+    background: rgba(249, 38, 6, 0.08);
+    padding: 0.75rem 0.9rem;
+    color: #ffd8d2;
+    font-size: 0.82rem;
+  }
+
+  .agenda-rules > strong {
+    color: #ffe8e4;
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+  }
+
+  .agenda-rules ul {
+    margin: 0;
+    padding-left: 1rem;
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
+  }
+
+  label {
+    font-size: 0.85rem;
+    color: var(--agenda-muted);
+  }
+
+  input,
+  textarea,
+  select {
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #100f14;
+    color: var(--agenda-text);
+    padding: 0.85rem 1rem;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--agenda-accent);
+  }
+
+  select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23b5afbd' d='M6 8.5L1 3.5h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+  }
+
+  .field-hint {
+    font-size: 0.75rem;
+    color: var(--agenda-muted);
+  }
+
+  /* Servicios checkboxes */
+  .servicios-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .servicio-check {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #100f14;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    font-size: 0.95rem;
+    color: var(--agenda-text);
+  }
+
+  .servicio-check:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .servicio-check:has(input:checked) {
+    border-color: var(--agenda-accent);
+    background: rgba(249, 38, 6, 0.08);
+  }
+
+  .servicio-check input[type="checkbox"] {
+    display: none;
+  }
+
+  .check-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    flex-shrink: 0;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .servicio-check:has(input:checked) .check-mark {
+    border-color: var(--agenda-accent);
+    background: var(--agenda-accent);
+  }
+
+  .servicio-check:has(input:checked) .check-mark::after {
+    content: "";
+    display: block;
+    width: 5px;
+    height: 9px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-top: -1px;
+  }
+
+  .check-label {
+    flex: 1;
+  }
+
+  .check-meta {
+    margin-top: 0.3rem;
+    color: var(--agenda-muted);
+    font-size: 0.78rem;
+  }
+
+  .check-extra {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.45rem;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(249, 38, 6, 0.16);
+    color: #ffb7aa;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .servicios-extra-alert {
+    border-radius: 10px;
+    border: 1px solid rgba(249, 38, 6, 0.35);
+    background: rgba(249, 38, 6, 0.08);
+    color: #ffc8bf;
+    padding: 0.65rem 0.8rem;
+    font-size: 0.8rem;
+    line-height: 1.45;
+  }
+
+  .success-warning {
+    margin-top: 0.7rem;
+    border-radius: 10px;
+    border: 1px solid rgba(249, 38, 6, 0.35);
+    background: rgba(249, 38, 6, 0.08);
+    color: #ffd5cf;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .success-extra-list {
+    margin: 0.6rem 0 0;
+    padding-left: 1rem;
+    color: var(--agenda-muted);
+    font-size: 0.85rem;
+  }
+
+  .check-label small {
+    color: var(--agenda-muted);
+    font-size: 0.8rem;
+  }
+
+  /* Slots grid */
+  .slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .slots-grid :global(.slot-btn) {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #100f14;
+    color: var(--agenda-text);
+    padding: 0.7rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+  }
+
+  .slots-grid :global(.slot-btn:hover:not(.disabled)) {
+    border-color: var(--agenda-accent);
+    background: rgba(249, 38, 6, 0.1);
+  }
+
+  .slots-grid :global(.slot-btn.selected) {
+    border-color: var(--agenda-accent);
+    background: rgba(249, 38, 6, 0.2);
+    box-shadow: 0 0 12px rgba(249, 38, 6, 0.3);
+  }
+
+  .slots-grid :global(.slot-btn.disabled) {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .slots-grid :global(.slot-btn .slot-cupos) {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--agenda-muted);
+    margin-top: 2px;
+  }
+
+  .turnstile {
+    display: inline-flex;
+    padding: 0.5rem;
+    border-radius: 12px;
+    background: #0f0e12;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+  }
+
+  .form-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .form-actions button {
+    border: none;
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    color: white;
+    padding: 0.85rem 1.8rem;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .form-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .form-actions button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(249, 38, 6, 0.35);
+  }
+
+  .form-status {
+    font-size: 0.85rem;
+    color: var(--agenda-muted);
+  }
+
+  .form-status.error {
+    color: #ffb4a8;
+  }
+
+  .form-status.success {
+    color: var(--agenda-success);
+  }
+
+  .form-success h3 {
+    margin: 0 0 0.75rem;
+    color: var(--agenda-success);
+  }
+
+  .form-success p,
+  .form-success div {
+    color: var(--agenda-muted);
+  }
+
+  .link-citas {
+    color: var(--agenda-accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .link-citas:hover {
+    text-decoration: underline;
+  }
+
+  .info-card h3 {
+    margin-top: 0;
+  }
+
+  .info-card ul {
+    padding-left: 1rem;
+    color: var(--agenda-muted);
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  @media (max-width: 960px) {
+    .form-section {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .content {
+      padding: 2.5rem 1.25rem 3rem;
+    }
+    .form-card,
+    .info-card {
+      padding: 1.5rem;
+    }
+  }
+</style>
+
+<script is:inline>
+  // ─── State ─────────────────────────────────────────────────────────
+  let selectedSlot = null;
+  const form = document.getElementById("agenda-form");
+  const statusEl = document.getElementById("agenda-status");
+  const successEl = document.getElementById("agenda-success");
+  const submitBtn = document.getElementById("agenda-submit");
+  const slotsContainer = document.getElementById("slots-container");
+  const slotsGrid = document.getElementById("slots-grid");
+  const slotsHint = document.getElementById("slots-hint");
+  const horaInput = document.getElementById("horaInicio");
+  const codigoInput = document.getElementById("codigoMembresia");
+  const serviciosHint = document.getElementById("servicios-hint");
+  const serviciosExtraAlert = document.getElementById("servicios-extra-alert");
+  let codigoServiciosCargado = "";
+
+  function formatGs(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return "0 Gs.";
+    return `${new Intl.NumberFormat("es-PY").format(Math.round(num))} Gs.`;
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function showServiciosExtraAlert() {
+    if (!serviciosExtraAlert) return;
+
+    const selectedWithExtra = Array.from(
+      document.querySelectorAll('input[name="idServicios"]:checked'),
+    ).filter((input) => input.dataset.requierePagoExtra === "1");
+
+    if (!selectedWithExtra.length) {
+      serviciosExtraAlert.style.display = "none";
+      serviciosExtraAlert.textContent = "";
+      return;
+    }
+
+    const mensajes = selectedWithExtra.map((input) => {
+      const nombre = input.dataset.servicioNombre || "Servicio";
+      const precio = input.dataset.precioExtraTexto || "0 Gs.";
+      return `${nombre}: se cobrará extra ${precio} por uso.`;
+    });
+
+    serviciosExtraAlert.style.display = "block";
+    serviciosExtraAlert.textContent = mensajes.join(" ");
+  }
+
+  function setStatus(message, type = "error") {
+    if (!statusEl) return;
+    statusEl.textContent = message || "";
+    statusEl.classList.remove("error", "success");
+    if (message) {
+      statusEl.classList.add(type);
+    }
+  }
+
+  // ─── Load sedes & servicios on page load ──────────────────────────
+  async function loadSedes() {
+    const sel = document.getElementById("idSede");
+    try {
+      const res = await fetch("/api/agenda/sedes");
+      const sedes = await res.json();
+      sel.innerHTML = '<option value="">Seleccioná una sede</option>';
+      if (Array.isArray(sedes)) {
+        sedes.forEach((s) => {
+          const opt = document.createElement("option");
+          opt.value = s.idSede;
+          opt.textContent = s.nombre + (s.direccion ? ` — ${s.direccion}` : "");
+          sel.appendChild(opt);
+        });
+      }
+    } catch {
+      sel.innerHTML = '<option value="">Error al cargar sedes</option>';
+    }
+  }
+
+  async function loadServicios(codigoMembresia) {
+    const container = document.getElementById("servicios-list");
+    const codigo = (codigoMembresia || "").trim().toUpperCase();
+
+    if (!container) return;
+
+    if (!codigo) {
+      container.innerHTML = '<span class="field-hint">Ingresá tu código para ver tus servicios incluidos.</span>';
+      if (serviciosHint) {
+        serviciosHint.textContent = "Solo se muestran servicios limitados del plan de tu membresía.";
+      }
+      if (serviciosExtraAlert) {
+        serviciosExtraAlert.style.display = "none";
+      }
+      codigoServiciosCargado = "";
+      return;
+    }
+
+    try {
+      container.innerHTML = '<span class="field-hint">Cargando servicios de tu plan...</span>';
+      if (serviciosHint) {
+        serviciosHint.textContent = "";
+      }
+
+      const res = await fetch(
+        `/api/agenda/servicios?codigoMembresia=${encodeURIComponent(codigo)}`,
+      );
+      const body = await res.json().catch(() => ({}));
+      const servicios = Array.isArray(body) ? body : [];
+
+      if (!res.ok) {
+        container.innerHTML =
+          `<span class="field-hint">${escapeHtml(body.error || "No se pudieron cargar los servicios.")}</span>`;
+        if (serviciosHint) {
+          serviciosHint.textContent = "Verificá tu código de membresía.";
+        }
+        if (serviciosExtraAlert) {
+          serviciosExtraAlert.style.display = "none";
+        }
+        return;
+      }
+
+      container.innerHTML = "";
+      if (Array.isArray(servicios) && servicios.length > 0) {
+        servicios.forEach((s) => {
+          const label = document.createElement("label");
+          label.className = "servicio-check";
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.name = "idServicios";
+          input.value = s.idServicio;
+          input.dataset.requierePagoExtra = s.requierePagoExtra ? "1" : "0";
+          input.dataset.servicioNombre = s.nombre || "Servicio";
+          input.dataset.precioExtraTexto = s.precioAplicadoTexto || formatGs(s.precioAplicado);
+          input.addEventListener("change", showServiciosExtraAlert);
+
+          const checkMark = document.createElement("span");
+          checkMark.className = "check-mark";
+
+          const textWrap = document.createElement("span");
+          textWrap.className = "check-label";
+          textWrap.innerHTML = `${escapeHtml(s.nombre || "Servicio")}${s.duracionMinutos ? ` <small>(${escapeHtml(String(s.duracionMinutos))} min)</small>` : ""}`;
+
+          if (typeof s.cantidadIncluida === "number") {
+            const meta = document.createElement("div");
+            meta.className = "check-meta";
+            meta.textContent = `Incluido: ${s.cantidadIncluida} | Usados: ${s.usados ?? 0} | Reservados: ${s.reservados ?? 0} | Te quedan: ${s.restantes ?? 0}`;
+            textWrap.appendChild(meta);
+
+            if (s.requierePagoExtra) {
+              const extra = document.createElement("span");
+              extra.className = "check-extra";
+              extra.textContent = `Costo extra: ${s.precioAplicadoTexto || formatGs(s.precioAplicado)} por uso`;
+              textWrap.appendChild(extra);
+            }
+          }
+
+          label.appendChild(input);
+          label.appendChild(checkMark);
+          label.appendChild(textWrap);
+          container.appendChild(label);
+        });
+
+        if (serviciosHint) {
+          serviciosHint.textContent =
+            "Se muestran solo los servicios limitados de tu plan. Si elegís uno sin cupo, se cobrará como extra.";
+        }
+        codigoServiciosCargado = codigo;
+      } else {
+        container.innerHTML = '<span class="field-hint">Tu plan no tiene servicios limitados disponibles.</span>';
+        if (serviciosHint) {
+          serviciosHint.textContent = "Contactanos para revisar tu plan de membresía.";
+        }
+      }
+    } catch {
+      container.innerHTML = '<span class="field-hint">Error al cargar servicios.</span>';
+      if (serviciosHint) {
+        serviciosHint.textContent = "Intentá nuevamente en unos segundos.";
+      }
+    }
+
+    if (serviciosExtraAlert) {
+      serviciosExtraAlert.style.display = "none";
+    }
+  }
+
+  // ─── Set date min/max ──────────────────────────────────────────────
+  function setupDateInput() {
+    const dateInput = document.getElementById("fechaCita");
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    dateInput.min = `${yyyy}-${mm}-${dd}`;
+
+    // Max: 30 days from now
+    const max = new Date(today);
+    max.setDate(max.getDate() + 30);
+    const maxYyyy = max.getFullYear();
+    const maxMm = String(max.getMonth() + 1).padStart(2, "0");
+    const maxDd = String(max.getDate()).padStart(2, "0");
+    dateInput.max = `${maxYyyy}-${maxMm}-${maxDd}`;
+  }
+
+  // ─── Load slots when date changes ─────────────────────────────────
+  async function loadSlots(fecha) {
+    selectedSlot = null;
+    horaInput.value = "";
+    submitBtn.disabled = true;
+    slotsGrid.innerHTML = "";
+    slotsHint.textContent = "";
+
+    // Check if Sunday
+    const d = new Date(fecha + "T12:00:00");
+    if (d.getDay() === 0) {
+      slotsContainer.style.display = "block";
+      slotsHint.textContent = "No se atiende los domingos. Elegí otro día.";
+      return;
+    }
+
+    slotsContainer.style.display = "block";
+    slotsHint.textContent = "Cargando horarios...";
+
+    try {
+      const res = await fetch(`/api/agenda/slots?fecha=${fecha}`);
+      const body = await res.json();
+
+      if (body.error) {
+        slotsHint.textContent = body.error;
+        return;
+      }
+
+      const slots = body.slots || [];
+      if (slots.length === 0) {
+        slotsHint.textContent = "No hay horarios disponibles para esta fecha.";
+        return;
+      }
+
+      slotsHint.textContent = "Seleccioná un horario:";
+
+      slots.forEach((slot) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "slot-btn" + (slot.disponible ? "" : " disabled");
+        btn.innerHTML = `${slot.hora}<span class="slot-cupos">${slot.disponibles} cupo${slot.disponibles !== 1 ? "s" : ""}</span>`;
+        btn.dataset.hora = slot.hora;
+
+        if (slot.disponible) {
+          btn.addEventListener("click", () => {
+            // Deselect previous
+            slotsGrid.querySelectorAll(".slot-btn").forEach((b) => b.classList.remove("selected"));
+            btn.classList.add("selected");
+            selectedSlot = slot.hora;
+            horaInput.value = slot.hora;
+            submitBtn.disabled = false;
+          });
+        }
+
+        slotsGrid.appendChild(btn);
+      });
+    } catch {
+      slotsHint.textContent = "Error al cargar horarios. Intentá de nuevo.";
+    }
+  }
+
+  // ─── Date change listener ─────────────────────────────────────────
+  document.getElementById("fechaCita").addEventListener("change", (e) => {
+    const fecha = e.target.value;
+    if (fecha) loadSlots(fecha);
+  });
+
+  // ─── Membership code listeners ─────────────────────────────────────
+  function refreshServiciosByCodigo() {
+    if (!codigoInput) return;
+    const codigo = codigoInput.value.trim().toUpperCase();
+    codigoInput.value = codigo;
+
+    if (codigo === codigoServiciosCargado) {
+      return;
+    }
+
+    loadServicios(codigo);
+  }
+
+  codigoInput?.addEventListener("blur", refreshServiciosByCodigo);
+  codigoInput?.addEventListener("change", refreshServiciosByCodigo);
+
+  // ─── Turnstile helper ─────────────────────────────────────────────
+  function getTurnstileToken() {
+    const tokenField = form?.querySelector("[name='cf-turnstile-response']");
+    return tokenField && "value" in tokenField ? tokenField.value : "";
+  }
+
+  // ─── Submit ────────────────────────────────────────────────────────
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!form || !submitBtn || !statusEl || !successEl) return;
+
+    const codigoMembresia = form.querySelector("#codigoMembresia").value.trim();
+    const idSede = form.querySelector("#idSede").value;
+    const idServicios = Array.from(form.querySelectorAll('input[name="idServicios"]:checked')).map((cb) => cb.value);
+    const fechaCita = form.querySelector("#fechaCita").value;
+    const horaInicio = horaInput.value;
+    const observaciones = form.querySelector("#observaciones").value.trim();
+    const turnstileToken = getTurnstileToken();
+
+    // Validation
+    if (!codigoMembresia) {
+      setStatus("Ingresá tu código de membresía.");
+      return;
+    }
+    if (!idSede) {
+      setStatus("Seleccioná una sede.");
+      return;
+    }
+    if (!fechaCita) {
+      setStatus("Seleccioná una fecha.");
+      return;
+    }
+    if (!horaInicio) {
+      setStatus("Seleccioná un horario disponible.");
+      return;
+    }
+    if (!turnstileToken) {
+      setStatus("Verificá el captcha para continuar.");
+      return;
+    }
+
+    if (idServicios.length > 0) {
+      const citaInicio = new Date(`${fechaCita}T${horaInicio}:00`);
+      const diffMs = citaInicio.getTime() - Date.now();
+      const diffHoras = diffMs / (1000 * 60 * 60);
+
+      if (diffHoras < 24) {
+        setStatus(
+          "Los servicios limitados (extras) solo pueden agendarse con mínimo 24 horas de anticipación.",
+        );
+        return;
+      }
+    }
+
+    submitBtn.disabled = true;
+    setStatus("Agendando turno...", "success");
+
+    try {
+      const res = await fetch("/api/agenda/citas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          codigoMembresia,
+          idSede,
+          idServicios,
+          fechaCita,
+          horaInicio,
+          observaciones: observaciones || undefined,
+          turnstileToken,
+        }),
+      });
+
+      const body = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const backendError = String(body.error || "");
+
+        if (backendError.includes("Solo se permite una cita por dia")) {
+          setStatus(
+            "Esta membresía ya tiene una cita para ese día. Solo se permite 1 cita diaria por membresía.",
+          );
+        } else if (backendError.includes("24 horas")) {
+          setStatus(
+            "Los servicios limitados (extras) requieren mínimo 24 horas de anticipación.",
+          );
+        } else {
+          setStatus(backendError || "No pudimos agendar tu turno.");
+        }
+        submitBtn.disabled = false;
+        return;
+      }
+
+      // Success
+      form.style.display = "none";
+      successEl.style.display = "block";
+
+      const d = body.data || body;
+      const extraServicios = Array.isArray(d.serviciosConCostoExtra)
+        ? d.serviciosConCostoExtra
+            .map((extra) => {
+              const nombre = escapeHtml(extra.nombre || "Servicio");
+              const unidades = escapeHtml(String(extra.unidadesExtra || 0));
+              const monto = escapeHtml(extra.montoExtraTexto || formatGs(extra.montoExtra));
+              return `<li>${nombre}: ${unidades} uso(s) extra - ${monto}</li>`;
+            })
+            .join("")
+        : "";
+
+      const warningHtml = body.warning
+        ? `<p class="success-warning">${escapeHtml(body.warning)}</p>`
+        : "";
+
+      const extraListHtml = extraServicios
+        ? `<ul class="success-extra-list">${extraServicios}</ul>`
+        : "";
+
+      document.getElementById("success-details").innerHTML = `
+        <p><strong>Fecha:</strong> ${escapeHtml(d.fecha || fechaCita)}</p>
+        <p><strong>Horario:</strong> ${escapeHtml(d.horaInicio || horaInicio)} - ${escapeHtml(d.horaFin || "")}</p>
+        <p><strong>Sede:</strong> ${escapeHtml(d.sede || "")}</p>
+        <p><strong>Servicios:</strong> ${escapeHtml(d.servicios || "")}</p>
+        ${warningHtml}
+        ${extraListHtml}
+      `;
+    } catch {
+      setStatus("Error de red. Intentá nuevamente.");
+      submitBtn.disabled = false;
+    }
+  });
+
+  // ─── Init ──────────────────────────────────────────────────────────
+  loadSedes();
+  loadServicios();
+  setupDateInput();
+</script>
+
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
