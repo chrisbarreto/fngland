@@ -19,7 +19,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           <h1>Reservá tu horario</h1>
           <p class="subtitle">
             Elegí la sede, el servicio y el horario que más te convenga.
-            Necesitás tu código de membresía para agendar. Solo se permite una cita por día por membresía.
+            Ingresá tu número de cédula y seleccioná la membresía con la que querés agendar.
           </p>
         </div>
         <div class="hero-glow"></div>
@@ -42,20 +42,29 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           </div>
 
           <form id="agenda-form" novalidate>
-            <!-- Código de membresía -->
+            <!-- Identificación -->
             <div class="field">
-              <label for="codigoMembresia">Código de membresía</label>
+              <label for="cedulaTitular">Número de cédula</label>
               <input
-                id="codigoMembresia"
-                name="codigoMembresia"
+                id="cedulaTitular"
+                name="cedulaTitular"
                 type="text"
-                placeholder="Ej: NG001"
+                placeholder="Ej: 1234567"
                 autocomplete="off"
                 required
                 maxlength="20"
+                inputmode="numeric"
               />
-              <span class="field-hint">Se encuentra en tu tarjeta o contrato.</span>
+              <span class="field-hint">Ingresá la cédula del titular para ver sus membresías asociadas.</span>
             </div>
+
+            <div class="field" id="membresias-container" style="display:none;">
+              <label>Membresías asociadas</label>
+              <div id="membresias-list" class="membresias-list"></div>
+              <span class="field-hint" id="membresias-hint"></span>
+            </div>
+
+            <input type="hidden" id="codigoMembresia" name="codigoMembresia" />
 
             <!-- Sede -->
             <div class="field">
@@ -71,7 +80,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               <div id="servicios-list" class="servicios-list">
                 <span class="field-hint">Cargando servicios...</span>
               </div>
-              <span class="field-hint" id="servicios-hint">Ingresá tu código de membresía para cargar tus servicios incluidos.</span>
+              <span class="field-hint" id="servicios-hint">Seleccioná una membresía para cargar tus servicios incluidos.</span>
               <div class="servicios-extra-alert" id="servicios-extra-alert" style="display:none;"></div>
             </div>
 
@@ -84,7 +93,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                 type="date"
                 required
               />
-              <span class="field-hint">Lunes a sábado. Seleccioná una fecha para ver los horarios.</span>
+              <span class="field-hint">Lunes a sábado. Seleccioná una fecha para ver los horarios (11:00 a 12:00 bloqueado).</span>
             </div>
 
             <!-- Slots -->
@@ -141,7 +150,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           <h3>Información útil</h3>
           <ul>
             <li>Los turnos son de 1 hora (ej: 08:00 a 09:00).</li>
-            <li>Horario de atención: 08:00 a 20:00, lunes a sábado.</li>
+            <li>Horario de atención: 08:00 a 22:00, lunes a sábado (último turno 21:00 a 22:00).</li>
+            <li>Horario de almuerzo bloqueado: 11:00 a 12:00.</li>
             <li>Máximo 4 turnos por horario.</li>
             <li>Una membresía no puede agendar más de una vez el mismo día.</li>
             <li>Los servicios limitados solo se agendan con 24 horas de anticipación.</li>
@@ -319,6 +329,70 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   .field-hint {
     font-size: 0.75rem;
     color: var(--agenda-muted);
+  }
+
+  /* Membresias (seleccion unica) */
+  .membresias-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .membresia-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #100f14;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .membresia-option:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .membresia-option:has(input:checked) {
+    border-color: var(--agenda-accent);
+    background: rgba(249, 38, 6, 0.08);
+  }
+
+  .membresia-option input[type="radio"] {
+    display: none;
+  }
+
+  .membresia-mark {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    margin-top: 1px;
+    flex-shrink: 0;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .membresia-option:has(input:checked) .membresia-mark {
+    border-color: var(--agenda-accent);
+    box-shadow: inset 0 0 0 5px var(--agenda-accent);
+  }
+
+  .membresia-content {
+    display: grid;
+    gap: 0.2rem;
+  }
+
+  .membresia-code {
+    font-size: 0.93rem;
+    font-weight: 600;
+    color: var(--agenda-text);
+  }
+
+  .membresia-meta {
+    font-size: 0.78rem;
+    color: var(--agenda-muted);
+    line-height: 1.35;
   }
 
   /* Servicios checkboxes */
@@ -587,9 +661,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   const slotsHint = document.getElementById("slots-hint");
   const horaInput = document.getElementById("horaInicio");
   const codigoInput = document.getElementById("codigoMembresia");
+  const cedulaInput = document.getElementById("cedulaTitular");
+  const membresiasContainer = document.getElementById("membresias-container");
+  const membresiasList = document.getElementById("membresias-list");
+  const membresiasHint = document.getElementById("membresias-hint");
   const serviciosHint = document.getElementById("servicios-hint");
   const serviciosExtraAlert = document.getElementById("servicios-extra-alert");
   let codigoServiciosCargado = "";
+  let cedulaMembresiasCargada = "";
+  let membresiasFetchToken = 0;
 
   function formatGs(value) {
     const num = Number(value);
@@ -604,6 +684,37 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       .replace(/>/g, "&gt;")
       .replace(/\"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  function normalizeCedula(value) {
+    return String(value || "").replace(/\D/g, "");
+  }
+
+  function normalizeCodigoMembresia(value) {
+    return String(value || "").trim().toUpperCase();
+  }
+
+  function extractMembresias(payload) {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.membresias)) return payload.membresias;
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.items)) return payload.items;
+    return [];
+  }
+
+  function renderMembresiaMeta(item) {
+    const marca = item?.vehiculo?.marca || item?.marca || "";
+    const modelo = item?.vehiculo?.modelo || item?.modelo || "";
+    const chapa = item?.vehiculo?.chapa || item?.chapa || "";
+    const estado = item?.estado || item?.estadoMembresia || "";
+    const vehiculo = [marca, modelo].filter(Boolean).join(" ").trim();
+    const partes = [];
+
+    if (vehiculo) partes.push(vehiculo);
+    if (chapa) partes.push(`Chapa: ${chapa}`);
+    if (estado) partes.push(`Estado: ${estado}`);
+
+    return partes.join(" | ");
   }
 
   function showServiciosExtraAlert() {
@@ -660,12 +771,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
   async function loadServicios(codigoMembresia) {
     const container = document.getElementById("servicios-list");
-    const codigo = (codigoMembresia || "").trim().toUpperCase();
+    const codigo = normalizeCodigoMembresia(codigoMembresia);
 
     if (!container) return;
 
     if (!codigo) {
-      container.innerHTML = '<span class="field-hint">Ingresá tu código para ver tus servicios incluidos.</span>';
+      container.innerHTML = '<span class="field-hint">Seleccioná una membresía para ver tus servicios incluidos.</span>';
       if (serviciosHint) {
         serviciosHint.textContent = "Solo se muestran servicios limitados del plan de tu membresía.";
       }
@@ -692,7 +803,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         container.innerHTML =
           `<span class="field-hint">${escapeHtml(body.error || "No se pudieron cargar los servicios.")}</span>`;
         if (serviciosHint) {
-          serviciosHint.textContent = "Verificá tu código de membresía.";
+          serviciosHint.textContent = "Verificá la membresía seleccionada.";
         }
         if (serviciosExtraAlert) {
           serviciosExtraAlert.style.display = "none";
@@ -761,6 +872,152 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
     if (serviciosExtraAlert) {
       serviciosExtraAlert.style.display = "none";
+    }
+  }
+
+  function resetMembresiaSeleccion() {
+    if (codigoInput) {
+      codigoInput.value = "";
+    }
+    if (membresiasList) {
+      membresiasList.innerHTML = "";
+    }
+    if (membresiasHint) {
+      membresiasHint.textContent = "";
+    }
+    if (membresiasContainer) {
+      membresiasContainer.style.display = "none";
+    }
+    loadServicios("");
+  }
+
+  async function loadMembresiasByCedula(cedulaValue) {
+    const cedula = normalizeCedula(cedulaValue);
+
+    if (!cedulaInput || !membresiasList || !membresiasContainer) return;
+
+    if (cedulaInput.value !== cedula) {
+      cedulaInput.value = cedula;
+    }
+
+    if (!cedula) {
+      cedulaMembresiasCargada = "";
+      resetMembresiaSeleccion();
+      return;
+    }
+
+    const fetchToken = ++membresiasFetchToken;
+    cedulaMembresiasCargada = "";
+    if (codigoInput) {
+      codigoInput.value = "";
+    }
+    codigoServiciosCargado = "";
+    loadServicios("");
+
+    membresiasContainer.style.display = "block";
+    membresiasList.innerHTML = '<span class="field-hint">Buscando membresías asociadas...</span>';
+    if (membresiasHint) {
+      membresiasHint.textContent = "";
+    }
+
+    try {
+      const res = await fetch(`/api/agenda/membresias?cedula=${encodeURIComponent(cedula)}`);
+      const body = await res.json().catch(() => ({}));
+
+      if (fetchToken !== membresiasFetchToken) {
+        return;
+      }
+
+      if (!res.ok) {
+        membresiasList.innerHTML = `<span class="field-hint">${escapeHtml(body.error || "No se pudieron cargar tus membresías.")}</span>`;
+        if (membresiasHint) {
+          membresiasHint.textContent = "Verificá tu número de cédula.";
+        }
+        return;
+      }
+
+      const membresias = extractMembresias(body)
+        .map((item) => {
+          const codigo = normalizeCodigoMembresia(
+            item?.codigoMembresia ||
+            item?.codigo ||
+            item?.numeroMembresia ||
+            item?.numero ||
+            item?.nroMembresia,
+          );
+
+          return {
+            codigo,
+            meta: renderMembresiaMeta(item),
+          };
+        })
+        .filter((item) => item.codigo);
+
+      if (!membresias.length) {
+        membresiasList.innerHTML = '<span class="field-hint">No encontramos membresías activas para esta cédula.</span>';
+        if (membresiasHint) {
+          membresiasHint.textContent = "Si creés que es un error, escribinos por WhatsApp.";
+        }
+        return;
+      }
+
+      membresiasList.innerHTML = "";
+      membresias.forEach((membresia, index) => {
+        const label = document.createElement("label");
+        label.className = "membresia-option";
+
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = "membresiaSeleccionada";
+        input.value = membresia.codigo;
+        input.addEventListener("change", () => {
+          if (codigoInput) {
+            codigoInput.value = membresia.codigo;
+          }
+          loadServicios(membresia.codigo);
+        });
+
+        const mark = document.createElement("span");
+        mark.className = "membresia-mark";
+
+        const content = document.createElement("span");
+        content.className = "membresia-content";
+
+        const code = document.createElement("span");
+        code.className = "membresia-code";
+        code.textContent = `Membresía ${membresia.codigo}`;
+        content.appendChild(code);
+
+        if (membresia.meta) {
+          const meta = document.createElement("span");
+          meta.className = "membresia-meta";
+          meta.textContent = membresia.meta;
+          content.appendChild(meta);
+        }
+
+        label.appendChild(input);
+        label.appendChild(mark);
+        label.appendChild(content);
+        membresiasList.appendChild(label);
+
+        if (index === 0) {
+          input.checked = true;
+          input.dispatchEvent(new Event("change"));
+        }
+      });
+
+      cedulaMembresiasCargada = cedula;
+      if (membresiasHint) {
+        membresiasHint.textContent = "Seleccioná la membresía que vas a usar para este turno. Solo podés agendar una a la vez.";
+      }
+    } catch {
+      if (fetchToken !== membresiasFetchToken) {
+        return;
+      }
+      membresiasList.innerHTML = '<span class="field-hint">Error al buscar membresías. Intentá nuevamente.</span>';
+      if (membresiasHint) {
+        membresiasHint.textContent = "Revisá tu conexión e intentá de nuevo.";
+      }
     }
   }
 
@@ -849,21 +1106,44 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     if (fecha) loadSlots(fecha);
   });
 
-  // ─── Membership code listeners ─────────────────────────────────────
-  function refreshServiciosByCodigo() {
-    if (!codigoInput) return;
-    const codigo = codigoInput.value.trim().toUpperCase();
-    codigoInput.value = codigo;
+  // ─── Membership lookup listeners ────────────────────────────────────
+  cedulaInput?.addEventListener("input", () => {
+    const cedula = normalizeCedula(cedulaInput.value);
+    if (cedulaInput.value !== cedula) {
+      cedulaInput.value = cedula;
+    }
 
-    if (codigo === codigoServiciosCargado) {
+    if (!cedula) {
+      cedulaMembresiasCargada = "";
+      resetMembresiaSeleccion();
       return;
     }
 
-    loadServicios(codigo);
-  }
+    if (cedula !== cedulaMembresiasCargada) {
+      if (codigoInput) {
+        codigoInput.value = "";
+      }
+      codigoServiciosCargado = "";
+      loadServicios("");
+      if (membresiasHint) {
+        membresiasHint.textContent = "Presioná fuera del campo para buscar membresías asociadas.";
+      }
+    }
+  });
 
-  codigoInput?.addEventListener("blur", refreshServiciosByCodigo);
-  codigoInput?.addEventListener("change", refreshServiciosByCodigo);
+  cedulaInput?.addEventListener("blur", () => {
+    const cedula = normalizeCedula(cedulaInput.value);
+    if (cedula && cedula !== cedulaMembresiasCargada) {
+      loadMembresiasByCedula(cedula);
+    }
+  });
+
+  cedulaInput?.addEventListener("change", () => {
+    const cedula = normalizeCedula(cedulaInput.value);
+    if (cedula && cedula !== cedulaMembresiasCargada) {
+      loadMembresiasByCedula(cedula);
+    }
+  });
 
   // ─── Turnstile helper ─────────────────────────────────────────────
   function getTurnstileToken() {
@@ -876,7 +1156,10 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     event.preventDefault();
     if (!form || !submitBtn || !statusEl || !successEl) return;
 
-    const codigoMembresia = form.querySelector("#codigoMembresia").value.trim();
+    const cedulaIngresada = normalizeCedula(form.querySelector("#cedulaTitular").value);
+    let codigoMembresia = normalizeCodigoMembresia(
+      form.querySelector("#codigoMembresia").value,
+    );
     const idSede = form.querySelector("#idSede").value;
     const idServicios = Array.from(form.querySelectorAll('input[name="idServicios"]:checked')).map((cb) => cb.value);
     const fechaCita = form.querySelector("#fechaCita").value;
@@ -885,10 +1168,21 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     const turnstileToken = getTurnstileToken();
 
     // Validation
-    if (!codigoMembresia) {
-      setStatus("Ingresá tu código de membresía.");
+    if (!cedulaIngresada) {
+      setStatus("Ingresá tu número de cédula.");
       return;
     }
+
+    if (cedulaIngresada !== cedulaMembresiasCargada) {
+      await loadMembresiasByCedula(cedulaIngresada);
+      codigoMembresia = normalizeCodigoMembresia(form.querySelector("#codigoMembresia").value);
+    }
+
+    if (!codigoMembresia) {
+      setStatus("Seleccioná una membresía asociada a tu cédula.");
+      return;
+    }
+
     if (!idSede) {
       setStatus("Seleccioná una sede.");
       return;
