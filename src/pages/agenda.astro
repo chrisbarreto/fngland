@@ -13,18 +13,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 >
   <div class="page">
     <main class="content">
-      <section class="hero">
-        <div class="hero-content">
-          <p class="eyebrow">Agenda tu turno</p>
-          <h1>Reservá tu horario</h1>
-          <p class="subtitle">
-            Elegí la sede, el servicio y el horario que más te convenga.
-            Ingresá tu número de cédula y seleccioná la membresía con la que querés agendar.
-          </p>
-        </div>
-        <div class="hero-glow"></div>
-      </section>
-
       <section class="form-section">
         <div class="form-card">
           <div class="form-header">
@@ -36,8 +24,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             <strong>Reglas de agendamiento</strong>
             <ul>
               <li>Solo se permite <strong>1 cita por día</strong> por membresía.</li>
-              <li>Los servicios limitados (extras) requieren <strong>mínimo 24 horas</strong> de anticipación.</li>
-              <li>Si no seleccionás extras, se aplican automáticamente los servicios ilimitados de tu plan.</li>
+              <li>Los servicios extras requieren <strong>mínimo 24 horas</strong> de anticipación.</li>
+              <li>Si no seleccionás extras, se genera una cita para el servicio de detailing general.</li>
             </ul>
           </div>
 
@@ -65,10 +53,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                   >
                     <circle class="path" cx="12" cy="12" r="9" fill="none" stroke-width="3"></circle>
                   </svg>
-                  <span id="validar-cedula-text">Validar cédula</span>
+                  <span id="validar-cedula-text">Confirmar</span>
                 </button>
               </div>
-              <span class="field-hint">Ingresá la cédula y presioná "Validar cédula" para ver membresías asociadas.</span>
             </div>
 
             <div class="field" id="membresias-container" style="display:none;">
@@ -162,13 +149,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         <aside class="info-card">
           <h3>Información útil</h3>
           <ul>
-            <li>Los turnos son de 1 hora (ej: 08:00 a 09:00).</li>
+            <li>Los turnos son de 1 hora para servicio de detailing general (ej: 08:00 a 09:00).</li>
+            <li>Los turnos son de dos horas en total para el servicio de detallado de motor(ej: 08:00 a 10:00).</li>
             <li>Horario de atención: 08:00 a 22:00, lunes a sábado (último turno 21:00 a 22:00).</li>
             <li>Horario de almuerzo bloqueado: 11:00 a 12:00.</li>
-            <li>Máximo 4 turnos por horario.</li>
             <li>Una membresía no puede agendar más de una vez el mismo día.</li>
-            <li>Los servicios limitados solo se agendan con 24 horas de anticipación.</li>
-            <li>Podés ver tus citas agendadas en <a href="/mis-citas" style="color:var(--agenda-accent);">Mis Citas</a>.</li>
+            <li>Los servicios extras solo se agendan con 24 horas de anticipación.</li>
+            <li>Puedes ver tus citas agendadas en <a href="/mis-citas" style="color:var(--agenda-accent);">Mis Citas</a>.</li>
           </ul>
         </aside>
       </section>
