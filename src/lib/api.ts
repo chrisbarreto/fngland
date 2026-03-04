@@ -3,13 +3,53 @@
  * Used by Astro server-side API routes only.
  */
 
-const API_URL = import.meta.env.API_URL || "http://localhost:3001/api";
+const PROD_API_URL = "https://api.formulang.com.py/api";
+
+function resolveApiUrl(): string {
+  const configured = String(import.meta.env.API_URL || "").trim();
+
+  if (!configured) {
+    return import.meta.env.PROD ? PROD_API_URL : "http://localhost:3001/api";
+  }
+
+  try {
+    const parsed = new URL(configured);
+    const host = parsed.hostname.toLowerCase();
+
+    // Evita configuraciones que apuntan al frontend/panel y no al backend API
+    if (
+      host === "formulang.com.py" ||
+      host === "www.formulang.com.py" ||
+      host === "panel.formulang.com.py"
+    ) {
+      return PROD_API_URL;
+    }
+
+    if (host === "api.formulang.com.py" && parsed.pathname === "/") {
+      return `${parsed.origin}/api`;
+    }
+
+    return configured.replace(/\/+$/, "");
+  } catch {
+    return configured.replace(/\/+$/, "");
+  }
+}
+
+const API_URL = resolveApiUrl();
 const API_KEY = import.meta.env.API_KEY_LANDING;
 
 export async function apiFetch<T = any>(
   path: string,
   options: RequestInit = {},
 ): Promise<{ data?: T; error?: string; status: number }> {
+  if (!API_KEY) {
+    return {
+      error:
+        "API_KEY_LANDING no está configurada en el servidor de la landing.",
+      status: 500,
+    };
+  }
+
   const url = `${API_URL}/public${path}`;
 
   try {
