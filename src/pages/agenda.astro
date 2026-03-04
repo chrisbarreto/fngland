@@ -753,7 +753,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   async function loadSedes() {
     const sel = document.getElementById("idSede");
     try {
-      const res = await fetch("/api/agenda/sedes");
+      const res = await fetch("/proxy/agenda/sedes");
       const sedes = await res.json();
       sel.innerHTML = '<option value="">Seleccioná una sede</option>';
       if (Array.isArray(sedes)) {
@@ -794,7 +794,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
 
       const res = await fetch(
-        `/api/agenda/servicios?codigoMembresia=${encodeURIComponent(codigo)}`,
+        `/proxy/agenda/servicios?codigoMembresia=${encodeURIComponent(codigo)}`,
       );
       const body = await res.json().catch(() => ({}));
       const servicios = Array.isArray(body) ? body : [];
@@ -921,7 +921,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     }
 
     try {
-      const res = await fetch(`/api/agenda/membresias?cedula=${encodeURIComponent(cedula)}`);
+      const res = await fetch(`/proxy/agenda/membresias?cedula=${encodeURIComponent(cedula)}`);
       const body = await res.json().catch(() => ({}));
 
       if (fetchToken !== membresiasFetchToken) {
@@ -1074,7 +1074,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     slotsHint.textContent = "Cargando horarios...";
 
     try {
-      const res = await fetch(`/api/agenda/slots?fecha=${fecha}`);
+      const res = await fetch(`/proxy/agenda/slots?fecha=${fecha}`);
       const body = await res.json();
 
       if (body.error) {
@@ -1235,7 +1235,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     setStatus("Agendando turno...", "success");
 
     try {
-      const res = await fetch("/api/agenda/citas", {
+      const res = await fetch("/proxy/agenda/citas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

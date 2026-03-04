@@ -358,7 +358,7 @@ import Footer from "@/components/Footer.astro";
     resultsEl.style.display = "none";
 
     try {
-      const res = await fetch(`/api/agenda/mis-citas?codigoMembresia=${encodeURIComponent(codigo)}`);
+      const res = await fetch(`/proxy/agenda/mis-citas?codigoMembresia=${encodeURIComponent(codigo)}`);
       const body = await res.json();
 
       if (!res.ok) {
