@@ -45,17 +45,30 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             <!-- Identificación -->
             <div class="field">
               <label for="cedulaTitular">Número de cédula</label>
-              <input
-                id="cedulaTitular"
-                name="cedulaTitular"
-                type="text"
-                placeholder="Ej: 1234567"
-                autocomplete="off"
-                required
-                maxlength="20"
-                inputmode="numeric"
-              />
-              <span class="field-hint">Ingresá la cédula del titular para ver sus membresías asociadas.</span>
+              <div class="cedula-input-group">
+                <input
+                  id="cedulaTitular"
+                  name="cedulaTitular"
+                  type="text"
+                  placeholder="Ej: 1234567"
+                  autocomplete="off"
+                  required
+                  maxlength="20"
+                  inputmode="numeric"
+                />
+                <button type="button" id="validar-cedula-btn" class="cedula-validate-btn">
+                  <svg
+                    id="validar-cedula-spinner"
+                    class="cedula-spinner"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <circle class="path" cx="12" cy="12" r="9" fill="none" stroke-width="3"></circle>
+                  </svg>
+                  <span id="validar-cedula-text">Validar cédula</span>
+                </button>
+              </div>
+              <span class="field-hint">Ingresá la cédula y presioná "Validar cédula" para ver membresías asociadas.</span>
             </div>
 
             <div class="field" id="membresias-container" style="display:none;">
@@ -331,6 +344,63 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     color: var(--agenda-muted);
   }
 
+  .cedula-input-group {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  .cedula-validate-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid rgba(249, 38, 6, 0.45);
+    background: rgba(249, 38, 6, 0.12);
+    color: #ffd8d1;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .cedula-validate-btn:hover:not(:disabled) {
+    background: rgba(249, 38, 6, 0.2);
+    border-color: rgba(249, 38, 6, 0.75);
+  }
+
+  .cedula-validate-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+
+  .cedula-spinner {
+    width: 15px;
+    height: 15px;
+    display: none;
+    animation: spin 0.8s linear infinite;
+  }
+
+  .cedula-spinner .path {
+    stroke: currentColor;
+    stroke-linecap: round;
+    opacity: 0.9;
+  }
+
+  .cedula-validate-btn.loading .cedula-spinner {
+    display: inline-block;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   /* Membresias (seleccion unica) */
   .membresias-list {
     display: flex;
@@ -380,13 +450,31 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
   .membresia-content {
     display: grid;
-    gap: 0.2rem;
+    gap: 0.35rem;
   }
 
   .membresia-code {
     font-size: 0.93rem;
     font-weight: 600;
     color: var(--agenda-text);
+  }
+
+  .membresia-code small {
+    color: var(--agenda-muted);
+    font-weight: 500;
+    margin-left: 0.35rem;
+    font-size: 0.72rem;
+  }
+
+  .membresia-line {
+    font-size: 0.78rem;
+    color: var(--agenda-muted);
+    line-height: 1.35;
+  }
+
+  .membresia-line strong {
+    color: #e5dfe8;
+    font-weight: 600;
   }
 
   .membresia-meta {
@@ -636,6 +724,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     .form-section {
       grid-template-columns: 1fr;
     }
+
+    .cedula-input-group {
+      grid-template-columns: 1fr;
+    }
+
+    .cedula-validate-btn {
+      width: 100%;
+    }
   }
 
   @media (max-width: 640px) {
@@ -662,6 +758,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   const horaInput = document.getElementById("horaInicio");
   const codigoInput = document.getElementById("codigoMembresia");
   const cedulaInput = document.getElementById("cedulaTitular");
+  const validarCedulaBtn = document.getElementById("validar-cedula-btn");
+  const validarCedulaText = document.getElementById("validar-cedula-text");
   const membresiasContainer = document.getElementById("membresias-container");
   const membresiasList = document.getElementById("membresias-list");
   const membresiasHint = document.getElementById("membresias-hint");
@@ -694,6 +792,35 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     return String(value || "").trim().toUpperCase();
   }
 
+  function maskMembresiaCode(codigo) {
+    const clean = normalizeCodigoMembresia(codigo);
+    if (!clean) return "";
+    if (clean.length <= 4) return `${clean.slice(0, 1)}***`;
+
+    const middleLength = Math.max(clean.length - 4, 2);
+    return `${clean.slice(0, 2)}${"*".repeat(middleLength)}${clean.slice(-2)}`;
+  }
+
+  function maskPlate(chapa) {
+    const value = String(chapa || "").trim().toUpperCase();
+    if (!value) return "";
+    if (value.length <= 3) return "***";
+    return `***${value.slice(3)}`;
+  }
+
+  function setCedulaLoading(loading) {
+    if (!validarCedulaBtn) return;
+
+    validarCedulaBtn.disabled = loading;
+    validarCedulaBtn.classList.toggle("loading", loading);
+
+    if (validarCedulaText) {
+      validarCedulaText.textContent = loading
+        ? "Validando..."
+        : "Validar cédula";
+    }
+  }
+
   function extractMembresias(payload) {
     if (Array.isArray(payload)) return payload;
     if (Array.isArray(payload?.membresias)) return payload.membresias;
@@ -702,19 +829,17 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     return [];
   }
 
-  function renderMembresiaMeta(item) {
+  function renderMembresiaMeta(item, codigo) {
     const marca = item?.vehiculo?.marca || item?.marca || "";
     const modelo = item?.vehiculo?.modelo || item?.modelo || "";
     const chapa = item?.vehiculo?.chapa || item?.chapa || "";
     const estado = item?.estado || item?.estadoMembresia || "";
-    const vehiculo = [marca, modelo].filter(Boolean).join(" ").trim();
-    const partes = [];
-
-    if (vehiculo) partes.push(vehiculo);
-    if (chapa) partes.push(`Chapa: ${chapa}`);
-    if (estado) partes.push(`Estado: ${estado}`);
-
-    return partes.join(" | ");
+    return {
+      codigoVisible: maskMembresiaCode(codigo),
+      vehiculoVisible: [marca, modelo].filter(Boolean).join(" ").trim(),
+      chapaVisible: maskPlate(chapa),
+      estadoVisible: String(estado || "").toLowerCase(),
+    };
   }
 
   function showServiciosExtraAlert() {
@@ -907,6 +1032,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     }
 
     const fetchToken = ++membresiasFetchToken;
+    setCedulaLoading(true);
     cedulaMembresiasCargada = "";
     if (codigoInput) {
       codigoInput.value = "";
@@ -945,10 +1071,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             item?.numero ||
             item?.nroMembresia,
           );
+          const meta = renderMembresiaMeta(item, codigo);
 
           return {
             codigo,
-            meta: renderMembresiaMeta(item),
+            ...meta,
           };
         })
         .filter((item) => item.codigo);
@@ -985,14 +1112,28 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
         const code = document.createElement("span");
         code.className = "membresia-code";
-        code.textContent = `Membresía ${membresia.codigo}`;
+        code.innerHTML = `Membresía <strong>${escapeHtml(membresia.codigoVisible || membresia.codigo)}</strong><small>(${escapeHtml(membresia.codigo)})</small>`;
         content.appendChild(code);
 
-        if (membresia.meta) {
-          const meta = document.createElement("span");
-          meta.className = "membresia-meta";
-          meta.textContent = membresia.meta;
-          content.appendChild(meta);
+        if (membresia.vehiculoVisible) {
+          const vehiculo = document.createElement("span");
+          vehiculo.className = "membresia-line";
+          vehiculo.innerHTML = `<strong>Vehículo:</strong> ${escapeHtml(membresia.vehiculoVisible)}`;
+          content.appendChild(vehiculo);
+        }
+
+        if (membresia.chapaVisible) {
+          const chapa = document.createElement("span");
+          chapa.className = "membresia-line";
+          chapa.innerHTML = `<strong>Chapa:</strong> ${escapeHtml(membresia.chapaVisible)}`;
+          content.appendChild(chapa);
+        }
+
+        if (membresia.estadoVisible) {
+          const estado = document.createElement("span");
+          estado.className = "membresia-line";
+          estado.innerHTML = `<strong>Estado:</strong> ${escapeHtml(membresia.estadoVisible)}`;
+          content.appendChild(estado);
         }
 
         label.appendChild(input);
@@ -1018,6 +1159,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (membresiasHint) {
         membresiasHint.textContent = "Revisá tu conexión e intentá de nuevo.";
       }
+    } finally {
+      setCedulaLoading(false);
     }
   }
 
@@ -1144,23 +1287,26 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       codigoServiciosCargado = "";
       loadServicios("");
       if (membresiasHint) {
-        membresiasHint.textContent = "Presioná fuera del campo para buscar membresías asociadas.";
+        membresiasHint.textContent = "Presioná \"Validar cédula\" para cargar membresías asociadas.";
       }
     }
   });
 
-  cedulaInput?.addEventListener("blur", () => {
+  validarCedulaBtn?.addEventListener("click", () => {
     const cedula = normalizeCedula(cedulaInput.value);
-    if (cedula && cedula !== cedulaMembresiasCargada) {
-      loadMembresiasByCedula(cedula);
+    if (!cedula) {
+      setStatus("Ingresá tu número de cédula.");
+      return;
     }
+
+    setStatus("");
+    loadMembresiasByCedula(cedula);
   });
 
-  cedulaInput?.addEventListener("change", () => {
-    const cedula = normalizeCedula(cedulaInput.value);
-    if (cedula && cedula !== cedulaMembresiasCargada) {
-      loadMembresiasByCedula(cedula);
-    }
+  cedulaInput?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    validarCedulaBtn?.click();
   });
 
   // ─── Turnstile helper ─────────────────────────────────────────────
