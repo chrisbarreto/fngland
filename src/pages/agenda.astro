@@ -455,25 +455,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
   .membresia-code {
     font-size: 0.93rem;
-    font-weight: 600;
-    color: var(--agenda-text);
-  }
-
-  .membresia-code small {
-    color: var(--agenda-muted);
     font-weight: 500;
-    margin-left: 0.35rem;
-    font-size: 0.72rem;
-  }
-
-  .membresia-line {
-    font-size: 0.78rem;
     color: var(--agenda-muted);
     line-height: 1.35;
+    word-break: break-word;
   }
 
-  .membresia-line strong {
-    color: #e5dfe8;
+  .membresia-code strong {
+    color: var(--agenda-text);
     font-weight: 600;
   }
 
@@ -792,17 +781,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     return String(value || "").trim().toUpperCase();
   }
 
-  function maskMembresiaCode(codigo) {
-    const clean = normalizeCodigoMembresia(codigo);
-    if (!clean) return "";
-    if (clean.length <= 4) return `${clean.slice(0, 1)}***`;
-
-    const middleLength = Math.max(clean.length - 4, 2);
-    return `${clean.slice(0, 2)}${"*".repeat(middleLength)}${clean.slice(-2)}`;
-  }
-
   function maskPlate(chapa) {
-    const value = String(chapa || "").trim().toUpperCase();
+    const value = String(chapa || "")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
     if (!value) return "";
     if (value.length <= 3) return "***";
     return `***${value.slice(3)}`;
@@ -833,12 +816,10 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     const marca = item?.vehiculo?.marca || item?.marca || "";
     const modelo = item?.vehiculo?.modelo || item?.modelo || "";
     const chapa = item?.vehiculo?.chapa || item?.chapa || "";
-    const estado = item?.estado || item?.estadoMembresia || "";
     return {
-      codigoVisible: maskMembresiaCode(codigo),
+      codigoVisible: normalizeCodigoMembresia(codigo),
       vehiculoVisible: [marca, modelo].filter(Boolean).join(" ").trim(),
       chapaVisible: maskPlate(chapa),
-      estadoVisible: String(estado || "").toLowerCase(),
     };
   }
 
@@ -1112,29 +1093,20 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
         const code = document.createElement("span");
         code.className = "membresia-code";
-        code.innerHTML = `Membresía <strong>${escapeHtml(membresia.codigoVisible || membresia.codigo)}</strong><small>(${escapeHtml(membresia.codigo)})</small>`;
-        content.appendChild(code);
+        const partes = [
+          `Membresía <strong>${escapeHtml(membresia.codigoVisible || membresia.codigo)}</strong>`,
+        ];
 
         if (membresia.vehiculoVisible) {
-          const vehiculo = document.createElement("span");
-          vehiculo.className = "membresia-line";
-          vehiculo.innerHTML = `<strong>Vehículo:</strong> ${escapeHtml(membresia.vehiculoVisible)}`;
-          content.appendChild(vehiculo);
+          partes.push(`Vehículo: ${escapeHtml(membresia.vehiculoVisible)}`);
         }
 
         if (membresia.chapaVisible) {
-          const chapa = document.createElement("span");
-          chapa.className = "membresia-line";
-          chapa.innerHTML = `<strong>Chapa:</strong> ${escapeHtml(membresia.chapaVisible)}`;
-          content.appendChild(chapa);
+          partes.push(`Chapa: ${escapeHtml(membresia.chapaVisible)}`);
         }
 
-        if (membresia.estadoVisible) {
-          const estado = document.createElement("span");
-          estado.className = "membresia-line";
-          estado.innerHTML = `<strong>Estado:</strong> ${escapeHtml(membresia.estadoVisible)}`;
-          content.appendChild(estado);
-        }
+        code.innerHTML = partes.join(" | ");
+        content.appendChild(code);
 
         label.appendChild(input);
         label.appendChild(mark);
