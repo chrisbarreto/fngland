@@ -1169,6 +1169,21 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     return tokenField && "value" in tokenField ? tokenField.value : "";
   }
 
+  function resetTurnstile() {
+    try {
+      if (window.turnstile && typeof window.turnstile.reset === "function") {
+        window.turnstile.reset();
+      }
+    } catch {
+      // no-op
+    }
+
+    const tokenField = form?.querySelector("[name='cf-turnstile-response']");
+    if (tokenField && "value" in tokenField) {
+      tokenField.value = "";
+    }
+  }
+
   // ─── Submit ────────────────────────────────────────────────────────
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1262,8 +1277,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           setStatus(
             "Los servicios limitados (extras) requieren mínimo 24 horas de anticipación.",
           );
+        } else if (backendError.toLowerCase().includes("captcha")) {
+          setStatus("No se pudo validar el captcha. Marcá nuevamente la verificación.");
+          resetTurnstile();
         } else {
           setStatus(backendError || "No pudimos agendar tu turno.");
+          resetTurnstile();
         }
         submitBtn.disabled = false;
         return;
@@ -1303,6 +1322,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       `;
     } catch {
       setStatus("Error de red. Intentá nuevamente.");
+      resetTurnstile();
       submitBtn.disabled = false;
     }
   });
