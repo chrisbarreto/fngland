@@ -57,16 +57,6 @@ import RegistroModal from "@/components/RegistroModal.astro";
     <!-- Main content -->
     <div class="sl-markdown-content" style="position: relative; z-index: 2; background-color: var(--sl-color-black); margin-top: -120px; padding-top: 40px;">
 
-      {/* Impact Bullets Section */}
-      <section class="impact-section" aria-label="Diferenciales Fórmula NG">
-        <div class="impact-grid">
-          <p class="impact-item"><span class="impact-check">✔</span> Cuidado profesional por etapas</p>
-          <p class="impact-item"><span class="impact-check">✔</span> Productos premium y procesos controlados</p>
-          <p class="impact-item"><span class="impact-check">✔</span> Ahorro real con membresía mensual</p>
-          <p class="impact-item"><span class="impact-check">✔</span> Comodidad total: agenda online y traslados</p>
-        </div>
-      </section>
-
       {/* Features Section */}
       <Section
         id="beneficios"
@@ -341,53 +331,12 @@ import RegistroModal from "@/components/RegistroModal.astro";
   .hero-video-mobile {
     display: none;
   }
-  .impact-section {
-    padding: 1.25rem clamp(1rem, 3vw, 2rem) 2.25rem;
-  }
-  .impact-grid {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.9rem 1rem;
-  }
-  .impact-item {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.95rem 1rem;
-    border-radius: 12px;
-    border: 1px solid color-mix(in srgb, #f92606 38%, transparent);
-    background: color-mix(in srgb, var(--sl-color-black) 72%, #1a1a1a);
-    color: var(--sl-color-gray-2);
-    font-size: 1rem;
-    line-height: 1.4;
-  }
-  .impact-check {
-    color: #7BE1A4;
-    font-weight: 700;
-    font-size: 1.05rem;
-    line-height: 1;
-    transform: translateY(-1px);
-  }
   @media (max-width: 768px) {
     .hero-video-desktop {
       display: none;
     }
     .hero-video-mobile {
       display: block;
-    }
-    .impact-section {
-      padding: 0.75rem 1rem 1.5rem;
-    }
-    .impact-grid {
-      grid-template-columns: 1fr;
-      gap: 0.7rem;
-    }
-    .impact-item {
-      font-size: 0.95rem;
-      padding: 0.85rem 0.9rem;
     }
   }
 </style>
