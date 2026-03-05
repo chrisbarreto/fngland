@@ -188,10 +188,25 @@ import logoDark from "@/assets/logos/logo-dark.svg";
   
   @media (max-width: 548px) {
     .hero-title {
-      font-size: 2.2rem;
-      line-height: 2.3rem;
-      letter-spacing: -0.5px;
+      font-size: clamp(1.45rem, 5.2vw, 1.85rem);
+      line-height: 1.1;
+      letter-spacing: -0.2px;
+      gap: 0.35rem;
       margin-top: -1rem;
+    }
+
+    .hero-title-main,
+    .hero-title-sub {
+      white-space: nowrap;
+    }
+
+    .hero-title-main {
+      color: var(--sl-color-white);
+    }
+
+    .hero-title-sub {
+      color: var(--sl-color-gray-3);
+      opacity: 1;
     }
     
     .hero-subtitle {
