@@ -1245,30 +1245,30 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     }
 
     const slots = result.slots;
-    if (slots.length === 0) {
+    const availableSlots = slots.filter((slot) => Number(slot.disponibles) > 0);
+
+    if (availableSlots.length === 0) {
       slotsHint.textContent = "No hay horarios disponibles para esta fecha.";
       return;
     }
 
     slotsHint.textContent = "Seleccioná un horario:";
 
-    slots.forEach((slot) => {
+    availableSlots.forEach((slot) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "slot-btn" + (slot.disponible ? "" : " disabled");
+      btn.className = "slot-btn";
       btn.innerHTML = `${slot.hora}<span class="slot-cupos">${slot.disponibles} cupo${slot.disponibles !== 1 ? "s" : ""}</span>`;
       btn.dataset.hora = slot.hora;
 
-      if (slot.disponible) {
-        btn.addEventListener("click", () => {
-          // Deselect previous
-          slotsGrid.querySelectorAll(".slot-btn").forEach((b) => b.classList.remove("selected"));
-          btn.classList.add("selected");
-          selectedSlot = slot.hora;
-          horaInput.value = slot.hora;
-          submitBtn.disabled = false;
-        });
-      }
+      btn.addEventListener("click", () => {
+        // Deselect previous
+        slotsGrid.querySelectorAll(".slot-btn").forEach((b) => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        selectedSlot = slot.hora;
+        horaInput.value = slot.hora;
+        submitBtn.disabled = false;
+      });
 
       slotsGrid.appendChild(btn);
     });
