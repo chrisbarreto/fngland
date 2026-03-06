@@ -1,0 +1,270 @@
+---
+export const prerender = false;
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { apiFetch } from "@/lib/api";
+
+/**
+ * /tarjetas/callback — Callback page for Bancard card registration (catastro).
+ *
+ * After the client completes (or cancels) the Bancard iframe, Bancard redirects
+ * here with query params appended to the PAGOPAR_REDIRECT_URL:
+ *
+ *   /tarjetas/callback?idCliente=UUID&token=HMAC&status=add_new_card_success
+ *   /tarjetas/callback?idCliente=UUID&token=HMAC&status=add_new_card_fail&description=...
+ *
+ * On success (or "already registered"), this page calls the NestJS backend to
+ * confirm/sync the card. On terminal failure, it shows a retry button that
+ * links back to the panel's stable registration link.
+ */
+
+const idCliente = Astro.url.searchParams.get("idCliente") ?? "";
+const token = Astro.url.searchParams.get("token") ?? "";
+const bancardStatus = Astro.url.searchParams.get("status") ?? "";
+const bancardDescription = Astro.url.searchParams.get("description") ?? "";
+
+const bancardFailed =
+  bancardStatus !== "" && !bancardStatus.toLowerCase().includes("success");
+
+// "ya ha sido catastrada" means the card already exists on Bancard's side —
+// just needs to be confirmed/synced to our DB, not a real failure.
+const isAlreadyRegistered =
+  bancardFailed &&
+  bancardDescription.toLowerCase().includes("ya ha sido catastrada");
+
+const isTerminalFailure = bancardFailed && !isAlreadyRegistered;
+const shouldConfirm = !isTerminalFailure && !!idCliente;
+
+// --- Server-side confirmation ---
+let confirmResult: {
+  status: "success" | "error";
+  tarjetasCount: number;
+  errorMsg: string;
+} = {
+  status: "error",
+  tarjetasCount: 0,
+  errorMsg: "",
+};
+
+if (isTerminalFailure) {
+  confirmResult.status = "error";
+  confirmResult.errorMsg =
+    bancardDescription || "La tarjeta no pudo ser registrada.";
+} else if (!idCliente) {
+  confirmResult.status = "error";
+  confirmResult.errorMsg = "Falta el parámetro idCliente en la URL.";
+} else if (shouldConfirm) {
+  const { data, error } = await apiFetch<{
+    tarjetas?: { idTarjeta: string }[];
+    message?: string;
+  }>("/pagopar/confirmar", {
+    method: "POST",
+    body: JSON.stringify({ idCliente }),
+  });
+
+  if (error) {
+    confirmResult.status = "error";
+    confirmResult.errorMsg = error;
+  } else if (data?.tarjetas && data.tarjetas.length > 0) {
+    confirmResult.status = "success";
+    confirmResult.tarjetasCount = data.tarjetas.length;
+  } else {
+    confirmResult.status = "error";
+    confirmResult.errorMsg =
+      "La confirmación fue procesada pero no se encontraron tarjetas registradas. " +
+      "Es posible que el banco emisor haya rechazado la tarjeta.";
+  }
+}
+
+const canRetry = !!idCliente && !!token;
+
+// Build the stable retry link (points to the panel's public registration page)
+const retryUrl = canRetry
+  ? `/tarjetas/registrar?idCliente=${encodeURIComponent(idCliente)}&token=${encodeURIComponent(token)}`
+  : "";
+---
+
+<BaseLayout
+  title="Registro de tarjeta | Fórmula NG"
+  description="Resultado del registro de tarjeta para débito automático."
+  noindex={true}
+>
+  <div class="callback-page">
+    <div class="callback-card">
+      {/* ── Success ── */}
+      {confirmResult.status === "success" && (
+        <div class="callback-content">
+          <div class="icon-circle icon-success">
+            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 class="callback-title">Tarjeta registrada</h1>
+          <p class="callback-message">
+            Tu tarjeta fue confirmada exitosamente.
+            {confirmResult.tarjetasCount > 0 && (
+              <span>
+                {` Tienes ${confirmResult.tarjetasCount} tarjeta${confirmResult.tarjetasCount > 1 ? "s" : ""} activa${confirmResult.tarjetasCount > 1 ? "s" : ""}.`}
+              </span>
+            )}
+          </p>
+          <p class="callback-hint">Puedes cerrar esta ventana.</p>
+        </div>
+      )}
+
+      {/* ── Error ── */}
+      {confirmResult.status === "error" && (
+        <div class="callback-content">
+          <div class="icon-circle icon-error">
+            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h1 class="callback-title">No se pudo registrar la tarjeta</h1>
+          <p class="callback-error-msg">{confirmResult.errorMsg}</p>
+          {canRetry ? (
+            <p class="callback-hint">Puedes intentar nuevamente con el mismo enlace.</p>
+          ) : (
+            <p class="callback-hint">
+              Solicita un nuevo enlace a tu proveedor de servicio para intentar de nuevo.
+            </p>
+          )}
+          <div class="callback-actions">
+            {canRetry && (
+              <a href={retryUrl} class="btn btn-primary">
+                Intentar de nuevo
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+
+    <div class="callback-footer">
+      <p>
+        Tus datos son procesados de forma segura por Bancard.
+        No almacenamos información de tu tarjeta.
+      </p>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .callback-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1.5rem;
+    background: var(--sl-color-black);
+  }
+
+  .callback-card {
+    width: 100%;
+    max-width: 28rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 2.5rem 2rem;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .callback-content {
+    text-align: center;
+  }
+
+  .icon-circle {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+  }
+
+  .icon-success {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+  }
+
+  .icon-error {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+  }
+
+  .callback-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--sl-color-white);
+    margin: 0 0 0.75rem;
+  }
+
+  .callback-message {
+    font-size: 0.9375rem;
+    color: var(--sl-color-gray-3);
+    margin: 0 0 0.5rem;
+    line-height: 1.5;
+  }
+
+  .callback-error-msg {
+    font-size: 0.9375rem;
+    color: #f87171;
+    margin: 0 0 0.75rem;
+    line-height: 1.5;
+  }
+
+  .callback-hint {
+    font-size: 0.8125rem;
+    color: var(--sl-color-gray-4);
+    margin: 0 0 1.5rem;
+  }
+
+  .callback-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 0.75rem 1.75rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    color: white;
+    box-shadow: 0 4px 20px rgba(249, 38, 6, 0.3);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(249, 38, 6, 0.5);
+  }
+
+  .callback-footer {
+    margin-top: 1.25rem;
+    text-align: center;
+  }
+
+  .callback-footer p {
+    font-size: 0.75rem;
+    color: var(--sl-color-gray-5, #6b7280);
+    max-width: 24rem;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 480px) {
+    .callback-card {
+      padding: 2rem 1.25rem;
+    }
+  }
+</style>

@@ -1,6 +1,7 @@
 ---
 // This component renders a full-screen registration modal.
 // All logic is client-side JavaScript (no framework needed).
+const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 ---
 
 <!-- Registration Modal -->
@@ -92,13 +93,13 @@
             <label for="tipoVehiculo">Tipo</label>
             <select id="tipoVehiculo" name="tipoVehiculo">
               <option value="">Seleccionar...</option>
-              <option value="auto">Auto</option>
-              <option value="camioneta">Camioneta</option>
-              <option value="suv">SUV</option>
-              <option value="pickup">Pickup</option>
-              <option value="van">Van</option>
-              <option value="moto">Moto</option>
-              <option value="otro">Otro</option>
+              <option value="1">Auto</option>
+              <option value="2">Camioneta</option>
+              <option value="3">SUV</option>
+              <option value="6">Pickup</option>
+              <option value="7">Van</option>
+              <option value="4">Moto</option>
+              <option value="8">Otro</option>
             </select>
             <span class="field-error"></span>
           </div>
@@ -131,6 +132,15 @@
             </select>
             <span class="debit-day-hint">Si el mes no tiene ese día, se cobrará el último día del mes.</span>
           </div>
+        </div>
+
+        <!-- Turnstile captcha -->
+        <div class="turnstile-wrapper">
+          <div
+            class="cf-turnstile"
+            data-sitekey={siteKey}
+            data-theme="dark"
+          ></div>
         </div>
 
         <div class="form-actions">
@@ -570,6 +580,16 @@
     font-size: 0.85rem;
     margin-top: 1rem;
     text-align: center;
+  }
+
+  /* Turnstile captcha */
+  .turnstile-wrapper {
+    display: inline-flex;
+    margin-top: 1.25rem;
+    padding: 0.5rem;
+    border-radius: 12px;
+    background: #0f0e12;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
   }
 
   /* Auto-debit section */
@@ -1021,10 +1041,23 @@
       if (color) formData.color = color;
 
       const tipoVehiculo = (document.getElementById("tipoVehiculo") as HTMLSelectElement).value;
-      if (tipoVehiculo) formData.tipoVehiculo = tipoVehiculo;
+      if (tipoVehiculo) formData.idTipoVehiculo = Number(tipoVehiculo);
 
       const idPlan = (document.getElementById("idPlan") as HTMLInputElement).value;
       if (idPlan) formData.idPlan = idPlan;
+
+      // Turnstile captcha token
+      const turnstileField = form.querySelector("[name='cf-turnstile-response']") as HTMLInputElement | null;
+      const turnstileToken = turnstileField?.value || "";
+      if (!turnstileToken) {
+        errorMsg.textContent = "Completá la verificación de seguridad (captcha) para continuar.";
+        errorBanner.style.display = "block";
+        submitBtn.disabled = false;
+        submitText.style.display = "inline";
+        submitLoading.style.display = "none";
+        return;
+      }
+      formData.turnstileToken = turnstileToken;
 
       try {
         // Step 1: Register client + vehicle + membership
@@ -1064,6 +1097,7 @@
             body: JSON.stringify({
               idCliente: idCliente,
               diaDebito: Number(diaDebitoSelect.value),
+              urlRedirect: window.location.origin + "/api/callback",
             }),
           }, 30000);
 

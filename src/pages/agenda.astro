@@ -1160,7 +1160,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   const SLOTS_MAX_RETRIES = 2;
   const SLOTS_RETRY_DELAYS = [1500, 3000]; // ms before each retry
 
-  async function fetchSlotsWithRetry(fecha) {
+  async function fetchSlotsWithRetry(fecha, idSede) {
     let lastError = null;
 
     for (let attempt = 0; attempt <= SLOTS_MAX_RETRIES; attempt++) {
@@ -1170,7 +1170,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
 
       try {
-        const res = await fetch(`/proxy/agenda/slots?fecha=${fecha}`);
+        const res = await fetch(`/proxy/agenda/slots?fecha=${fecha}&idSede=${encodeURIComponent(idSede)}`);
 
         // Non-JSON response (e.g. Cloudflare HTML page, 502, etc.)
         const ct = res.headers.get("content-type") || "";
@@ -1219,6 +1219,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     slotsGrid.innerHTML = "";
     slotsHint.textContent = "";
 
+    const idSede = document.getElementById("idSede")?.value;
+    if (!idSede) {
+      slotsContainer.style.display = "block";
+      slotsHint.textContent = "Seleccioná una sede antes de elegir horario.";
+      return;
+    }
+
     // Check if Sunday
     const d = new Date(fecha + "T12:00:00");
     if (d.getDay() === 0) {
@@ -1230,7 +1237,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     slotsContainer.style.display = "block";
     slotsHint.textContent = "Cargando horarios...";
 
-    const result = await fetchSlotsWithRetry(fecha);
+    const result = await fetchSlotsWithRetry(fecha, idSede);
 
     if (result.error) {
       slotsHint.textContent = result.error;
@@ -1272,6 +1279,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   if (fechaInput) {
     fechaInput.addEventListener("change", (e) => {
       const fecha = e.target.value;
+      if (fecha) loadSlots(fecha);
+    });
+  }
+
+  // ─── Sede change listener (reload slots) ──────────────────────────
+  const sedeSelect = document.getElementById("idSede");
+  if (sedeSelect) {
+    sedeSelect.addEventListener("change", () => {
+      const fecha = document.getElementById("fechaCita")?.value;
       if (fecha) loadSlots(fecha);
     });
   }

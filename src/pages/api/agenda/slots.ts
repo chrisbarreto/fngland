@@ -5,6 +5,7 @@ export const prerender = false;
 
 export const GET: APIRoute = async ({ url }) => {
   const fecha = url.searchParams.get("fecha");
+  const idSede = url.searchParams.get("idSede");
 
   if (!fecha) {
     return new Response(
@@ -13,8 +14,15 @@ export const GET: APIRoute = async ({ url }) => {
     );
   }
 
+  if (!idSede) {
+    return new Response(
+      JSON.stringify({ error: "Parámetro 'idSede' es requerido" }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
   const { data, error, status } = await apiFetch(
-    `/agenda/slots?fecha=${encodeURIComponent(fecha)}`,
+    `/agenda/slots?fecha=${encodeURIComponent(fecha)}&idSede=${encodeURIComponent(idSede)}`,
   );
 
   if (error) {
