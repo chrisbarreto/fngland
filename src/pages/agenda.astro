@@ -154,7 +154,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
               <div class="agenda-success-actions">
                 <a href="/mis-citas" class="agenda-success-link">Ver mis citas</a>
-                <button type="button" id="agenda-success-reset" class="agenda-success-reset">Agendar otra cita</button>
               </div>
             </div>
           </div>
@@ -805,10 +804,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
   .agenda-success-actions {
     margin-top: 1.2rem;
-    display: grid;
-    grid-template-columns: repeat(2, 220px);
+    display: flex;
     justify-content: center;
-    gap: 0.75rem;
+    width: min(420px, 100%);
+    margin-left: auto;
+    margin-right: auto;
     animation-delay: 0.68s;
   }
 
@@ -980,7 +980,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   const successEl = document.getElementById("agenda-success");
   const successDetailsEl = document.getElementById("success-details");
   const successTrasladoEl = document.getElementById("success-traslado");
-  const successResetBtn = document.getElementById("agenda-success-reset");
   const submitBtn = document.getElementById("agenda-submit");
   const slotsContainer = document.getElementById("slots-container");
   const slotsGrid = document.getElementById("slots-grid");
@@ -1884,10 +1883,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       resetTurnstile();
       submitBtn.disabled = false;
     }
-  });
-
-  successResetBtn?.addEventListener("click", () => {
-    window.location.reload();
   });
 
   // ─── Init ──────────────────────────────────────────────────────────
