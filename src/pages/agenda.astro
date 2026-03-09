@@ -698,16 +698,18 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     padding: 1.5rem;
     background: rgba(2, 9, 5, 0.78);
     backdrop-filter: blur(8px);
+    overflow-x: hidden;
   }
 
   .agenda-success-panel {
-    width: min(640px, 100%);
+    width: min(560px, 100%);
     border-radius: 24px;
     border: 1px solid rgba(60, 218, 143, 0.3);
     background: linear-gradient(170deg, rgba(16, 62, 42, 0.96), rgba(10, 24, 19, 0.98));
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
     padding: 2.25rem 2rem;
     text-align: center;
+    box-sizing: border-box;
   }
 
   .agenda-success-icon-wrap {
@@ -764,7 +766,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   .agenda-success-details {
     margin: 0 auto;
     text-align: left;
-    width: min(460px, 100%);
+    width: min(420px, 100%);
     border-radius: 14px;
     border: 1px solid rgba(60, 218, 143, 0.22);
     background: rgba(7, 18, 14, 0.58);
@@ -789,7 +791,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
   .agenda-success-traslado {
     margin: 0.95rem auto 0;
-    width: min(460px, 100%);
+    width: min(420px, 100%);
     border-radius: 12px;
     border: 1px solid rgba(251, 191, 36, 0.45);
     background: rgba(251, 191, 36, 0.12);
@@ -803,15 +805,19 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
   .agenda-success-actions {
     margin-top: 1.2rem;
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, 220px);
     justify-content: center;
     gap: 0.75rem;
-    flex-wrap: wrap;
     animation-delay: 0.68s;
   }
 
   .agenda-success-link,
   .agenda-success-reset {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border: none;
     border-radius: 999px;
     padding: 0.78rem 1.3rem;
@@ -913,12 +919,16 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       padding: 0;
       align-items: stretch;
       justify-content: stretch;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
     }
 
     .agenda-success-panel {
       width: 100%;
       min-height: 100vh;
       min-height: 100dvh;
+      max-width: none;
       border-radius: 0;
       border: 0;
       display: flex;
@@ -928,6 +938,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       padding: max(1.4rem, env(safe-area-inset-top)) 1rem max(1.6rem, env(safe-area-inset-bottom));
       box-sizing: border-box;
       overflow-y: auto;
+      overflow-x: hidden;
     }
 
     .agenda-success-icon {
@@ -943,7 +954,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     .agenda-success-details,
     .agenda-success-traslado,
     .agenda-success-actions {
-      width: min(560px, 100%);
+      width: 100%;
+      max-width: 520px;
+      box-sizing: border-box;
     }
 
     .agenda-success-actions {
