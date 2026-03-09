@@ -1239,7 +1239,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
           const textWrap = document.createElement("span");
           textWrap.className = "check-label";
-          textWrap.innerHTML = `${escapeHtml(s.nombre || "Servicio")}${s.duracionMinutos ? ` <small>(${escapeHtml(String(s.duracionMinutos))} min)</small>` : ""}`;
+          textWrap.innerHTML = `${escapeHtml(s.nombre || "Servicio")}`;
 
           if (typeof s.cantidadIncluida === "number") {
             const meta = document.createElement("div");
@@ -1823,13 +1823,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         const serviciosSeleccionados = Array.from(
           form.querySelectorAll('input[name="idServicios"]:checked'),
         );
-        const incluyeTrasladoPorId = idServicios.some((id) => String(id).trim() === "20");
-        const incluyeTrasladoPorNombre = serviciosSeleccionados.some((input) =>
-          normalizeSearchText(input.dataset.servicioNombre).includes("traslado"),
-        );
-        const incluyeTrasladoPorRespuesta = normalizeSearchText(d.servicios).includes("traslado");
-        const incluyeTraslado =
-          incluyeTrasladoPorId || incluyeTrasladoPorNombre || incluyeTrasladoPorRespuesta;
+        const serviciosDesdeSeleccion = serviciosSeleccionados
+          .map((input) => input.dataset.servicioNombre || "")
+          .join(" ");
+        const serviciosDesdeRespuesta = Array.isArray(d.servicios)
+          ? d.servicios.join(" ")
+          : String(d.servicios || "");
+        const textoServicios = normalizeSearchText(`${serviciosDesdeSeleccion} ${serviciosDesdeRespuesta}`);
+        const incluyeTraslado = textoServicios.includes("traslad");
 
         if (incluyeTraslado) {
           const horaTurno = d.horaInicio || horaInicio;
@@ -1841,9 +1842,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             ? `Importante (servicio de traslado): debés entregar el vehículo al chofer una hora antes de la cita. Tu cita es a las ${escapeHtml(horaTurnoMostrada)}, por lo tanto la entrega debe ser a las <strong>${escapeHtml(horaEntregaMostrada)}</strong>.`
             : "Importante (servicio de traslado): debés entregar el vehículo al chofer una hora antes de la cita.";
           successTrasladoEl.style.display = "block";
+          successTrasladoEl.style.opacity = "1";
         } else {
           successTrasladoEl.style.display = "none";
           successTrasladoEl.textContent = "";
+          successTrasladoEl.style.opacity = "";
         }
       }
     } catch {
