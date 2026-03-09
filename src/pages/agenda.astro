@@ -25,6 +25,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             <ul>
               <li>Solo se permite <strong>1 cita por día</strong> por membresía.</li>
               <li>El servicio de lavado de motor requiere <strong>mínimo 16 horas</strong> de anticipación.</li>
+              <li>El servicio de traslado requiere <strong>mínimo 24 horas</strong> de anticipación.</li>
               <li>Si no seleccionás extras, se genera una cita para el servicio de detailing general.</li>
             </ul>
           </div>
@@ -145,7 +146,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                 </svg>
               </div>
 
-              <h3 id="agenda-success-title">!Cita confirmada!</h3>
+              <h3 id="agenda-success-title">Cita confirmada</h3>
               <p class="agenda-success-subtitle">Recibimos tu turno correctamente.</p>
 
               <div id="success-details" class="agenda-success-details"></div>
@@ -168,6 +169,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             <li>Horario de almuerzo bloqueado: 11:00 a 12:00.</li>
             <li>Una membresía no puede agendar más de una vez el mismo día.</li>
             <li>El servicio de lavado de motor solo se agenda con 16 horas de anticipación.</li>
+            <li>El servicio de traslado solo se agenda con 24 horas de anticipación.</li>
             <li>Puedes ver tus citas agendadas en <a href="/mis-citas" style="color:var(--agenda-accent);">Mis Citas</a>.</li>
           </ul>
         </aside>
@@ -1055,13 +1057,23 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     serviciosExtraAlert.textContent = mensajes.join(" ");
   }
 
-  const ID_TIPO_SERVICIO_LAVADO_MOTOR = "17";
-  const ANTICIPACION_LAVADO_MOTOR_HORAS = 16;
+  const ANTICIPACION_POR_TIPO_SERVICIO = {
+    "17": { horas: 16, nombre: "lavado de motor" },
+    "20": { horas: 24, nombre: "traslado" },
+  };
 
-  function isLavadoMotorSelected() {
-    return Array.from(
+  function getMaxAnticipacionRequerida() {
+    const checked = Array.from(
       document.querySelectorAll('input[name="idServicios"]:checked'),
-    ).some((cb) => cb.dataset.idTipoServicio === ID_TIPO_SERVICIO_LAVADO_MOTOR);
+    );
+    let max = null;
+    for (const cb of checked) {
+      const regla = ANTICIPACION_POR_TIPO_SERVICIO[cb.dataset.idTipoServicio];
+      if (regla && (!max || regla.horas > max.horas)) {
+        max = regla;
+      }
+    }
+    return max;
   }
 
   function setStatus(message, type = "error") {
@@ -1092,6 +1104,45 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     const horasSalida = String(fechaBase.getHours()).padStart(2, "0");
     const minutosSalida = String(fechaBase.getMinutes()).padStart(2, "0");
     return `${horasSalida}:${minutosSalida}`;
+  }
+
+  function formatHoraSimple(hora) {
+    const horaTexto = String(hora || "").trim();
+    const partes = horaTexto.split(":");
+    if (partes.length < 2) return horaTexto;
+
+    const horas = Number(partes[0]);
+    const minutos = Number(partes[1]);
+    if (!Number.isInteger(horas) || !Number.isInteger(minutos)) return horaTexto;
+
+    return `${horas}:${String(minutos).padStart(2, "0")}`;
+  }
+
+  function formatFechaLargaEs(fecha) {
+    const fechaTexto = String(fecha || "").trim();
+    if (!fechaTexto) return "";
+
+    const isoMatch = fechaTexto.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    let dateObj;
+
+    if (isoMatch) {
+      const year = Number(isoMatch[1]);
+      const month = Number(isoMatch[2]) - 1;
+      const day = Number(isoMatch[3]);
+      dateObj = new Date(year, month, day);
+    } else {
+      dateObj = new Date(fechaTexto);
+    }
+
+    if (Number.isNaN(dateObj.getTime())) {
+      return fechaTexto;
+    }
+
+    return new Intl.DateTimeFormat("es-PY", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(dateObj);
   }
 
   // ─── Load sedes & servicios on page load ──────────────────────────
@@ -1504,11 +1555,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     const slots = result.slots;
     let availableSlots = slots.filter((slot) => Number(slot.disponibles) > 0);
 
-    // Filter out slots that don't meet the 16h anticipation for lavado de motor
+    // Filter out slots that don't meet anticipation requirements (lavado de motor 16h, traslado 24h)
     let slotsFilteredByAnticipacion = 0;
-    if (isLavadoMotorSelected()) {
+    let anticipacionRegla = null;
+    const regla = getMaxAnticipacionRequerida();
+    if (regla) {
+      anticipacionRegla = regla;
       const now = new Date();
-      const cutoff = new Date(now.getTime() + ANTICIPACION_LAVADO_MOTOR_HORAS * 60 * 60 * 1000);
+      const cutoff = new Date(now.getTime() + regla.horas * 60 * 60 * 1000);
       const beforeCount = availableSlots.length;
       availableSlots = availableSlots.filter((slot) => {
         const slotDate = new Date(`${fecha}T${slot.hora}:00`);
@@ -1519,13 +1573,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
     if (availableSlots.length === 0) {
       slotsHint.textContent = slotsFilteredByAnticipacion > 0
-        ? "No hay horarios disponibles. El lavado de motor requiere al menos 16 horas de anticipación."
+        ? `No hay horarios disponibles. El servicio de ${anticipacionRegla.nombre} requiere al menos ${anticipacionRegla.horas} horas de anticipación.`
         : "No hay horarios disponibles para esta fecha.";
       return;
     }
 
     slotsHint.textContent = slotsFilteredByAnticipacion > 0
-      ? "Seleccioná un horario (algunos no están disponibles por la anticipación requerida para lavado de motor):"
+      ? `Seleccioná un horario (algunos no están disponibles por la anticipación requerida para ${anticipacionRegla.nombre}):`
       : "Seleccioná un horario:";
 
     availableSlots.forEach((slot) => {
@@ -1705,9 +1759,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           setStatus(
             "Esta membresía ya tiene una cita para ese día. Solo se permite 1 cita diaria por membresía.",
           );
-        } else if (backendError.includes("16 horas")) {
+        } else if (backendError.includes("horas de anticipacion")) {
           setStatus(
-            "El servicio de lavado de motor solo puede agendarse con mínimo 16 horas de anticipación.",
+            backendError.replace("minimo", "mínimo").replace("anticipacion", "anticipación"),
           );
         } else if (backendError.toLowerCase().includes("captcha")) {
           setStatus("No se pudo validar el captcha. Marcá nuevamente la verificación.");
@@ -1746,8 +1800,10 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         ? `<ul class="success-extra-list">${extraServicios}</ul>`
         : "";
 
+      const fechaMostrada = formatFechaLargaEs(d.fecha || fechaCita);
+
       successDetailsEl.innerHTML = `
-        <p><strong>Fecha:</strong> ${escapeHtml(d.fecha || fechaCita)}</p>
+        <p><strong>Fecha:</strong> ${escapeHtml(fechaMostrada || d.fecha || fechaCita)}</p>
         <p><strong>Horario:</strong> ${escapeHtml(d.horaInicio || horaInicio)} - ${escapeHtml(d.horaFin || "")}</p>
         <p><strong>Sede:</strong> ${escapeHtml(d.sede || "")}</p>
         <p><strong>Servicios:</strong> ${escapeHtml(d.servicios || "")}</p>
@@ -1760,11 +1816,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         if (incluyeTraslado) {
           const horaTurno = d.horaInicio || horaInicio;
           const horaEntrega = restarUnaHora(horaTurno);
-          const mensajeHora = horaEntrega
-            ? ` a las ${horaEntrega}`
-            : " una hora antes de la hora agendada";
+          const horaTurnoMostrada = formatHoraSimple(horaTurno);
+          const horaEntregaMostrada = formatHoraSimple(horaEntrega);
 
-          successTrasladoEl.textContent = `Recorda: al incluir servicio de traslado, tu vehiculo debe estar listo para la entrega al chofer${mensajeHora}.`;
+          successTrasladoEl.innerHTML = horaEntrega
+            ? `Importante (servicio de traslado): debés entregar el vehículo al chofer una hora antes de la cita. Tu cita es a las ${escapeHtml(horaTurnoMostrada)}, por lo tanto la entrega debe ser a las <strong>${escapeHtml(horaEntregaMostrada)}</strong>.`
+            : "Importante (servicio de traslado): debés entregar el vehículo al chofer una hora antes de la cita.";
           successTrasladoEl.style.display = "block";
         } else {
           successTrasladoEl.style.display = "none";

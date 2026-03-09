@@ -3,11 +3,13 @@ export const prerender = true;
 
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Footer from "@/components/Footer.astro";
+
+const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 ---
 
 <BaseLayout
   title="Mis Citas | Fórmula NG"
-  description="Consultá tus citas agendadas en Fórmula NG con tu código de membresía."
+  description="Consultá tus citas agendadas en Fórmula NG con tu número de cédula."
 >
   <div class="page">
     <main class="content">
@@ -16,7 +18,7 @@ import Footer from "@/components/Footer.astro";
           <p class="eyebrow">Mis turnos</p>
           <h1>Mis citas agendadas</h1>
           <p class="subtitle">
-            Ingresá tu código de membresía para ver tus turnos reservados.
+            Ingresá tu número de cédula para ver todos tus turnos reservados.
           </p>
         </div>
         <div class="hero-glow"></div>
@@ -28,15 +30,25 @@ import Footer from "@/components/Footer.astro";
           <form id="search-form" novalidate>
             <div class="search-row">
               <input
-                id="codigoInput"
+                id="cedulaInput"
                 type="text"
-                placeholder="Código de membresía (ej: NG001)"
+                placeholder="Número de cédula (ej: 1234567)"
                 maxlength="20"
                 autocomplete="off"
+                inputmode="numeric"
                 required
               />
               <button type="submit" id="search-btn">Buscar</button>
             </div>
+
+            <div class="search-turnstile">
+              <div
+                class="cf-turnstile"
+                data-sitekey={siteKey}
+                data-theme="dark"
+              ></div>
+            </div>
+
             <span class="search-status" id="search-status"></span>
           </form>
         </div>
@@ -193,6 +205,15 @@ import Footer from "@/components/Footer.astro";
     color: var(--mc-muted);
   }
 
+  .search-turnstile {
+    margin-top: 0.85rem;
+    display: inline-flex;
+    padding: 0.45rem;
+    border-radius: 12px;
+    background: #0f0e12;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+  }
+
   .vehicle-info {
     background: var(--mc-card);
     border: 1px solid var(--mc-border);
@@ -338,6 +359,34 @@ import Footer from "@/components/Footer.astro";
     return isoTime;
   }
 
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function normalizeCedula(value) {
+    return String(value || "").replace(/\D/g, "");
+  }
+
+  function getTurnstileToken() {
+    const tokenField = form?.querySelector("[name='cf-turnstile-response']");
+    return tokenField && "value" in tokenField ? tokenField.value : "";
+  }
+
+  function resetTurnstile() {
+    try {
+      if (window.turnstile && typeof window.turnstile.reset === "function") {
+        window.turnstile.reset();
+      }
+    } catch {
+      // no-op
+    }
+  }
+
   function estadoClass(estado) {
     if (estado === "confirmada") return "estado-confirmada";
     if (estado === "completada") return "estado-completada";
@@ -346,10 +395,21 @@ import Footer from "@/components/Footer.astro";
 
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const codigo = document.getElementById("codigoInput").value.trim();
+    const cedulaInput = document.getElementById("cedulaInput");
+    const cedula = normalizeCedula(cedulaInput?.value || "");
+    const turnstileToken = getTurnstileToken();
 
-    if (!codigo) {
-      statusEl.textContent = "Ingresá tu código de membresía.";
+    if (cedulaInput && cedulaInput.value !== cedula) {
+      cedulaInput.value = cedula;
+    }
+
+    if (!cedula) {
+      statusEl.textContent = "Ingresá tu número de cédula.";
+      return;
+    }
+
+    if (!turnstileToken) {
+      statusEl.textContent = "Verificá el captcha para continuar.";
       return;
     }
 
@@ -358,11 +418,16 @@ import Footer from "@/components/Footer.astro";
     resultsEl.style.display = "none";
 
     try {
-      const res = await fetch(`/proxy/agenda/mis-citas?codigoMembresia=${encodeURIComponent(codigo)}`);
+      const res = await fetch("/proxy/agenda/mis-citas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cedula, turnstileToken }),
+      });
       const body = await res.json();
 
       if (!res.ok) {
         statusEl.textContent = body.error || "No pudimos buscar tus citas.";
+        resetTurnstile();
         searchBtn.disabled = false;
         return;
       }
@@ -370,16 +435,20 @@ import Footer from "@/components/Footer.astro";
       statusEl.textContent = "";
       resultsEl.style.display = "block";
 
-      // Vehicle info
-      const v = body.vehiculo;
+      const membresias = Array.isArray(body.membresias) ? body.membresias : [];
       vehicleEl.innerHTML = `
-        <strong>${body.codigoMembresia}</strong> — 
-        ${v.marca || ""} ${v.modelo || ""} 
-        ${v.chapa ? `<strong>(${v.chapa})</strong>` : ""}
+        <strong>CI:</strong> ${escapeHtml(body.cedula || cedula)} ·
+        <strong>Membresías:</strong> ${escapeHtml(String(body.totalMembresias || membresias.length || 0))}
       `;
 
-      // Citas
-      const citas = body.citas || [];
+      const citas = membresias.flatMap((m) => {
+        const citasMembresia = Array.isArray(m?.citas) ? m.citas : [];
+        return citasMembresia.map((c) => ({
+          ...c,
+          codigoMembresia: m.codigoMembresia,
+        }));
+      });
+
       if (citas.length === 0) {
         citasListEl.innerHTML = "";
         noCitasEl.style.display = "block";
@@ -395,14 +464,15 @@ import Footer from "@/components/Footer.astro";
             return `
               <div class="cita-card">
                 <div class="cita-fecha">
-                  <span class="dia">${dia}</span>
-                  <span class="mes">${mes}</span>
+                  <span class="dia">${escapeHtml(String(dia))}</span>
+                  <span class="mes">${escapeHtml(mes)}</span>
                 </div>
                 <div class="cita-info">
-                  <span class="servicio">${c.servicio?.nombre || "Servicio"}</span>
-                  <span class="detalle">${hi} - ${hf} · ${c.sede?.nombre || ""}</span>
+                  <span class="servicio">${escapeHtml(c.servicio?.nombre || "Servicio")}</span>
+                  <span class="detalle">${escapeHtml(hi)} - ${escapeHtml(hf)} · ${escapeHtml(c.sede?.nombre || "")}</span>
+                  <span class="detalle">Membresía: ${escapeHtml(c.codigoMembresia || "")}</span>
                 </div>
-                <span class="cita-estado ${estadoClass(c.estado)}">${c.estado}</span>
+                <span class="cita-estado ${estadoClass(c.estado)}">${escapeHtml(c.estado || "pendiente")}</span>
               </div>
             `;
           })
@@ -410,8 +480,11 @@ import Footer from "@/components/Footer.astro";
       }
     } catch {
       statusEl.textContent = "Error de red. Intentá nuevamente.";
+      resetTurnstile();
     }
 
     searchBtn.disabled = false;
   });
 </script>
+
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
