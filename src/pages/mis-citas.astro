@@ -351,12 +351,19 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
   function formatHora(isoTime) {
     if (!isoTime) return "";
-    // Could be ISO datetime or just HH:mm
+    const raw = String(isoTime).trim();
+
+    const hhmmssMatch = raw.match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
+    if (hhmmssMatch) {
+      return `${hhmmssMatch[1]}:${hhmmssMatch[2]}`;
+    }
+
+    // Could be ISO datetime
     const d = new Date(isoTime);
     if (!isNaN(d.getTime())) {
       return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
     }
-    return isoTime;
+    return raw;
   }
 
   function escapeHtml(value) {
