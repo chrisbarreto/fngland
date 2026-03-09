@@ -24,7 +24,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             <strong>Reglas de agendamiento</strong>
             <ul>
               <li>Solo se permite <strong>1 cita por día</strong> por membresía.</li>
-              <li>Los servicios extras requieren <strong>mínimo 24 horas</strong> de anticipación.</li>
+              <li>El servicio de lavado de motor requiere <strong>mínimo 16 horas</strong> de anticipación.</li>
               <li>Si no seleccionás extras, se genera una cita para el servicio de detailing general.</li>
             </ul>
           </div>
@@ -136,13 +136,26 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             </div>
           </form>
 
-          <!-- Success state -->
-          <div class="form-success" id="agenda-success" style="display:none;">
-            <h3>Turno agendado</h3>
-            <div id="success-details"></div>
-            <p style="margin-top:1rem;">
-              <a href="/mis-citas" class="link-citas">Ver mis citas →</a>
-            </p>
+          <div class="agenda-success-modal" id="agenda-success" hidden aria-live="polite" role="dialog" aria-modal="true" aria-labelledby="agenda-success-title">
+            <div class="agenda-success-panel">
+              <div class="agenda-success-icon-wrap" aria-hidden="true">
+                <svg class="agenda-success-icon" viewBox="0 0 120 120">
+                  <circle class="agenda-success-circle" cx="60" cy="60" r="56"></circle>
+                  <path class="agenda-success-check" d="M35 62 L52 79 L86 44"></path>
+                </svg>
+              </div>
+
+              <h3 id="agenda-success-title">!Cita confirmada!</h3>
+              <p class="agenda-success-subtitle">Recibimos tu turno correctamente.</p>
+
+              <div id="success-details" class="agenda-success-details"></div>
+              <p id="success-traslado" class="agenda-success-traslado" style="display:none;"></p>
+
+              <div class="agenda-success-actions">
+                <a href="/mis-citas" class="agenda-success-link">Ver mis citas</a>
+                <button type="button" id="agenda-success-reset" class="agenda-success-reset">Agendar otra cita</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -154,7 +167,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             <li>Horario de atención: 08:00 a 22:00, lunes a sábado (último turno 21:00 a 22:00).</li>
             <li>Horario de almuerzo bloqueado: 11:00 a 12:00.</li>
             <li>Una membresía no puede agendar más de una vez el mismo día.</li>
-            <li>Los servicios extras solo se agendan con 24 horas de anticipación.</li>
+            <li>El servicio de lavado de motor solo se agenda con 16 horas de anticipación.</li>
             <li>Puedes ver tus citas agendadas en <a href="/mis-citas" style="color:var(--agenda-accent);">Mis Citas</a>.</li>
           </ul>
         </aside>
@@ -665,24 +678,199 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     color: var(--agenda-success);
   }
 
-  .form-success h3 {
-    margin: 0 0 0.75rem;
-    color: var(--agenda-success);
+  :global(body.agenda-success-open) {
+    overflow: hidden;
   }
 
-  .form-success p,
-  .form-success div {
-    color: var(--agenda-muted);
+  .agenda-success-modal[hidden] {
+    display: none;
   }
 
-  .link-citas {
-    color: var(--agenda-accent);
+  .agenda-success-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(2, 9, 5, 0.78);
+    backdrop-filter: blur(8px);
+  }
+
+  .agenda-success-panel {
+    width: min(640px, 100%);
+    border-radius: 24px;
+    border: 1px solid rgba(60, 218, 143, 0.3);
+    background: linear-gradient(170deg, rgba(16, 62, 42, 0.96), rgba(10, 24, 19, 0.98));
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+    padding: 2.25rem 2rem;
+    text-align: center;
+  }
+
+  .agenda-success-icon-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+    animation: successBounceIn 0.55s cubic-bezier(0.18, 0.9, 0.25, 1.25) both;
+  }
+
+  .agenda-success-icon {
+    width: clamp(150px, 24vw, 210px);
+    height: clamp(150px, 24vw, 210px);
+    filter: drop-shadow(0 18px 26px rgba(10, 185, 129, 0.28));
+  }
+
+  .agenda-success-circle {
+    fill: #10b981;
+  }
+
+  .agenda-success-check {
+    fill: none;
+    stroke: #ffffff;
+    stroke-width: 9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 66;
+    stroke-dashoffset: 66;
+    animation: successDrawCheck 0.45s ease 0.35s forwards;
+  }
+
+  .agenda-success-panel h3,
+  .agenda-success-subtitle,
+  .agenda-success-details,
+  .agenda-success-traslado,
+  .agenda-success-actions {
+    opacity: 0;
+    animation: successFadeInUp 0.45s ease forwards;
+  }
+
+  .agenda-success-panel h3 {
+    margin: 0;
+    font-size: clamp(1.8rem, 3vw, 2.35rem);
+    color: #e8fff3;
+    animation-delay: 0.36s;
+  }
+
+  .agenda-success-subtitle {
+    margin: 0.5rem 0 1.2rem;
+    color: #bdeed8;
+    font-size: 1.08rem;
+    animation-delay: 0.44s;
+  }
+
+  .agenda-success-details {
+    margin: 0 auto;
+    text-align: left;
+    width: min(460px, 100%);
+    border-radius: 14px;
+    border: 1px solid rgba(60, 218, 143, 0.22);
+    background: rgba(7, 18, 14, 0.58);
+    padding: 1rem 1rem 0.9rem;
+    color: #d8f4e7;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    animation-delay: 0.52s;
+  }
+
+  .agenda-success-details p {
+    margin: 0 0 0.42rem;
+  }
+
+  .agenda-success-details p:last-child {
+    margin-bottom: 0;
+  }
+
+  .agenda-success-details strong {
+    color: #f4fff9;
+  }
+
+  .agenda-success-traslado {
+    margin: 0.95rem auto 0;
+    width: min(460px, 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(251, 191, 36, 0.45);
+    background: rgba(251, 191, 36, 0.12);
+    color: #fef3c7;
+    text-align: left;
+    padding: 0.8rem 0.9rem;
+    font-size: 0.9rem;
+    line-height: 1.42;
+    animation-delay: 0.6s;
+  }
+
+  .agenda-success-actions {
+    margin-top: 1.2rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    animation-delay: 0.68s;
+  }
+
+  .agenda-success-link,
+  .agenda-success-reset {
+    border: none;
+    border-radius: 999px;
+    padding: 0.78rem 1.3rem;
+    font-size: 0.9rem;
+    font-weight: 600;
     text-decoration: none;
-    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   }
 
-  .link-citas:hover {
-    text-decoration: underline;
+  .agenda-success-link {
+    color: #072518;
+    background: linear-gradient(135deg, #34d399, #10b981);
+    box-shadow: 0 8px 22px rgba(16, 185, 129, 0.28);
+  }
+
+  .agenda-success-reset {
+    color: #d3fae9;
+    background: rgba(22, 56, 40, 0.85);
+    border: 1px solid rgba(107, 236, 175, 0.22);
+  }
+
+  .agenda-success-link:hover,
+  .agenda-success-reset:hover {
+    transform: translateY(-1px);
+  }
+
+  .agenda-success-link:hover {
+    box-shadow: 0 12px 26px rgba(16, 185, 129, 0.38);
+  }
+
+  .agenda-success-reset:hover {
+    background: rgba(26, 69, 49, 0.95);
+  }
+
+  @keyframes successBounceIn {
+    0% {
+      transform: scale(0.5);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes successDrawCheck {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes successFadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .info-card h3 {
@@ -718,6 +906,37 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     .info-card {
       padding: 1.5rem;
     }
+
+    .agenda-success-modal {
+      padding: 0;
+    }
+
+    .agenda-success-panel {
+      width: 100vw;
+      min-height: 100vh;
+      border-radius: 0;
+      border: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 2rem 1.2rem;
+    }
+
+    .agenda-success-icon {
+      width: 190px;
+      height: 190px;
+    }
+
+    .agenda-success-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .agenda-success-link,
+    .agenda-success-reset {
+      width: 100%;
+      text-align: center;
+    }
   }
 </style>
 
@@ -727,6 +946,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   const form = document.getElementById("agenda-form");
   const statusEl = document.getElementById("agenda-status");
   const successEl = document.getElementById("agenda-success");
+  const successDetailsEl = document.getElementById("success-details");
+  const successTrasladoEl = document.getElementById("success-traslado");
+  const successResetBtn = document.getElementById("agenda-success-reset");
   const submitBtn = document.getElementById("agenda-submit");
   const slotsContainer = document.getElementById("slots-container");
   const slotsGrid = document.getElementById("slots-grid");
@@ -833,6 +1055,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     serviciosExtraAlert.textContent = mensajes.join(" ");
   }
 
+  const ID_TIPO_SERVICIO_LAVADO_MOTOR = "17";
+  const ANTICIPACION_LAVADO_MOTOR_HORAS = 16;
+
+  function isLavadoMotorSelected() {
+    return Array.from(
+      document.querySelectorAll('input[name="idServicios"]:checked'),
+    ).some((cb) => cb.dataset.idTipoServicio === ID_TIPO_SERVICIO_LAVADO_MOTOR);
+  }
+
   function setStatus(message, type = "error") {
     if (!statusEl) return;
     statusEl.textContent = message || "";
@@ -840,6 +1071,27 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     if (message) {
       statusEl.classList.add(type);
     }
+  }
+
+  function restarUnaHora(hora) {
+    const horaTexto = String(hora || "").trim();
+    const partes = horaTexto.split(":");
+    if (partes.length < 2) return "";
+
+    const horas = Number(partes[0]);
+    const minutos = Number(partes[1]);
+
+    if (!Number.isInteger(horas) || !Number.isInteger(minutos)) {
+      return "";
+    }
+
+    const fechaBase = new Date();
+    fechaBase.setHours(horas, minutos, 0, 0);
+    fechaBase.setHours(fechaBase.getHours() - 1);
+
+    const horasSalida = String(fechaBase.getHours()).padStart(2, "0");
+    const minutosSalida = String(fechaBase.getMinutes()).padStart(2, "0");
+    return `${horasSalida}:${minutosSalida}`;
   }
 
   // ─── Load sedes & servicios on page load ──────────────────────────
@@ -914,9 +1166,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           input.name = "idServicios";
           input.value = s.idServicio;
           input.dataset.requierePagoExtra = s.requierePagoExtra ? "1" : "0";
+          input.dataset.idTipoServicio = String(s.idTipoServicio ?? "");
           input.dataset.servicioNombre = s.nombre || "Servicio";
           input.dataset.precioExtraTexto = s.precioAplicadoTexto || formatGs(s.precioAplicado);
           input.addEventListener("change", showServiciosExtraAlert);
+          input.addEventListener("change", () => {
+            const fecha = document.getElementById("fechaCita")?.value;
+            if (fecha) loadSlots(fecha);
+          });
 
           const checkMark = document.createElement("span");
           checkMark.className = "check-mark";
@@ -1245,14 +1502,31 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     }
 
     const slots = result.slots;
-    const availableSlots = slots.filter((slot) => Number(slot.disponibles) > 0);
+    let availableSlots = slots.filter((slot) => Number(slot.disponibles) > 0);
+
+    // Filter out slots that don't meet the 16h anticipation for lavado de motor
+    let slotsFilteredByAnticipacion = 0;
+    if (isLavadoMotorSelected()) {
+      const now = new Date();
+      const cutoff = new Date(now.getTime() + ANTICIPACION_LAVADO_MOTOR_HORAS * 60 * 60 * 1000);
+      const beforeCount = availableSlots.length;
+      availableSlots = availableSlots.filter((slot) => {
+        const slotDate = new Date(`${fecha}T${slot.hora}:00`);
+        return slotDate.getTime() >= cutoff.getTime();
+      });
+      slotsFilteredByAnticipacion = beforeCount - availableSlots.length;
+    }
 
     if (availableSlots.length === 0) {
-      slotsHint.textContent = "No hay horarios disponibles para esta fecha.";
+      slotsHint.textContent = slotsFilteredByAnticipacion > 0
+        ? "No hay horarios disponibles. El lavado de motor requiere al menos 16 horas de anticipación."
+        : "No hay horarios disponibles para esta fecha.";
       return;
     }
 
-    slotsHint.textContent = "Seleccioná un horario:";
+    slotsHint.textContent = slotsFilteredByAnticipacion > 0
+      ? "Seleccioná un horario (algunos no están disponibles por la anticipación requerida para lavado de motor):"
+      : "Seleccioná un horario:";
 
     availableSlots.forEach((slot) => {
       const btn = document.createElement("button");
@@ -1404,19 +1678,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       return;
     }
 
-    if (idServicios.length > 0) {
-      const citaInicio = new Date(`${fechaCita}T${horaInicio}:00`);
-      const diffMs = citaInicio.getTime() - Date.now();
-      const diffHoras = diffMs / (1000 * 60 * 60);
-
-      if (diffHoras < 24) {
-        setStatus(
-          "Los servicios limitados (extras) solo pueden agendarse con mínimo 24 horas de anticipación.",
-        );
-        return;
-      }
-    }
-
     submitBtn.disabled = true;
     setStatus("Agendando turno...", "success");
 
@@ -1444,9 +1705,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           setStatus(
             "Esta membresía ya tiene una cita para ese día. Solo se permite 1 cita diaria por membresía.",
           );
-        } else if (backendError.includes("24 horas")) {
+        } else if (backendError.includes("16 horas")) {
           setStatus(
-            "Los servicios limitados (extras) requieren mínimo 24 horas de anticipación.",
+            "El servicio de lavado de motor solo puede agendarse con mínimo 16 horas de anticipación.",
           );
         } else if (backendError.toLowerCase().includes("captcha")) {
           setStatus("No se pudo validar el captcha. Marcá nuevamente la verificación.");
@@ -1461,7 +1722,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
       // Success
       form.style.display = "none";
-      successEl.style.display = "block";
+      successEl.hidden = false;
+      document.body.classList.add("agenda-success-open");
+      setStatus("");
 
       const d = body.data || body;
       const extraServicios = Array.isArray(d.serviciosConCostoExtra)
@@ -1483,7 +1746,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         ? `<ul class="success-extra-list">${extraServicios}</ul>`
         : "";
 
-      document.getElementById("success-details").innerHTML = `
+      successDetailsEl.innerHTML = `
         <p><strong>Fecha:</strong> ${escapeHtml(d.fecha || fechaCita)}</p>
         <p><strong>Horario:</strong> ${escapeHtml(d.horaInicio || horaInicio)} - ${escapeHtml(d.horaFin || "")}</p>
         <p><strong>Sede:</strong> ${escapeHtml(d.sede || "")}</p>
@@ -1491,11 +1754,32 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         ${warningHtml}
         ${extraListHtml}
       `;
+
+      if (successTrasladoEl) {
+        const incluyeTraslado = idServicios.includes("20");
+        if (incluyeTraslado) {
+          const horaTurno = d.horaInicio || horaInicio;
+          const horaEntrega = restarUnaHora(horaTurno);
+          const mensajeHora = horaEntrega
+            ? ` a las ${horaEntrega}`
+            : " una hora antes de la hora agendada";
+
+          successTrasladoEl.textContent = `Recorda: al incluir servicio de traslado, tu vehiculo debe estar listo para la entrega al chofer${mensajeHora}.`;
+          successTrasladoEl.style.display = "block";
+        } else {
+          successTrasladoEl.style.display = "none";
+          successTrasladoEl.textContent = "";
+        }
+      }
     } catch {
       setStatus("Error de red. Intentá nuevamente.");
       resetTurnstile();
       submitBtn.disabled = false;
     }
+  });
+
+  successResetBtn?.addEventListener("click", () => {
+    window.location.reload();
   });
 
   // ─── Init ──────────────────────────────────────────────────────────
