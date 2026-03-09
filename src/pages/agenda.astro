@@ -1118,6 +1118,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     return `${horas}:${String(minutos).padStart(2, "0")}`;
   }
 
+  function normalizeSearchText(value) {
+    return String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+  }
+
   function formatFechaLargaEs(fecha) {
     const fechaTexto = String(fecha || "").trim();
     if (!fechaTexto) return "";
@@ -1812,7 +1820,17 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       `;
 
       if (successTrasladoEl) {
-        const incluyeTraslado = idServicios.includes("20");
+        const serviciosSeleccionados = Array.from(
+          form.querySelectorAll('input[name="idServicios"]:checked'),
+        );
+        const incluyeTrasladoPorId = idServicios.some((id) => String(id).trim() === "20");
+        const incluyeTrasladoPorNombre = serviciosSeleccionados.some((input) =>
+          normalizeSearchText(input.dataset.servicioNombre).includes("traslado"),
+        );
+        const incluyeTrasladoPorRespuesta = normalizeSearchText(d.servicios).includes("traslado");
+        const incluyeTraslado =
+          incluyeTrasladoPorId || incluyeTrasladoPorNombre || incluyeTrasladoPorRespuesta;
+
         if (incluyeTraslado) {
           const horaTurno = d.horaInicio || horaInicio;
           const horaEntrega = restarUnaHora(horaTurno);
