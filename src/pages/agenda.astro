@@ -806,7 +806,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     margin-top: 1.2rem;
     display: flex;
     justify-content: center;
-    width: min(420px, 100%);
+    width: min(320px, 100%);
     margin-left: auto;
     margin-right: auto;
     animation-delay: 0.68s;
@@ -952,11 +952,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     }
 
     .agenda-success-details,
-    .agenda-success-traslado,
-    .agenda-success-actions {
+    .agenda-success-traslado {
       width: 100%;
       max-width: 520px;
       box-sizing: border-box;
+    }
+
+    .agenda-success-actions {
+      width: min(320px, 100%);
+      max-width: 320px;
     }
 
     .agenda-success-actions {
