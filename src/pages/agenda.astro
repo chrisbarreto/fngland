@@ -25,7 +25,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             <ul>
               <li>Solo se permite <strong>1 cita por día</strong> por membresía.</li>
               <li>El servicio de lavado de motor requiere <strong>mínimo 16 horas</strong> de anticipación.</li>
-              <li>El servicio de traslado requiere <strong>mínimo 24 horas</strong> de anticipación.</li>
+              <li>El servicio de traslado requiere <strong>mínimo 16 horas</strong> de anticipación.</li>
               <li>Si no seleccionás extras, se genera una cita para el servicio de detailing general.</li>
             </ul>
           </div>
@@ -122,9 +122,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               <label>Verificación</label>
               <div class="turnstile">
                 <div
-                  class="cf-turnstile"
+                  id="turnstile-widget"
                   data-sitekey={siteKey}
-                  data-theme="dark"
                 ></div>
               </div>
             </div>
@@ -168,7 +167,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             <li>Horario de almuerzo bloqueado: 11:00 a 12:00.</li>
             <li>Una membresía no puede agendar más de una vez el mismo día.</li>
             <li>El servicio de lavado de motor solo se agenda con 16 horas de anticipación.</li>
-            <li>El servicio de traslado solo se agenda con 24 horas de anticipación.</li>
+            <li>El servicio de traslado solo se agenda con 16 horas de anticipación.</li>
             <li>Puedes ver tus citas agendadas en <a href="/mis-citas" style="color:var(--agenda-accent);">Mis Citas</a>.</li>
           </ul>
         </aside>
@@ -1092,7 +1091,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
   const ANTICIPACION_POR_TIPO_SERVICIO = {
     "17": { horas: 16, nombre: "lavado de motor" },
-    "20": { horas: 24, nombre: "traslado" },
+    "20": { horas: 16, nombre: "traslado" },
   };
 
   function getMaxAnticipacionRequerida() {
@@ -1596,7 +1595,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     const slots = result.slots;
     let availableSlots = slots.filter((slot) => Number(slot.disponibles) > 0);
 
-    // Filter out slots that don't meet anticipation requirements (lavado de motor 16h, traslado 24h)
+    // Filter out slots that don't meet anticipation requirements (lavado de motor 16h, traslado 16h)
     let slotsFilteredByAnticipacion = 0;
     let anticipacionRegla = null;
     const regla = getMaxAnticipacionRequerida();
@@ -1704,24 +1703,46 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   });
 
   // ─── Turnstile helper ─────────────────────────────────────────────
+  let turnstileWidgetId = null;
+  let turnstileToken = "";
+
+  // Called by Cloudflare when the script loads (via ?onload= param)
+  window.onTurnstileLoad = function () {
+    const container = document.getElementById("turnstile-widget");
+    if (!container) return;
+    const sitekey = container.dataset.sitekey || "";
+    turnstileWidgetId = window.turnstile.render(container, {
+      sitekey,
+      theme: "dark",
+      callback: function (token) {
+        turnstileToken = token;
+      },
+      "expired-callback": function () {
+        turnstileToken = "";
+      },
+      "error-callback": function () {
+        turnstileToken = "";
+      },
+    });
+  };
+
   function getTurnstileToken() {
-    const tokenField = form?.querySelector("[name='cf-turnstile-response']");
-    return tokenField && "value" in tokenField ? tokenField.value : "";
+    return turnstileToken;
   }
 
   function resetTurnstile() {
     try {
       if (window.turnstile && typeof window.turnstile.reset === "function") {
-        window.turnstile.reset();
+        if (turnstileWidgetId != null) {
+          window.turnstile.reset(turnstileWidgetId);
+        } else {
+          window.turnstile.reset();
+        }
       }
     } catch {
       // no-op
     }
-
-    const tokenField = form?.querySelector("[name='cf-turnstile-response']");
-    if (tokenField && "value" in tokenField) {
-      tokenField.value = "";
-    }
+    turnstileToken = "";
   }
 
   // ─── Submit ────────────────────────────────────────────────────────
@@ -1895,4 +1916,4 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   setupDateInput();
 </script>
 
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad" async defer></script>
