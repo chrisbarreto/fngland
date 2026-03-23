@@ -1,0 +1,80 @@
+---
+export const prerender = true;
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Footer from "@/components/Footer.astro";
+import logoDark from "@/assets/logos/logo-dark.svg";
+---
+
+<BaseLayout
+  title="Cancelaciones y Reembolsos | Fórmula NG"
+  description="Política de cancelaciones y reembolsos del Plan Premium de Fórmula NG."
+  canonicalPath="/cancelaciones-y-reembolsos"
+  noindex={true}
+>
+  <div class="legal-page">
+    <header class="legal-header">
+      <a href="/" aria-label="Volver al inicio">
+        <img src={logoDark.src} alt="Fórmula NG" width="130" height="32" />
+      </a>
+      <a href="/membresia" class="back-link">← Volver</a>
+    </header>
+
+    <main class="legal-main">
+      <h1>Cancelaciones y Reembolsos</h1>
+      <p class="meta">FORMULA NG E.A.S.  · RUC 80156407-7 · Vigente desde marzo 2026</p>
+
+      <h2>1. Permanencia mínima</h2>
+      <p>El Plan Premium tiene una <strong>permanencia mínima de 12 (doce) meses</strong> continuos desde la fecha de activación. Durante ese período no es posible solicitar la baja anticipada del plan, salvo situaciones excepcionales evaluadas caso a caso por Fórmula NG.</p>
+
+      <h2>2. Cómo solicitar la cancelación</h2>
+      <p>Una vez cumplido el período de permanencia mínima, el Miembro puede solicitar la cancelación del plan con un <strong>aviso mínimo de 60 (sesenta) días corridos</strong> de anticipación al próximo vencimiento mensual.</p>
+      <p>La solicitud debe realizarse por uno de los siguientes canales:</p>
+      <ul>
+        <li><strong>WhatsApp:</strong> <a href="https://wa.me/595992789328">0992 789 328</a></li>
+        <li><strong>Email:</strong> <a href="mailto:info@formulang.com.py">info@formulang.com.py</a></li>
+      </ul>
+      <p>Fórmula NG confirmará la recepción y la fecha efectiva de baja por los mismos medios.</p>
+
+      <h2>3. Efectos de la cancelación</h2>
+      <p>La membresía permanece activa hasta el último día del ciclo mensual en curso al momento de hacerse efectiva la baja. No se realizan débitos adicionales después de esa fecha.</p>
+
+      <h2>4. Política de reembolsos</h2>
+      <p>Los pagos realizados no son reembolsables, dado que el Plan Premium implica la prestación de servicios activos desde el momento de la activación. En casos de error de cobro imputable a Fórmula NG, se evaluará la devolución de forma individual.</p>
+
+      <h2>5. Suspensión por falta de pago</h2>
+      <p>La suspensión temporal de la membresía por débito rechazado no constituye una cancelación. El plan puede reactivarse regularizando el pago pendiente. Ver también los <a href="/terminos-y-condiciones">Términos y Condiciones</a>.</p>
+
+      <h2>6. Contacto</h2>
+      <p>Para gestionar una cancelación o consultar sobre reembolsos: <a href="mailto:info@formulang.com.py">info@formulang.com.py</a> · WhatsApp: <a href="https://wa.me/595992789328">0992 789 328</a></p>
+    </main>
+
+    <Footer />
+  </div>
+</BaseLayout>
+
+<style>
+  .legal-page { min-height: 100vh; background: #060606; display: flex; flex-direction: column; }
+  .legal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    max-width: 860px; margin: 0 auto; width: 100%;
+  }
+  .legal-header img { height: 32px; width: auto; }
+  .back-link { font-size: 0.85rem; color: rgba(255,255,255,0.45); text-decoration: none; }
+  .back-link:hover { color: #ff6b3d; }
+  .legal-main {
+    flex: 1; max-width: 860px; margin: 0 auto; width: 100%;
+    padding: 3rem 1.5rem 4rem;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.7;
+  }
+  h1 { margin: 0 0 0.4rem; font-size: clamp(1.6rem, 4vw, 2.2rem); color: #fff; }
+  .meta { margin: 0 0 2.5rem; font-size: 0.8rem; color: rgba(255,255,255,0.35); }
+  h2 { margin: 2rem 0 0.6rem; font-size: 1.05rem; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem; }
+  p { margin: 0 0 0.8rem; font-size: 0.9rem; }
+  ul { margin: 0 0 0.8rem; padding-left: 1.3rem; font-size: 0.9rem; }
+  li { margin-bottom: 0.3rem; }
+  a { color: #ff6b3d; text-decoration: underline; }
+  a:hover { color: #f92606; }
+</style>

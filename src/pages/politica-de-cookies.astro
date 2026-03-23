@@ -1,0 +1,82 @@
+---
+export const prerender = true;
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Footer from "@/components/Footer.astro";
+import logoDark from "@/assets/logos/logo-dark.svg";
+---
+
+<BaseLayout
+  title="Política de Cookies | Fórmula NG"
+  description="Información sobre el uso de cookies en el sitio web de Fórmula NG."
+  canonicalPath="/politica-de-cookies"
+  noindex={true}
+>
+  <div class="legal-page">
+    <header class="legal-header">
+      <a href="/" aria-label="Volver al inicio">
+        <img src={logoDark.src} alt="Fórmula NG" width="130" height="32" />
+      </a>
+      <a href="/membresia" class="back-link">← Volver</a>
+    </header>
+
+    <main class="legal-main">
+      <h1>Política de Cookies</h1>
+      <p class="meta">FORMULA NG E.A.S.  · RUC 80156407-7 · Vigente desde marzo 2026</p>
+
+      <h2>1. ¿Qué son las cookies?</h2>
+      <p>Las cookies son pequeños archivos de texto que los sitios web almacenan en tu dispositivo para recordar preferencias, habilitar funcionalidades o medir el rendimiento del sitio.</p>
+
+      <h2>2. Cookies que usamos</h2>
+
+      <h3>Cookies técnicas (esenciales)</h3>
+      <p>Son necesarias para el funcionamiento básico del sitio. Sin ellas no es posible completar el proceso de registro o pago.</p>
+
+      <h3>Cookies de análisis y medición</h3>
+      <p>Podemos utilizar herramientas de medición de audiencia para entender cómo los usuarios interactúan con el sitio. Esta información es agregada y anónima.</p>
+
+      <h3>Cookies de publicidad (Meta Pixel)</h3>
+      <p>Utilizamos el píxel de Meta (Facebook/Instagram) para medir la efectividad de nuestras campañas publicitarias y optimizarlas. Esta herramienta puede almacenar cookies de seguimiento en tu dispositivo. Para más información sobre las prácticas de Meta: <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener noreferrer">Política de privacidad de Meta</a>.</p>
+
+      <h2>3. Cómo controlar las cookies</h2>
+      <p>Podés gestionar o eliminar cookies desde la configuración de tu navegador. Ten en cuenta que deshabilitar ciertas cookies puede afectar el funcionamiento del sitio.</p>
+      <ul>
+        <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener noreferrer">Chrome</a></li>
+        <li><a href="https://support.mozilla.org/es/kb/habilitar-y-deshabilitar-cookies-sitios-web" target="_blank" rel="noopener noreferrer">Firefox</a></li>
+        <li><a href="https://support.apple.com/es-es/guide/safari/sfri11471/mac" target="_blank" rel="noopener noreferrer">Safari</a></li>
+      </ul>
+
+      <h2>4. Contacto</h2>
+      <p>Consultas: <a href="mailto:info@formulang.com.py">info@formulang.com.py</a></p>
+    </main>
+
+    <Footer />
+  </div>
+</BaseLayout>
+
+<style>
+  .legal-page { min-height: 100vh; background: #060606; display: flex; flex-direction: column; }
+  .legal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    max-width: 860px; margin: 0 auto; width: 100%;
+  }
+  .legal-header img { height: 32px; width: auto; }
+  .back-link { font-size: 0.85rem; color: rgba(255,255,255,0.45); text-decoration: none; }
+  .back-link:hover { color: #ff6b3d; }
+  .legal-main {
+    flex: 1; max-width: 860px; margin: 0 auto; width: 100%;
+    padding: 3rem 1.5rem 4rem;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.7;
+  }
+  h1 { margin: 0 0 0.4rem; font-size: clamp(1.6rem, 4vw, 2.2rem); color: #fff; }
+  .meta { margin: 0 0 2.5rem; font-size: 0.8rem; color: rgba(255,255,255,0.35); }
+  h2 { margin: 2rem 0 0.6rem; font-size: 1.05rem; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem; }
+  h3 { margin: 1.2rem 0 0.4rem; font-size: 0.95rem; color: rgba(255,255,255,0.85); }
+  p { margin: 0 0 0.8rem; font-size: 0.9rem; }
+  ul { margin: 0 0 0.8rem; padding-left: 1.3rem; font-size: 0.9rem; }
+  li { margin-bottom: 0.3rem; }
+  a { color: #ff6b3d; text-decoration: underline; }
+  a:hover { color: #f92606; }
+</style>

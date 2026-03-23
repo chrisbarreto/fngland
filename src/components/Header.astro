@@ -99,8 +99,9 @@ const pathname = Astro.request.url;
       navigation_button.enable && (
         <li class="mt-4 inline-block lg:hidden">
           <a
-            href="#contacto"
-            aria-label="Contactar para sumarse al equipo"
+            href="/membresia#registro"
+            aria-label="Abrir registro del plan premium"
+            data-open-registro
             class="btn btn-outline-primary btn-sm"
           >
             {navigation_button.label}
@@ -116,8 +117,9 @@ const pathname = Astro.request.url;
     {
       navigation_button.enable && (
         <a
-          href="#contacto"
-          aria-label="Contactar para sumarse al equipo"
+          href="/membresia#registro"
+          aria-label="Abrir registro del plan premium"
+          data-open-registro
           class="btn btn-outline-primary hidden! lg:inline-block!"
         >
           {navigation_button.label}
@@ -153,4 +155,15 @@ const pathname = Astro.request.url;
   });
 
 
+</script>
+
+<script>
+  document.querySelectorAll("[data-open-registro]").forEach((trigger) => {
+    trigger.addEventListener("click", (event) => {
+      if (typeof (window as any).__openRegistroModal === "function") {
+        event.preventDefault();
+        (window as any).__openRegistroModal();
+      }
+    });
+  });
 </script>

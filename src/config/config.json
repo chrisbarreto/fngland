@@ -23,10 +23,10 @@
 
   "navigation_button": {
     "enable": true,
-    "label": "Sé parte del equipo",
+    "label": "Quiero mi plan",
     "translations": {
       "fr": "Erste Schritte"
     },
-    "link": "/getting-started/introduction/overview/"
+    "link": "/membresia"
   }
 }

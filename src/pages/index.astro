@@ -17,8 +17,8 @@ import RegistroModal from "@/components/RegistroModal.astro";
 ---
 
 <BaseLayout
-  title="Fórmula NG | El primer club de cuidado automotriz premium en Paraguay"
-  description="Lavados ilimitados, detailing profesional y servicios de alto nivel para quienes quieren que su auto esté siempre impecable."
+  title="Plan Premium de cuidado automotriz | Fórmula NG"
+  description="Membresía de lavado ilimitado en Asunción. Plan Premium de Fórmula NG: Gs. 200.000 por mes, detailing profesional, protección y servicio a domicilio."
 >
   <div class="page">
     <!-- Hero background video -->
@@ -60,21 +60,21 @@ import RegistroModal from "@/components/RegistroModal.astro";
       {/* Features Section */}
       <Section
         id="beneficios"
-        title="Beneficios <span class='light-text'>de tu membresía</span>"
-        description="Todo lo que incluye tu membresía de estética automotriz"
+        title="Beneficios <span class='light-text'>de tu Plan Premium</span>"
+        description="Todo lo que incluye tu membresía mensual de Gs. 200.000"
       >
         <Grid columns={4}>
           <Card title="Lavado Ilimitado" icon="car-wash" iconColor="#FF8585">
-            Lavados ilimitados durante 30 días: exterior completo, aspirado profundo y desinfección de interiores. Máximo 1 lavado por día.
+            Lavados ilimitados en cada ciclo mensual activo: exterior completo, aspirado profundo y desinfección de interiores. Máximo 1 lavado por día por vehículo.
           </Card>
           <Card title="Protección & Brillo" icon="shine-protection" iconColor="#7BE1A4">
-            1 aplicación de cera líquida con protección de hasta 4 meses y 1 lavado de motor profesional incluidos al mes.
+            1 aplicación de cera líquida con protección de hasta 4 meses y 1 lavado de motor profesional incluidos en cada ciclo mensual activo.
           </Card>
           <Card title="Servicio de Chofer" icon="driver-service" iconColor="#FFD97B">
-            2 traslados gratis para retiro o entrega de tu vehículo, con agenda previa y sujeto a disponibilidad.
+            2 traslados gratis para retiro o entrega de tu vehículo en cada ciclo mensual activo, con agenda previa y sujeto a disponibilidad.
           </Card>
           <Card title="Cuidado Interior" icon="interior-care" iconColor="#979BFF">
-            1 tratamiento de hidratación de plásticos interiores y revitalización de neumáticos incluidos al mes.
+            1 tratamiento de hidratación de plásticos interiores y revitalización de neumáticos incluidos en cada ciclo mensual activo.
           </Card>
         </Grid>
       </Section>
@@ -87,7 +87,7 @@ import RegistroModal from "@/components/RegistroModal.astro";
       <Section
         id="preguntas"
         title="Preguntas <span class='light-text'>frecuentes</span>"
-        description="Todo lo que necesitás saber sobre tu membresía de estética automotriz."
+        description="Todo lo que necesitás saber sobre el Plan Premium de Fórmula NG."
       >
         <AccordionContainer tabList={[
           {
@@ -129,13 +129,13 @@ import RegistroModal from "@/components/RegistroModal.astro";
         ]}>
           {/* Membresía Fórmula NG */}
           <Accordion
-            question="¿Qué incluye la Membresía Fórmula NG de Gs. 200.000?"
-            answer="Incluye lavados ILIMITADOS durante 30 días (máximo 1 lavado por día por vehículo) y los siguientes servicios: Lavado exterior completo, Aspirado profundo, Desinfección de interiores, Revitalización de neumáticos, 1 aplicación de cera líquida (protección hasta 4 meses), 1 lavado de motor profesional al mes, 1 tratamiento de hidratación de plásticos interiores, 2 traslados GRATIS (con agenda previa)."
+            question="¿Qué incluye el Plan Premium de Gs. 200.000 por mes?"
+            answer="Incluye lavados ILIMITADOS en cada ciclo mensual activo (máximo 1 lavado por día por vehículo) y los siguientes servicios: lavado exterior completo, aspirado profundo, desinfección de interiores, revitalización de neumáticos, 1 aplicación de cera líquida (protección hasta 4 meses), 1 lavado de motor profesional, 1 tratamiento de hidratación de plásticos interiores y 2 traslados gratis con agenda previa."
             type="membresia"
           />
           <Accordion
             question="¿Cuántas veces puedo lavar mi auto con la membresía?"
-            answer="Podés lavar tu vehículo de forma ilimitada durante los 30 días de vigencia, con un máximo de 1 lavado por día por vehículo."
+            answer="Podés lavar tu vehículo de forma ilimitada en cada ciclo mensual activo, con un máximo de 1 lavado por día por vehículo."
             type="membresia"
           />
           <Accordion
@@ -145,7 +145,7 @@ import RegistroModal from "@/components/RegistroModal.astro";
           />
           <Accordion
             question="¿La membresía tiene vencimiento?"
-            answer="Sí. La membresía tiene una vigencia de 30 días corridos desde la fecha de activación."
+            answer="Sí. El contrato del Plan Premium tiene una permanencia mínima de 12 meses. Los beneficios se habilitan por ciclos mensuales de 30 días y se mantienen activos mientras los pagos estén al día."
             type="membresia"
           />
           <Accordion
@@ -167,12 +167,22 @@ import RegistroModal from "@/components/RegistroModal.astro";
           />
           <Accordion
             question="¿La membresía se renueva automáticamente?"
-            answer="Solo si elegís la opción de débito automático. En caso contrario, la renovación se realiza de forma manual."
+            answer="Sí. El Plan Premium se cobra por débito automático obligatorio y mantiene la membresía activa durante la vigencia contratada, siempre que los pagos mensuales estén aprobados."
             type="pagos"
           />
           <Accordion
-            question="¿Puedo renovar mi membresía antes de que venza?"
-            answer="Sí. Podés renovarla en cualquier momento para seguir disfrutando del servicio sin interrupciones."
+            question="¿Cómo solicito la no renovación del plan?"
+            answer="La no renovación debe solicitarse con al menos 60 días corridos de anticipación al vencimiento de la vigencia contractual."
+            type="pagos"
+          />
+          <Accordion
+            question="¿Qué pasa si se rechaza el pago mensual?"
+            answer="Si el pago es rechazado, la membresía queda desactivada hasta regularizar el cobro correspondiente."
+            type="pagos"
+          />
+          <Accordion
+            question="¿Cuándo aplica un reembolso?"
+            answer="Solo aplican reembolsos en casos de cobro duplicado, error de facturación, cobro no autorizado atribuible a Fórmula NG o imposibilidad de prestación del servicio por causa atribuible a la empresa."
             type="pagos"
           />
           <div class="accordion pagopar-badge" data-tab="pagos" style="display:none;">
@@ -241,7 +251,7 @@ import RegistroModal from "@/components/RegistroModal.astro";
           />
           <Accordion
             question="¿Qué pasa si mi auto está en muy mal estado de suciedad?"
-            answer="En casos de suciedad extrema o trabajos especiales, puede aplicarse un costo adicional previo aviso y aprobación del cliente."
+            answer="En casos de suciedad extrema o trabajos especiales, puede aplicarse un costo adicional bajo evaluación y confirmación del supervisor, con aprobación previa del cliente."
             type="condiciones"
           />
         </AccordionContainer>

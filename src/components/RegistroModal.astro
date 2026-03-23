@@ -10,8 +10,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     <button id="modal-close" class="modal-close" aria-label="Cerrar">&times;</button>
     
     <div class="modal-header">
-      <h2 class="modal-title">Registra tu vehículo</h2>
-      <p class="modal-subtitle">Completá tus datos y te contactaremos para activar tu membresía.</p>
+      <h2 class="modal-title">Activá tu Plan Premium</h2>
+      <p class="modal-subtitle">Completá tus datos, elegí tu día de débito y registrá tu tarjeta para activar tu membresía de Gs. 200.000 por mes.</p>
       <!-- Step indicators -->
       <div class="steps-indicator">
         <div class="step-dot active" data-step="1"><span>1</span></div>
@@ -23,7 +23,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       <div class="steps-labels">
         <span class="step-label active" data-step="1">Tus datos</span>
         <span class="step-label" data-step="2">Tu vehículo</span>
-        <span class="step-label" data-step="3">Tu plan</span>
+        <span class="step-label" data-step="3">Plan y pago</span>
       </div>
     </div>
 
@@ -47,8 +47,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             <span class="field-error"></span>
           </div>
           <div class="form-group full">
-            <label for="email">Email <span id="email-optional-label" class="optional">(opcional)</span><span id="email-required-label" class="required" style="display:none;">*</span></label>
-            <input type="email" id="email" name="email" placeholder="tu@email.com" />
+            <label for="email">Email <span class="required">*</span></label>
+            <input type="email" id="email" name="email" required placeholder="tu@email.com" />
             <span class="field-error"></span>
           </div>
         </div>
@@ -119,19 +119,30 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
         <!-- Auto-debit section -->
         <div class="auto-debit-section">
-          <label class="checkbox-label">
-            <input type="checkbox" id="autoDebit" name="autoDebit" />
-            <span class="checkbox-custom"></span>
-            <span class="checkbox-text">Autorizo débitos automáticos mensuales en mi tarjeta</span>
-          </label>
+          <p class="auto-debit-eyebrow">Débito automático obligatorio</p>
+          <h3 class="auto-debit-title">Tu membresía se activa con pago inmediato</h3>
+          <p class="auto-debit-copy">
+            El Plan Premium tiene permanencia mínima de 12 meses y se cobra automáticamente por Gs. 200.000 en cada ciclo mensual activo.
+          </p>
+          <ul class="auto-debit-list">
+            <li>Tu primer débito se realizará un mes después de la activación, siempre en el mismo día del mes.</li>
+            <li>Si un pago es rechazado, la membresía queda desactivada hasta regularizar.</li>
+            <li>Para cambiar la fecha de débito contactá a soporte por WhatsApp.</li>
+          </ul>
+        </div>
 
-          <div id="debit-day-wrapper" class="debit-day-wrapper" style="display:none;">
-            <label for="diaDebito">Día preferido de débito <span class="required">*</span></label>
-            <select id="diaDebito" name="diaDebito">
-              <option value="">Seleccionar día...</option>
-            </select>
-            <span class="debit-day-hint">Si el mes no tiene ese día, se cobrará el último día del mes.</span>
-          </div>
+        <!-- Aceptación legal -->
+        <div class="legal-accept-wrapper">
+          <label class="legal-accept-label">
+            <input type="checkbox" id="acceptLegal" name="acceptLegal" />
+            <span>
+              Acepto los
+              <a href="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer">Términos y Condiciones</a>,
+              <a href="/politica-de-privacidad" target="_blank" rel="noopener noreferrer">Política de Privacidad</a>
+              y la <a href="/debito-automatico" target="_blank" rel="noopener noreferrer">autorización de débito automático</a>.
+            </span>
+          </label>
+          <span class="field-error" id="legal-accept-error"></span>
         </div>
 
         <!-- Turnstile captcha -->
@@ -146,8 +157,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         <div class="form-actions">
           <button type="button" class="btn-prev" data-prev="2">Atrás</button>
           <button type="submit" class="btn-submit" id="btn-submit">
-            <span class="btn-submit-text">Confirmar registro</span>
-            <span class="btn-submit-loading" style="display:none;">Enviando...</span>
+            <span class="btn-submit-text">Continuar al pago</span>
+            <span class="btn-submit-loading" style="display:none;">Procesando...</span>
           </button>
         </div>
       </div>
@@ -156,16 +167,16 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     <!-- Success state -->
     <div id="registro-success" class="success-message" style="display:none;">
       <div class="success-icon">&#10003;</div>
-      <h3>Registro exitoso</h3>
-      <p>Nos comunicaremos contigo pronto para activar tu membresía.</p>
+      <h3>Plan activado</h3>
+      <p>Tu Plan Premium quedó activo correctamente. Ya podés disfrutar de tus beneficios y agendar tus servicios.</p>
       <button type="button" class="btn-next" id="success-close">Cerrar</button>
     </div>
 
     <!-- Bancard Checkout iframe container -->
     <div id="bancard-checkout-container" style="display:none;">
       <div class="checkout-header">
-        <h3>Registrar tarjeta de pago</h3>
-        <p>Ingresá los datos de tu tarjeta de crédito o débito para activar los débitos automáticos.</p>
+        <h3>Registrá tu tarjeta de pago</h3>
+        <p>Ingresá los datos de tu tarjeta para habilitar el débito automático obligatorio y activar tu Plan Premium.</p>
       </div>
       <div id="bancard-iframe"></div>
       <p class="checkout-secure-note">
@@ -583,6 +594,35 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   }
 
   /* Turnstile captcha */
+  /* Legal acceptance checkbox */
+  .legal-accept-wrapper {
+    margin-top: 1.25rem;
+    display: grid;
+    gap: 0.3rem;
+  }
+  .legal-accept-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.5;
+  }
+  .legal-accept-label input[type="checkbox"] {
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+    width: 16px;
+    height: 16px;
+    accent-color: #f92606;
+    cursor: pointer;
+  }
+  .legal-accept-label a {
+    color: #ff6b3d;
+    text-decoration: underline;
+  }
+  .legal-accept-label a:hover { color: #f92606; }
+
   .turnstile-wrapper {
     display: inline-flex;
     margin-top: 1.25rem;
@@ -600,46 +640,33 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     border-radius: 12px;
     background: var(--sl-color-gray-5, #2a2a2a);
   }
-  .checkbox-label {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    cursor: pointer;
-    user-select: none;
+  .auto-debit-eyebrow {
+    margin: 0 0 0.4rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #ff6b3d;
+    font-weight: 700;
   }
-  .checkbox-label input[type="checkbox"] {
-    display: none;
+  .auto-debit-title {
+    margin: 0;
+    color: var(--sl-color-white, #fff);
+    font-size: 1.05rem;
   }
-  .checkbox-custom {
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--sl-color-gray-4, #555);
-    border-radius: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    margin-top: 1px;
+  .auto-debit-copy {
+    margin: 0.55rem 0 0;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--sl-color-gray-3, #888);
   }
-  .checkbox-custom::after {
-    content: "\2713";
-    color: white;
-    font-size: 0.7rem;
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  .checkbox-label input[type="checkbox"]:checked ~ .checkbox-custom {
-    background: #f92606;
-    border-color: #f92606;
-  }
-  .checkbox-label input[type="checkbox"]:checked ~ .checkbox-custom::after {
-    opacity: 1;
-  }
-  .checkbox-text {
-    font-size: 0.9rem;
+  .auto-debit-list {
+    margin: 0.9rem 0 0;
+    padding-left: 1.1rem;
     color: var(--sl-color-gray-2, #ccc);
-    line-height: 1.4;
+    display: grid;
+    gap: 0.45rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
   }
   .debit-day-wrapper {
     margin-top: 1rem;
@@ -710,10 +737,52 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     const submitBtn = document.getElementById("btn-submit") as HTMLButtonElement;
     const submitText = submitBtn?.querySelector(".btn-submit-text") as HTMLElement;
     const submitLoading = submitBtn?.querySelector(".btn-submit-loading") as HTMLElement;
+    const bancardContainer = document.getElementById("bancard-checkout-container") as HTMLElement;
+    const successTitle = successDiv?.querySelector("h3") as HTMLElement;
+    const successMessage = successDiv?.querySelector("p") as HTMLElement;
+    const successIcon = successDiv?.querySelector(".success-icon") as HTMLElement;
 
     let currentStep = 1;
     let marcasLoaded = false;
     let planesLoaded = false;
+    const defaultSuccessTitle = "Plan activado";
+    const defaultSuccessMessage =
+      "Tu Plan Premium quedó activo correctamente. Ya podés disfrutar de tus beneficios y agendar tus servicios.";
+
+    function restoreSuccessState() {
+      if (successTitle) successTitle.textContent = defaultSuccessTitle;
+      if (successMessage) successMessage.textContent = defaultSuccessMessage;
+      if (successIcon) {
+        successIcon.textContent = "\u2713";
+        successIcon.style.background = "#22c55e";
+      }
+    }
+
+    function showResult(title: string, message: string, isError = false) {
+      restoreSuccessState();
+      if (successTitle) successTitle.textContent = title;
+      if (successMessage) successMessage.textContent = message;
+      if (successIcon && isError) {
+        successIcon.textContent = "\u2717";
+        successIcon.style.background = "#ef4444";
+      }
+      form.style.display = "none";
+      bancardContainer.style.display = "none";
+      successDiv.style.display = "block";
+    }
+
+    function resetModalState() {
+      restoreSuccessState();
+      goToStep(1);
+      clearErrors();
+      form.style.display = "";
+      bancardContainer.style.display = "none";
+      successDiv.style.display = "none";
+      submitBtn.disabled = false;
+      submitText.style.display = "inline";
+      submitLoading.style.display = "none";
+      submitLoading.textContent = "Procesando...";
+    }
 
     // ---- Fetch with timeout ----
     function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 30000): Promise<Response> {
@@ -729,44 +798,30 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         .finally(() => clearTimeout(timer));
     }
 
-    // ---- Auto-debit toggle ----
-    const autoDebitCheckbox = document.getElementById("autoDebit") as HTMLInputElement;
-    const debitDayWrapper = document.getElementById("debit-day-wrapper") as HTMLElement;
-    const diaDebitoSelect = document.getElementById("diaDebito") as HTMLSelectElement;
-
-    // Populate day selector (1-31)
-    for (let d = 1; d <= 31; d++) {
-      const opt = document.createElement("option");
-      opt.value = String(d);
-      opt.textContent = String(d);
-      diaDebitoSelect.appendChild(opt);
-    }
-
-    autoDebitCheckbox?.addEventListener("change", () => {
-      debitDayWrapper.style.display = autoDebitCheckbox.checked ? "flex" : "none";
-      if (!autoDebitCheckbox.checked) {
-        diaDebitoSelect.value = "";
-      }
-      // Toggle email required indicator
-      const optLabel = document.getElementById("email-optional-label") as HTMLElement;
-      const reqLabel = document.getElementById("email-required-label") as HTMLElement;
-      if (optLabel && reqLabel) {
-        optLabel.style.display = autoDebitCheckbox.checked ? "none" : "inline";
-        reqLabel.style.display = autoDebitCheckbox.checked ? "inline" : "none";
-      }
-    });
+    // ---- Auto-debit: día calculado automáticamente al activar ----
+    // No se muestra selector; se usa el día del mes de la fecha de activación (estilo Netflix)
 
     // ---- Open / Close Modal ----
     function openModal() {
+      resetModalState();
       modal.style.display = "flex";
       document.body.style.overflow = "hidden";
       if (!marcasLoaded) loadMarcas();
+      // Meta Pixel: InitiateCheckout
+      if (typeof (window as any).fbq === "function") {
+        (window as any).fbq("track", "InitiateCheckout", {
+          content_name: "Plan Premium",
+          value: 200000,
+          currency: "PYG",
+        });
+      }
       if (!planesLoaded) loadPlanes();
     }
 
     function closeModal() {
       modal.style.display = "none";
       document.body.style.overflow = "";
+      resetModalState();
     }
 
     // Expose globally so Hero can call it
@@ -827,13 +882,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         const ruc = (document.getElementById("ruc") as HTMLInputElement).value.trim();
         const telefono = (document.getElementById("telefono") as HTMLInputElement).value.trim();
         const email = (document.getElementById("email") as HTMLInputElement).value.trim();
-        const wantsAutoDebit = autoDebitCheckbox?.checked;
 
         if (!nombre) { showFieldError("nombre", "El nombre es requerido"); valid = false; }
         if (!ruc) { showFieldError("ruc", "El RUC/CI es requerido"); valid = false; }
         if (!telefono) { showFieldError("telefono", "El teléfono es requerido"); valid = false; }
-        if (wantsAutoDebit && !email) {
-          showFieldError("email", "El email es requerido para débitos automáticos");
+        if (!email) {
+          showFieldError("email", "El email es requerido para activar tu plan");
           valid = false;
         } else if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
           showFieldError("email", "Email inválido");
@@ -844,6 +898,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (step === 2) {
         const chapa = (document.getElementById("chapa") as HTMLInputElement).value.trim();
         if (!chapa || chapa.length < 3) { showFieldError("chapa", "La chapa es requerida (mín. 3 caracteres)"); valid = false; }
+      }
+
+      if (step === 3) {
+        const acceptLegal = document.getElementById("acceptLegal") as HTMLInputElement;
+        if (acceptLegal && !acceptLegal.checked) {
+          const errorEl = document.getElementById("legal-accept-error");
+          if (errorEl) errorEl.textContent = "Debés aceptar los Términos y Condiciones para continuar.";
+          valid = false;
+        }
       }
 
       return valid;
@@ -862,6 +925,40 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       document.querySelectorAll(".invalid").forEach(el => el.classList.remove("invalid"));
       document.querySelectorAll(".field-error").forEach(el => el.textContent = "");
       errorBanner.style.display = "none";
+    }
+
+    function normalizeText(value: unknown): string {
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+    }
+
+    function escapeHtml(value: unknown): string {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function getPublicPlanName(plan: any): string {
+      const normalizedName = normalizeText(plan?.nombre);
+      if (normalizedName.includes("premium") || normalizedName.includes("premiun")) {
+        return "Plan Premium";
+      }
+      return String(plan?.nombre || "Plan");
+    }
+
+    function getPublicPlanDescription(plan: any): string {
+      const planDescription = String(plan?.descripcion || "").trim();
+      const contractDescription =
+        "Permanencia minima de 12 meses. Debito automatico obligatorio.";
+
+      if (!planDescription) return contractDescription;
+
+      return `${escapeHtml(planDescription).replace(/\n+/g, "<br />")}<br /><br />${contractDescription}`;
     }
 
     // ---- Load Marcas ----
@@ -942,11 +1039,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
         if (Array.isArray(data) && data.length > 0) {
           container.innerHTML = data.map((plan: any) => `
-            <div class="plan-card ${plan.destacado ? 'destacado' : ''}" data-plan-id="${plan.idPlan}">
-              ${plan.destacado ? '<div class="plan-card-badge">Recomendado</div>' : ''}
-              <div class="plan-name">${plan.nombre}</div>
+            <div class="plan-card selected" data-plan-id="${escapeHtml(plan.idPlan)}">
+              <div class="plan-card-badge">Plan oficial</div>
+              <div class="plan-name">${escapeHtml(getPublicPlanName(plan))}</div>
               <div class="plan-price">Gs. ${Number(plan.precio).toLocaleString("es-PY")}/mes</div>
-              ${plan.descripcion ? `<div class="plan-desc">${plan.descripcion}</div>` : ''}
+              <div class="plan-desc">${getPublicPlanDescription(plan)}</div>
               <div class="plan-check">&#10003;</div>
             </div>
           `).join("");
@@ -961,9 +1058,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             });
           });
 
-          // Auto-select the highlighted plan
-          const destacado = container.querySelector(".plan-card.destacado") as HTMLElement;
-          if (destacado) destacado.click();
+          // Auto-select the public plan
+          const selectedCard = container.querySelector(".plan-card") as HTMLElement;
+          if (selectedCard) selectedCard.click();
 
           planesLoaded = true;
         } else {
@@ -981,31 +1078,20 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       e.preventDefault();
       if (!validateStep(currentStep)) return;
 
-      // Validate auto-debit day if checkbox is checked
-      const wantsAutoDebit = autoDebitCheckbox?.checked;
-      if (wantsAutoDebit && !diaDebitoSelect.value) {
-        errorMsg.textContent = "Seleccioná un día de débito para activar los cobros automáticos.";
+      const emailVal = (document.getElementById("email") as HTMLInputElement).value.trim();
+      if (!emailVal) {
+        errorMsg.textContent = "El email es requerido para activar tu Plan Premium. Volvé al paso 1 para completarlo.";
         errorBanner.style.display = "block";
+        goToStep(1);
+        showFieldError("email", "El email es requerido para activar tu plan");
         return;
       }
-
-      // Validate email is present when auto-debit is enabled (PagoPar requires it)
-      if (wantsAutoDebit) {
-        const emailVal = (document.getElementById("email") as HTMLInputElement).value.trim();
-        if (!emailVal) {
-          errorMsg.textContent = "El email es requerido para activar débitos automáticos. Volvé al paso 1 para completarlo.";
-          errorBanner.style.display = "block";
-          goToStep(1);
-          showFieldError("email", "El email es requerido para débitos automáticos");
-          return;
-        }
-        if (!emailVal.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-          errorMsg.textContent = "El email ingresado no es válido. Volvé al paso 1 para corregirlo.";
-          errorBanner.style.display = "block";
-          goToStep(1);
-          showFieldError("email", "Email inválido");
-          return;
-        }
+      if (!emailVal.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        errorMsg.textContent = "El email ingresado no es válido. Volvé al paso 1 para corregirlo.";
+        errorBanner.style.display = "block";
+        goToStep(1);
+        showFieldError("email", "Email inválido");
+        return;
       }
 
       // Disable submit
@@ -1021,9 +1107,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         telefono: (document.getElementById("telefono") as HTMLInputElement).value.trim(),
       };
 
-      // Optional fields
       const email = (document.getElementById("email") as HTMLInputElement).value.trim();
-      if (email) formData.email = email;
+      formData.email = email;
 
       const chapa = (document.getElementById("chapa") as HTMLInputElement).value.trim();
       formData.chapa = chapa;
@@ -1059,6 +1144,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
       formData.turnstileToken = turnstileToken;
 
+      // Adjuntar atribución UTM si está disponible
+      try {
+        const utmRaw = sessionStorage.getItem("fng_utm");
+        if (utmRaw) formData.attribution = JSON.parse(utmRaw);
+      } catch { /* ignorar errores de parsing */ }
+
       try {
         // Step 1: Register client + vehicle + membership
         const res = await fetchWithTimeout("/api/registro", {
@@ -1083,83 +1174,87 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           }
         }
 
-        // Step 2: If auto-debit enabled, initiate Pagopar checkout
         const idCliente = body.data?.idCliente || body.idCliente;
-        if (wantsAutoDebit && idCliente) {
-          submitLoading.textContent = "Redirigiendo a Pagopar...";
+        if (!idCliente) {
+          throw new Error("No pudimos iniciar la activacion de tu plan. Intenta nuevamente.");
+        }
 
-          // Store idCliente for callback confirmation
-          sessionStorage.setItem("formulang_idCliente", idCliente);
+        submitLoading.textContent = "Redirigiendo a Pagopar...";
 
-          const checkoutRes = await fetchWithTimeout("/api/checkout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              idCliente: idCliente,
-              diaDebito: Number(diaDebitoSelect.value),
-              urlRedirect: window.location.origin + "/api/callback",
-            }),
-          }, 30000);
+        // Store idCliente for callback confirmation
+        sessionStorage.setItem("formulang_idCliente", idCliente);
 
-          const checkoutBody = await checkoutRes.json().catch(() => {
-            throw new Error("Error al procesar la respuesta del checkout. Intentá de nuevo.");
-          });
+        const checkoutRes = await fetchWithTimeout("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            idCliente: idCliente,
+            diaDebito: new Date().getDate(),
+            urlRedirect: window.location.origin + "/api/callback",
+          }),
+        }, 30000);
 
-          if (!checkoutRes.ok) {
-            // Registration succeeded but checkout failed — show partial success
-            form.style.display = "none";
-            (document.querySelector(".success-message h3") as HTMLElement).textContent = "Registro exitoso";
-            (document.querySelector(".success-message p") as HTMLElement).textContent =
-              "Tu registro fue exitoso, pero no pudimos iniciar el pago automático. Contactanos para activarlo manualmente.";
-            successDiv.style.display = "block";
-            return;
-          }
+        const checkoutBody = await checkoutRes.json().catch(() => {
+          throw new Error("Error al procesar la respuesta del checkout. Intentá de nuevo.");
+        });
 
-          // processId received — render Bancard iframe for card enrollment
-          const processId = checkoutBody.processId;
-          if (processId) {
-            form.style.display = "none";
-            const bancardContainer = document.getElementById("bancard-checkout-container")!;
-            bancardContainer.style.display = "block";
-
-            // Load Bancard Checkout JS SDK if not already loaded
-            if (!(window as any).Bancard) {
-              await new Promise<void>((resolve, reject) => {
-                const script = document.createElement("script");
-                script.src = "/bancard-checkout-5.0.1.js";
-                script.onload = () => resolve();
-                script.onerror = () => reject(new Error("Error al cargar Bancard SDK"));
-                document.head.appendChild(script);
-              });
-            }
-
-            // Render the Bancard card enrollment form
-            (window as any).Bancard.Cards.createForm("bancard-iframe", processId, {
-              styles: {
-                "input-background-color": "#ffffff",
-                "input-text-color": "#333333",
-                "input-placeholder-color": "#999999",
-                "input-border-color": "#dddddd",
-                "button-background-color": "#4f46e5",
-                "button-text-color": "#ffffff",
-                "form-background-color": "#ffffff",
-              },
-            });
-          } else {
-            // No processId — show partial success
-            form.style.display = "none";
-            (document.querySelector(".success-message h3") as HTMLElement).textContent = "Registro exitoso";
-            (document.querySelector(".success-message p") as HTMLElement).textContent =
-              "Tu registro fue exitoso. Contactanos para configurar los débitos automáticos.";
-            successDiv.style.display = "block";
-          }
+        if (!checkoutRes.ok) {
+          sessionStorage.removeItem("formulang_idCliente");
+          showResult(
+            "Alta pendiente",
+            "Tu registro fue recibido, pero no pudimos iniciar el pago automatico. Tu membresia no quedo activa. Contactanos para completar el alta.",
+            true,
+          );
           return;
         }
 
-        // No auto-debit — simple success
-        form.style.display = "none";
-        successDiv.style.display = "block";
+        const processId = checkoutBody.processId;
+        if (processId) {
+          form.style.display = "none";
+          bancardContainer.style.display = "block";
+          // Meta Pixel: AddPaymentInfo
+          if (typeof (window as any).fbq === "function") {
+            (window as any).fbq("track", "AddPaymentInfo", {
+              content_name: "Plan Premium",
+              value: 200000,
+              currency: "PYG",
+            });
+          }
+
+          // Load Bancard Checkout JS SDK if not already loaded
+          if (!(window as any).Bancard) {
+            await new Promise<void>((resolve, reject) => {
+              const script = document.createElement("script");
+              script.src = "/bancard-checkout-5.0.1.js";
+              script.onload = () => resolve();
+              script.onerror = () => reject(new Error("Error al cargar Bancard SDK"));
+              document.head.appendChild(script);
+            });
+          }
+
+          // Render the Bancard card enrollment form
+          (window as any).Bancard.Cards.createForm("bancard-iframe", processId, {
+            styles: {
+              "input-background-color": "#ffffff",
+              "input-text-color": "#333333",
+              "input-placeholder-color": "#999999",
+              "input-border-color": "#dddddd",
+              "button-background-color": "#4f46e5",
+              "button-text-color": "#ffffff",
+              "form-background-color": "#ffffff",
+            },
+          });
+        } else {
+          sessionStorage.removeItem("formulang_idCliente");
+          showResult(
+            "Alta pendiente",
+            "Tu registro fue recibido, pero no pudimos completar el cobro automatico. Tu membresia no quedo activa. Contactanos para continuar.",
+            true,
+          );
+        }
+        return;
       } catch (err: any) {
+        sessionStorage.removeItem("formulang_idCliente");
         // Filter out raw technical errors (SyntaxError, TypeError, etc.)
         const isTechnical = err instanceof SyntaxError || err instanceof TypeError ||
           (err.message && (err.message.includes("Unexpected token") || err.message.includes("undefined")));
@@ -1171,7 +1266,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         submitBtn.disabled = false;
         submitText.style.display = "inline";
         submitLoading.style.display = "none";
-        submitLoading.textContent = "Enviando...";
+        submitLoading.textContent = "Procesando...";
       }
     });
     // ---- Handle Pagopar Checkout Callback ----
@@ -1188,11 +1283,10 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (checkoutStatus === "ok") {
         // Show success notification
         openModal();
-        form.style.display = "none";
-        (document.querySelector(".success-message h3") as HTMLElement).textContent = "Tarjeta registrada";
-        (document.querySelector(".success-message p") as HTMLElement).textContent =
-          "Tu tarjeta fue registrada exitosamente. Los débitos automáticos están activos.";
-        successDiv.style.display = "block";
+        showResult(
+          "Plan activado",
+          "Tu tarjeta fue registrada exitosamente. Tu Plan Premium quedó activo y los débitos automáticos mensuales están habilitados.",
+        );
 
         // Confirm tarjeta in the backend (await result to ensure consistency)
         const storedClienteId = sessionStorage.getItem("formulang_idCliente");
@@ -1206,13 +1300,17 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             if (!confirmRes.ok) {
               const confirmBody = await confirmRes.json().catch(() => ({}));
               console.error("Error confirming card:", confirmBody);
-              (document.querySelector(".success-message p") as HTMLElement).textContent =
-                "Tu tarjeta fue registrada, pero hubo un problema activando los débitos automáticos. Contactanos para asistencia.";
+              if (successMessage) {
+                successMessage.textContent =
+                  "Tu tarjeta fue registrada, pero hubo un problema confirmando la activación automática de tu plan. Contactanos para asistencia.";
+              }
             }
           } catch (err) {
             console.error("Error confirming card:", err);
-            (document.querySelector(".success-message p") as HTMLElement).textContent =
-              "Tu tarjeta fue registrada, pero no pudimos confirmar los débitos automáticos. Contactanos para asistencia.";
+            if (successMessage) {
+              successMessage.textContent =
+                "Tu tarjeta fue registrada, pero no pudimos confirmar la activación automática de tu plan. Contactanos para asistencia.";
+            }
           } finally {
             sessionStorage.removeItem("formulang_idCliente");
           }
@@ -1221,12 +1319,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         // Show error
         const msg = params.get("checkout_msg") || "No se pudo registrar la tarjeta. Intentá de nuevo más tarde.";
         openModal();
-        form.style.display = "none";
-        (document.querySelector(".success-message h3") as HTMLElement).textContent = "Error al registrar tarjeta";
-        (document.querySelector(".success-message p") as HTMLElement).textContent = msg;
-        (document.querySelector(".success-icon") as HTMLElement).textContent = "\u2717";
-        (document.querySelector(".success-icon") as HTMLElement).style.background = "#ef4444";
-        successDiv.style.display = "block";
+        showResult("Error al registrar tarjeta", msg, true);
       }
     })();
   }

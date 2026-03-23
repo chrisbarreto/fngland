@@ -78,12 +78,26 @@ import logoDark from "@/assets/logos/logo-dark.svg";
       ))}
     </div>
 
+    <!-- Legal links -->
+    <nav class="footer-legal-links" aria-label="Documentos legales">
+      <a href="/terminos-y-condiciones">Términos y Condiciones</a>
+      <span class="footer-sep" aria-hidden="true">·</span>
+      <a href="/politica-de-privacidad">Política de Privacidad</a>
+      <span class="footer-sep" aria-hidden="true">·</span>
+      <a href="/politica-de-cookies">Cookies</a>
+      <span class="footer-sep" aria-hidden="true">·</span>
+      <a href="/cancelaciones-y-reembolsos">Cancelaciones</a>
+      <span class="footer-sep" aria-hidden="true">·</span>
+      <a href="/debito-automatico">Débito Automático</a>
+    </nav>
+
     <!-- Divider -->
     <div class="footer-divider"></div>
 
-    <!-- Copyright -->
+    <!-- Copyright + datos fiscales -->
     <div class="footer-bottom">
       <p set:html={markdownify(config?.params?.copyright)} />
+      <p class="footer-fiscal">FORMULA NG E.A.S.  · RUC 80156407-7</p>
     </div>
   </div>
 </footer>
@@ -219,13 +233,38 @@ import logoDark from "@/assets/logos/logo-dark.svg";
     background: linear-gradient(90deg, transparent, rgba(249, 38, 6, 0.3), transparent);
   }
 
+  .footer-legal-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem 0.5rem;
+    font-size: 0.78rem;
+  }
+  .footer-legal-links a {
+    color: var(--sl-color-gray-4);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-legal-links a:hover { color: #f92606; }
+  .footer-sep { color: rgba(255,255,255,0.2); }
+
   .footer-bottom {
     color: var(--sl-color-gray-4);
     font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    align-items: center;
   }
 
   .footer-bottom p {
     margin: 0;
+  }
+
+  .footer-fiscal {
+    font-size: 0.73rem;
+    color: rgba(255,255,255,0.2);
   }
 
   @media (max-width: 600px) {

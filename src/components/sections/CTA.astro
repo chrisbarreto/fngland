@@ -1,7 +1,7 @@
 ---
 import Section from "./Section.astro";
 
-const title = "¿Listo para tu membresía de <span class='light-text'>estética automotriz?</span>";
+const title = "Activá tu <span class='light-text'>Plan Premium</span> hoy mismo";
 
 ---
 
@@ -17,9 +17,12 @@ const title = "¿Listo para tu membresía de <span class='light-text'>estética 
         class="cta-btn"
         id="cta-registro-btn"
       >
-        QUIERO MI AUTO IMPECABLE
+        QUIERO ACTIVAR MI PLAN
       </button>
     </div>
+    <p class="cta-disclaimer">
+      Permanencia mínima de 12 meses. Débito automático obligatorio. Aplican <a href="/terminos-y-condiciones" style="color:inherit;text-decoration:underline;">términos y condiciones</a>.
+    </p>
   </Section>
 </div>
 
@@ -74,6 +77,15 @@ const title = "¿Listo para tu membresía de <span class='light-text'>estética 
   .cta-buttons {
     display: flex;
     justify-content: center;
+  }
+
+  .cta-disclaimer {
+    margin: 0.9rem 0 0;
+    text-align: center;
+    color: var(--sl-color-gray-3);
+    font-size: 0.76rem;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
   }
 </style>
 

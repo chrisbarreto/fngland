@@ -3,6 +3,9 @@ import { AstroFont } from "astro-font";
 import "@/styles/global.css";
 import theme from "@/config/theme.json";
 import config from "@/config/config.json";
+import MetaPixel from "@/components/MetaPixel.astro";
+import CookieBanner from "@/components/CookieBanner.astro";
+import UtmCapture from "@/components/UtmCapture.astro";
 
 const {
   title: titleProp,
@@ -84,7 +87,9 @@ if (pf) {
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
         "@id": "https://formulang.com.py",
-        name: "Formula NG",
+        name: "Fórmula NG",
+        legalName: "FORMULA NG E.A.S. ",
+        taxID: "80156407-7",
         alternateName: "Fórmula NG Detailing",
         description:
           "Membresía de estética automotriz en Asunción, Paraguay. Lavados ilimitados, detailing premium, lavado exterior, aspirado, cera líquida, lavado de motor y servicio de chofer.",
@@ -152,6 +157,9 @@ if (pf) {
       </script>
     )}
 
+    <!-- Meta Pixel (condicional vía PUBLIC_META_PIXEL_ID) -->
+    <MetaPixel />
+
     <!-- Google Font -->
     <AstroFont
       config={[
@@ -168,6 +176,8 @@ if (pf) {
     />
   </head>
   <body>
+    <UtmCapture />
     <slot />
+    <CookieBanner />
   </body>
 </html>

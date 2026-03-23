@@ -1,0 +1,90 @@
+---
+export const prerender = true;
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Footer from "@/components/Footer.astro";
+import logoDark from "@/assets/logos/logo-dark.svg";
+---
+
+<BaseLayout
+  title="Términos y Condiciones | Fórmula NG"
+  description="Términos y condiciones del Plan Premium de membresía de Fórmula NG."
+  canonicalPath="/terminos-y-condiciones"
+  noindex={true}
+>
+  <div class="legal-page">
+    <header class="legal-header">
+      <a href="/" aria-label="Volver al inicio">
+        <img src={logoDark.src} alt="Fórmula NG" width="130" height="32" />
+      </a>
+      <a href="/membresia" class="back-link">← Volver</a>
+    </header>
+
+    <main class="legal-main">
+      <h1>Términos y Condiciones</h1>
+      <p class="meta">FORMULA NG E.A.S.  · RUC 80156407-7 · Vigente desde marzo 2026</p>
+
+      <h2>1. Partes</h2>
+      <p>El presente contrato es celebrado entre <strong>FORMULA NG E.A.S. </strong>, con RUC <strong>80156407-7</strong>, con domicilio en 23 de Octubre 687 c/ Toribio Pacheco, Asunción, Paraguay (en adelante "Fórmula NG"), y el usuario que suscribe el Plan Premium (en adelante "el Miembro").</p>
+
+      <h2>2. Objeto del contrato</h2>
+      <p>Fórmula NG ofrece al Miembro el acceso al <strong>Plan Premium</strong> de membresía de estética automotriz, que incluye los beneficios descriptos en el momento del alta, por el precio de <strong>Gs. 200.000 (doscientos mil guaraníes) mensuales</strong>.</p>
+
+      <h2>3. Vigencia y permanencia mínima</h2>
+      <p>El contrato tiene una <strong>permanencia mínima de 12 (doce) meses</strong> continuos desde la fecha de activación. Pasado ese período, el contrato se renueva automáticamente por períodos mensuales hasta que el Miembro solicite la baja conforme al procedimiento establecido.</p>
+
+      <h2>4. Activación</h2>
+      <p>La membresía se activa de forma <strong>inmediata</strong> una vez que el Miembro registra su tarjeta de pago y el primer débito es aprobado por el procesador de pagos (Bancard / PagoPar). Fórmula NG se reserva el derecho de rechazar altas por razones operativas.</p>
+
+      <h2>5. Pago y débito automático</h2>
+      <p>El cobro se realiza mediante <strong>débito automático mensual obligatorio</strong> en el mismo día del mes en que se activó la membresía. Si ese día no existe en un mes determinado, el débito se realizará el último día de ese mes. El cambio de fecha de débito solo puede realizarse bajo solicitud al soporte. Ver también la <a href="/debito-automatico">Política de Débito Automático</a>.</p>
+
+      <h2>6. Pagos rechazados o fallidos</h2>
+      <p>Si un débito mensual es rechazado por cualquier motivo, la membresía queda <strong>suspendida automáticamente</strong> hasta que el pago sea regularizado. Fórmula NG notificará al Miembro por los medios de contacto registrados. La suspensión no extiende la permanencia mínima contratada.</p>
+
+      <h2>7. Cancelación y baja</h2>
+      <p>El Miembro podrá solicitar la cancelación del Plan Premium cumplida la permanencia mínima de 12 meses, con un <strong>aviso mínimo de 60 (sesenta) días corridos</strong> de anticipación al vencimiento de cada período mensual. La solicitud debe realizarse por escrito al canal oficial de soporte (WhatsApp o email). Ver también <a href="/cancelaciones-y-reembolsos">Cancelaciones y Reembolsos</a>.</p>
+
+      <h2>8. Beneficios y cobertura</h2>
+      <p>Los beneficios del Plan Premium aplican al vehículo registrado durante el proceso de alta. Para agregar vehículos adicionales se debe contratar una membresía independiente. Los beneficios no son acumulables ni transferibles a períodos posteriores. Fórmula NG puede modificar los beneficios incluidos con previo aviso de 30 días.</p>
+
+      <h2>9. Responsabilidad</h2>
+      <p>Fórmula NG tomará los recaudos necesarios en la manipulación del vehículo. No se responsabiliza por daños preexistentes no documentados, por objetos de valor dejados en el vehículo sin declaración previa, ni por demoras causadas por fuerza mayor.</p>
+
+      <h2>10. Modificaciones</h2>
+      <p>Fórmula NG puede modificar estos términos con un aviso mínimo de 30 días. La continuación del uso del servicio implica la aceptación de los nuevos términos.</p>
+
+      <h2>11. Jurisdicción</h2>
+      <p>Cualquier controversia derivada de este contrato se someterá a la jurisdicción de los tribunales competentes de la ciudad de Asunción, República del Paraguay.</p>
+
+      <h2>12. Contacto</h2>
+      <p>Para consultas: <a href="mailto:info@formulang.com.py">info@formulang.com.py</a> · WhatsApp: <a href="https://wa.me/595992789328">0992 789 328</a></p>
+    </main>
+
+    <Footer />
+  </div>
+</BaseLayout>
+
+<style>
+  .legal-page { min-height: 100vh; background: #060606; display: flex; flex-direction: column; }
+  .legal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    max-width: 860px; margin: 0 auto; width: 100%;
+  }
+  .legal-header img { height: 32px; width: auto; }
+  .back-link { font-size: 0.85rem; color: rgba(255,255,255,0.45); text-decoration: none; }
+  .back-link:hover { color: #ff6b3d; }
+  .legal-main {
+    flex: 1; max-width: 860px; margin: 0 auto; width: 100%;
+    padding: 3rem 1.5rem 4rem;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.7;
+  }
+  h1 { margin: 0 0 0.4rem; font-size: clamp(1.6rem, 4vw, 2.2rem); color: #fff; }
+  .meta { margin: 0 0 2.5rem; font-size: 0.8rem; color: rgba(255,255,255,0.35); }
+  h2 { margin: 2rem 0 0.6rem; font-size: 1.05rem; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem; }
+  p { margin: 0 0 0.8rem; font-size: 0.9rem; }
+  a { color: #ff6b3d; text-decoration: underline; }
+  a:hover { color: #f92606; }
+</style>

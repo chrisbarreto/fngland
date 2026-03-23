@@ -13,8 +13,8 @@ export const GET: APIRoute = async ({ url }) => {
   const status = url.searchParams.get("status") || "";
   const description = url.searchParams.get("description") || "";
 
-  // Redirect back to landing root with checkout result params
-  const redirectUrl = new URL("/", url.origin);
+  // Redirect to thank-you/result page with checkout params
+  const redirectUrl = new URL("/gracias", url.origin);
   redirectUrl.searchParams.set(
     "checkout",
     status === "add_new_card_success" ? "ok" : "error",

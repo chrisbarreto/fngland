@@ -1,0 +1,213 @@
+---
+export const prerender = true;
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+---
+
+<BaseLayout
+  title="Resultado de activación | Fórmula NG"
+  description="Estado de activación del Plan Premium de Fórmula NG."
+  canonicalPath="/gracias"
+  noindex={true}
+>
+  <div class="thanks-page">
+    <Header />
+
+    <main class="thanks-main">
+      <section class="status-card" id="status-card" data-status="pending">
+        <div class="status-icon" id="status-icon">!</div>
+        <p class="status-eyebrow" id="status-eyebrow">Estamos validando tu pago</p>
+        <h1 id="status-title">Finalizá la activación de tu Plan Premium</h1>
+        <p id="status-description">
+          Si acabás de completar el registro de tarjeta, esperá unos segundos y actualizá esta página.
+        </p>
+
+        <div class="status-actions">
+          <a href="/membresia" class="btn-primary" id="action-primary">Volver al registro</a>
+          <a
+            href="https://wa.me/595992789328"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-outline"
+          >
+            Hablar con soporte
+          </a>
+        </div>
+
+        <p class="support-note">
+          Soporte Fórmula NG: 0992 789 328 · info@formulang.com.py
+        </p>
+      </section>
+    </main>
+
+    <Footer />
+  </div>
+</BaseLayout>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const checkoutStatus = params.get("checkout");
+  const checkoutMessage = params.get("checkout_msg");
+
+  const card = document.getElementById("status-card");
+  const icon = document.getElementById("status-icon");
+  const eyebrow = document.getElementById("status-eyebrow");
+  const title = document.getElementById("status-title");
+  const description = document.getElementById("status-description");
+  const actionPrimary = document.getElementById("action-primary") as HTMLAnchorElement | null;
+
+  if (card && icon && eyebrow && title && description) {
+    if (checkoutStatus === "ok") {
+      card.dataset.status = "success";
+      icon.textContent = "✓";
+      eyebrow.textContent = "Pago confirmado";
+      title.textContent = "Tu Plan Premium quedó activo";
+      description.textContent =
+        "Tu tarjeta fue registrada correctamente y el débito automático mensual quedó habilitado. Podés agendar tu primer servicio escribiéndonos por WhatsApp.";
+      if (actionPrimary) {
+        actionPrimary.href = "https://wa.me/595992789328";
+        actionPrimary.target = "_blank";
+        actionPrimary.rel = "noopener noreferrer";
+        actionPrimary.textContent = "Agendar mi primer servicio";
+      }
+
+      // Meta Pixel Purchase event
+      if (typeof (window as any).fbq === "function") {
+        (window as any).fbq("track", "Purchase", {
+          value: 200000,
+          currency: "PYG",
+          content_name: "Plan Premium",
+        });
+      }
+
+    } else if (checkoutStatus === "error") {
+      card.dataset.status = "error";
+      icon.textContent = "✕";
+      eyebrow.textContent = "No pudimos activar tu plan";
+      title.textContent = "Hubo un problema con el registro de tarjeta";
+      description.textContent = checkoutMessage
+        ? checkoutMessage
+        : "Podés intentarlo de nuevo o contactarnos por WhatsApp y te ayudamos a resolverlo en minutos.";
+      if (actionPrimary) {
+        actionPrimary.textContent = "Intentar de nuevo";
+      }
+    }
+  }
+</script>
+
+<style>
+  .thanks-page {
+    min-height: 100vh;
+    background: radial-gradient(circle at top, rgba(249, 38, 6, 0.2), transparent 45%), #060606;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .thanks-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 1.25rem 3rem;
+  }
+
+  .status-card {
+    width: 100%;
+    max-width: 700px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 2.1rem;
+    text-align: center;
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .status-icon {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: white;
+    background: #4b5563;
+  }
+
+  .status-card[data-status="success"] .status-icon { background: #22c55e; }
+  .status-card[data-status="error"] .status-icon { background: #ef4444; }
+
+  .status-eyebrow {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.72rem;
+    color: #ff6b3d;
+    font-weight: 700;
+  }
+
+  h1 {
+    margin: 0;
+    color: var(--sl-color-white, #fff);
+    font-size: clamp(1.45rem, 3.9vw, 2.2rem);
+    line-height: 1.15;
+  }
+
+  #status-description {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.65);
+    line-height: 1.6;
+  }
+
+  .status-actions {
+    margin-top: 0.5rem;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .btn-primary,
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    padding: 0.8rem 1.3rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .btn-primary {
+    color: white;
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    box-shadow: 0 6px 20px rgba(249,38,6,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 26px rgba(249,38,6,0.45); }
+
+  .btn-outline {
+    color: white;
+    border: 1px solid rgba(255, 107, 61, 0.55);
+    background: transparent;
+  }
+  .btn-outline:hover { border-color: #ff6b3d; }
+
+  .support-note {
+    margin: 0.25rem 0 0;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  @media (max-width: 720px) {
+    .thanks-main { padding-top: 5.8rem; }
+    .status-card { padding: 1.45rem; border-radius: 14px; }
+    .status-actions { flex-direction: column; }
+    .btn-primary, .btn-outline { width: 100%; }
+  }
+</style>

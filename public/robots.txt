@@ -1,3 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /gracias
+Disallow: /agenda
+Disallow: /mis-citas
+Disallow: /tarjetas/
+Disallow: /api/
+Disallow: /proxy/
 Sitemap: https://formulang.com.py/sitemap.xml

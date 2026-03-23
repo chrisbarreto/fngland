@@ -1,0 +1,544 @@
+---
+export const prerender = true;
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Footer from "@/components/Footer.astro";
+import RegistroModal from "@/components/RegistroModal.astro";
+import logoDark from "@/assets/logos/logo-dark.svg";
+import reviews from "@/config/reviews.json" assert { type: "json" };
+---
+
+<BaseLayout
+  title="Plan Premium de lavado automotriz | Fórmula NG"
+  description="Lavados ilimitados, protección premium y servicio a domicilio por Gs. 200.000 al mes. Activá tu membresía hoy en Fórmula NG, Asunción."
+  canonicalPath="/membresia"
+>
+  <div class="membresia-page">
+
+    <!-- Header mínimo -->
+    <header class="lp-header">
+      <a href="/" aria-label="Ir al inicio">
+        <img src={logoDark.src} alt="Fórmula NG" width="148" height="37" class="lp-logo" />
+      </a>
+    </header>
+
+    <main>
+
+      <!-- HERO -->
+      <section class="hero">
+        <div class="hero-inner">
+          <p class="eyebrow">Membresía oficial · Asunción, Paraguay</p>
+          <h1>Tu auto impecable,<br />todos los días.</h1>
+          <p class="hero-sub">
+            Lavados ilimitados, protección profesional y beneficios exclusivos.
+            Un solo pago mensual. Sin sorpresas.
+          </p>
+          <div class="price-wrap">
+            <span class="price">Gs. 200.000</span>
+            <span class="price-mo">/ mes</span>
+          </div>
+          <button type="button" class="btn-hero" id="hero-cta">
+            Quiero mi Plan Premium
+          </button>
+          <p class="legal-note">
+            Al continuar aceptás los
+            <a href="/terminos-y-condiciones" target="_blank">Términos y Condiciones</a>,
+            <a href="/politica-de-privacidad" target="_blank">Política de Privacidad</a>
+            y la <a href="/debito-automatico" target="_blank">autorización de débito automático</a>.
+          </p>
+        </div>
+      </section>
+
+      <!-- BENEFICIOS -->
+      <section class="benefits">
+        <h2>¿Qué incluye el Plan Premium?</h2>
+        <div class="benefits-grid">
+          <div class="benefit-card">
+            <div class="benefit-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 7.9 7 6c-.29 1.9-1.57 2.9-2.29 3.1C3.57 10.0 3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></svg>
+            </div>
+            <h3>Lavados ilimitados</h3>
+            <p>Hasta 1 lavado por día por vehículo durante todo el mes activo.</p>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3>Protección y brillo</h3>
+            <p>1 aplicación de cera líquida con protección de hasta 4 meses incluida por ciclo.</p>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <h3>Lavado de motor</h3>
+            <p>1 lavado de motor profesional incluido por ciclo mensual activo.</p>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+            </div>
+            <h3>Interior completo</h3>
+            <p>Aspirado profundo, desinfección, hidratación de plásticos y revitalización de neumáticos.</p>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <h3>Servicio a domicilio</h3>
+            <p>2 traslados gratuitos por mes con agenda previa, sujeto a disponibilidad.</p>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+            </div>
+            <h3>Activación inmediata</h3>
+            <p>Tu membresía queda activa en el momento que registrás tu tarjeta y se aprueba el pago.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRECIO + CTA CENTRAL -->
+      <section class="cta-section">
+        <p class="cta-eyebrow">Todo eso por</p>
+        <div class="cta-price-wrap">
+          <span class="cta-price">Gs. 200.000</span>
+          <span class="cta-price-mo">/ mes</span>
+        </div>
+        <p class="cta-sub">Débito automático mensual · Activación inmediata · Permanencia 12 meses</p>
+        <button type="button" class="btn-cta" id="cta-mid">
+          Activar mi Plan Premium ahora
+        </button>
+        <p class="legal-note">
+          Al continuar aceptás los
+          <a href="/terminos-y-condiciones" target="_blank">Términos y Condiciones</a>,
+          <a href="/politica-de-privacidad" target="_blank">Política de Privacidad</a>
+          y la <a href="/debito-automatico" target="_blank">autorización de débito automático</a>.
+        </p>
+      </section>
+
+      <!-- PRUEBA SOCIAL -->
+      <section class="reviews-section">
+        <h2>Lo que dicen nuestros miembros</h2>
+        <div class="reviews-grid">
+          {reviews.slice(0, 3).map((r) => (
+            <div class="review-card">
+              <div class="review-header">
+                <div class="review-avatar">{r.name.charAt(0)}</div>
+                <div>
+                  <p class="review-name">{r.name}</p>
+                  {r.badge && <p class="review-badge">{r.badge}</p>}
+                </div>
+                <div class="review-stars" aria-label={`${r.rating} estrellas`}>
+                  {"★".repeat(r.rating)}
+                </div>
+              </div>
+              <p class="review-text">{r.text}</p>
+              <p class="review-date">{r.date}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- CONFIANZA -->
+      <section class="trust-section">
+        <div class="trust-items">
+          <div class="trust-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Pago seguro<br/>vía Bancard</span>
+          </div>
+          <div class="trust-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Activación<br/>inmediata</span>
+          </div>
+          <div class="trust-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.1 12.62a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>Soporte vía<br/>WhatsApp</span>
+          </div>
+          <div class="trust-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Asunción,<br/>Paraguay</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA FINAL -->
+      <section class="final-cta">
+        <h2>Empezá hoy mismo</h2>
+        <p>Registrate en minutos. Tu auto te lo va a agradecer.</p>
+        <button type="button" class="btn-cta" id="cta-final">
+          Quiero mi Plan Premium
+        </button>
+        <p class="legal-note">
+          Al continuar aceptás los
+          <a href="/terminos-y-condiciones" target="_blank">Términos y Condiciones</a>,
+          <a href="/politica-de-privacidad" target="_blank">Política de Privacidad</a>
+          y la <a href="/debito-automatico" target="_blank">autorización de débito automático</a>.
+        </p>
+      </section>
+
+    </main>
+
+    <Footer />
+  </div>
+
+  <RegistroModal />
+</BaseLayout>
+
+<script>
+  function openModal() {
+    if (typeof (window as any).__openRegistroModal === "function") {
+      (window as any).__openRegistroModal();
+    }
+  }
+
+  // ViewContent Meta Pixel event
+  if (typeof (window as any).fbq === "function") {
+    (window as any).fbq("track", "ViewContent", {
+      content_name: "Plan Premium",
+      content_category: "Membresia",
+      value: 200000,
+      currency: "PYG",
+    });
+  }
+
+  document.getElementById("hero-cta")?.addEventListener("click", openModal);
+  document.getElementById("cta-mid")?.addEventListener("click", openModal);
+  document.getElementById("cta-final")?.addEventListener("click", openModal);
+</script>
+
+<style>
+  .membresia-page {
+    min-height: 100vh;
+    background: #060606;
+    color: var(--sl-color-white, #fff);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header mínimo */
+  .lp-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .lp-logo { height: 36px; width: auto; }
+
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    background: radial-gradient(ellipse at top center, rgba(249,38,6,0.22) 0%, transparent 60%);
+    padding: 4rem 1.5rem 3.5rem;
+    text-align: center;
+  }
+  .hero-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    display: grid;
+    gap: 1rem;
+  }
+  .eyebrow {
+    margin: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: #ff6b3d;
+    font-weight: 700;
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    line-height: 1.1;
+    font-weight: 900;
+    color: #fff;
+  }
+  .hero-sub {
+    margin: 0;
+    font-size: clamp(1rem, 2.5vw, 1.15rem);
+    color: rgba(255,255,255,0.7);
+    line-height: 1.55;
+    max-width: 520px;
+    justify-self: center;
+  }
+  .price-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+  .price {
+    font-size: clamp(2.2rem, 6vw, 3rem);
+    font-weight: 900;
+    color: #ff6b3d;
+  }
+  .price-mo {
+    font-size: 1.1rem;
+    color: rgba(255,255,255,0.55);
+  }
+  .btn-hero {
+    margin-top: 0.5rem;
+    justify-self: center;
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 2.2rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 8px 28px rgba(249,38,6,0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+    letter-spacing: 0.01em;
+  }
+  .btn-hero:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 36px rgba(249,38,6,0.5);
+  }
+  .legal-note {
+    margin: 0.15rem 0 0;
+    font-size: 0.73rem;
+    color: rgba(255,255,255,0.35);
+    line-height: 1.45;
+  }
+  .legal-note a {
+    color: rgba(255,255,255,0.5);
+    text-decoration: underline;
+  }
+  .legal-note a:hover { color: #ff6b3d; }
+
+  /* ─── BENEFICIOS ─── */
+  .benefits {
+    padding: 3.5rem 1.5rem;
+    max-width: 1080px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .benefits h2, .reviews-section h2, .final-cta h2 {
+    text-align: center;
+    margin: 0 0 2rem;
+    font-size: clamp(1.4rem, 3.5vw, 1.9rem);
+    color: #fff;
+  }
+  .benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.1rem;
+  }
+  .benefit-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 1.5rem 1.25rem;
+    display: grid;
+    gap: 0.65rem;
+  }
+  .benefit-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: rgba(249,38,6,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ff6b3d;
+  }
+  .benefit-icon svg { width: 22px; height: 22px; }
+  .benefit-card h3 {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #fff;
+  }
+  .benefit-card p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.58);
+    line-height: 1.5;
+  }
+
+  /* ─── CTA CENTRAL ─── */
+  .cta-section {
+    background: radial-gradient(ellipse at center, rgba(249,38,6,0.15), transparent 70%);
+    padding: 3.5rem 1.5rem;
+    text-align: center;
+    display: grid;
+    gap: 0.9rem;
+  }
+  .cta-eyebrow {
+    margin: 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    font-weight: 600;
+  }
+  .cta-price-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    justify-content: center;
+  }
+  .cta-price {
+    font-size: clamp(2.5rem, 7vw, 3.8rem);
+    font-weight: 900;
+    color: #ff6b3d;
+  }
+  .cta-price-mo {
+    font-size: 1.15rem;
+    color: rgba(255,255,255,0.45);
+  }
+  .cta-sub {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.45);
+  }
+  .btn-cta {
+    justify-self: center;
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 2.5rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 8px 28px rgba(249,38,6,0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 36px rgba(249,38,6,0.5);
+  }
+
+  /* ─── REVIEWS ─── */
+  .reviews-section {
+    padding: 3.5rem 1.5rem;
+    max-width: 1080px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.1rem;
+  }
+  .review-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 1.35rem;
+    display: grid;
+    gap: 0.7rem;
+  }
+  .review-header {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+  .review-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .review-name {
+    margin: 0;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: #fff;
+  }
+  .review-badge {
+    margin: 0;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.4);
+  }
+  .review-stars {
+    margin-left: auto;
+    color: #facc15;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  .review-text {
+    margin: 0;
+    font-size: 0.84rem;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.55;
+  }
+  .review-date {
+    margin: 0;
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* ─── TRUST ─── */
+  .trust-section {
+    padding: 2.5rem 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .trust-items {
+    max-width: 680px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+  }
+  .trust-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    color: rgba(255,255,255,0.55);
+    font-size: 0.8rem;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .trust-item svg { color: #ff6b3d; }
+
+  /* ─── FINAL CTA ─── */
+  .final-cta {
+    padding: 4rem 1.5rem;
+    text-align: center;
+    display: grid;
+    gap: 1rem;
+    background: radial-gradient(ellipse at bottom, rgba(249,38,6,0.12), transparent 60%);
+  }
+  .final-cta p {
+    margin: 0;
+    color: rgba(255,255,255,0.6);
+    font-size: 1rem;
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 860px) {
+    .benefits-grid, .reviews-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (max-width: 560px) {
+    .benefits-grid, .reviews-grid {
+      grid-template-columns: 1fr;
+    }
+    .hero { padding: 3rem 1.25rem 2.5rem; }
+    .benefits, .reviews-section { padding: 2.5rem 1.25rem; }
+    .cta-section, .final-cta { padding: 2.5rem 1.25rem; }
+    .trust-items { gap: 1.5rem; }
+  }
+</style>
