@@ -70,19 +70,19 @@ import logoDark from "@/assets/logos/logo-dark.svg";
 </BaseLayout>
 
 <style>
-  .legal-page { min-height: 100vh; background: #060606; display: flex; flex-direction: column; }
+  .legal-page { min-height: 100vh; background: #060606; display: flex; flex-direction: column; width: 100%; max-width: 100%; overflow-x: hidden; }
   .legal-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 1.1rem 1.5rem;
     border-bottom: 1px solid rgba(255,255,255,0.07);
-    max-width: 860px; margin: 0 auto; width: 100%;
+    max-width: 860px; margin: 0 auto; width: 100%; box-sizing: border-box;
   }
   .legal-header img { height: 32px; width: auto; }
   .back-link { font-size: 0.85rem; color: rgba(255,255,255,0.45); text-decoration: none; }
   .back-link:hover { color: #ff6b3d; }
   .legal-main {
     flex: 1; max-width: 860px; margin: 0 auto; width: 100%;
-    padding: 3rem 1.5rem 4rem;
+    padding: 3rem 1.5rem 4rem; box-sizing: border-box;
     color: rgba(255,255,255,0.8);
     line-height: 1.7;
   }
