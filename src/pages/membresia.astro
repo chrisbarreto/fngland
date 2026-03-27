@@ -100,19 +100,18 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
 
       <!-- PRECIO + CTA CENTRAL -->
       <section class="cta-section">
+        <span class="cta-badge">🔥 Precio de lanzamiento</span>
         <p class="cta-eyebrow">Todo eso por</p>
         <div class="cta-price-wrap">
           <span class="cta-price">Gs. 200.000</span>
           <span class="cta-price-mo">/ mes</span>
         </div>
-        <p class="cta-sub">Débito automático mensual · Activación inmediata · Permanencia 12 meses</p>
+        <p class="cta-sub">Débito automático mensual · Activación inmediata</p>
         <button type="button" class="btn-cta" id="cta-mid">
           Activar mi Plan Premium ahora
         </button>
         <p class="legal-note">
-          Al continuar aceptás los
-          <a href="/terminos-y-condiciones" target="_blank">Términos y Condiciones</a>,
-          <a href="/politica-de-privacidad" target="_blank">Política de Privacidad</a>
+          Al continuar aceptás los <a href="/terminos-y-condiciones" target="_blank">Términos y Condiciones</a>
           y la <a href="/debito-automatico" target="_blank">autorización de débito automático</a>.
         </p>
       </section>
@@ -121,7 +120,7 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
       <section class="reviews-section">
         <h2>Lo que dicen nuestros miembros</h2>
         <div class="reviews-grid">
-          {reviews.slice(0, 3).map((r) => (
+          {reviews.map((r) => (
             <div class="review-card">
               <div class="review-header">
                 <div class="review-avatar">{r.name.charAt(0)}</div>
@@ -170,10 +169,7 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
           Quiero mi Plan Premium
         </button>
         <p class="legal-note">
-          Al continuar aceptás los
-          <a href="/terminos-y-condiciones" target="_blank">Términos y Condiciones</a>,
-          <a href="/politica-de-privacidad" target="_blank">Política de Privacidad</a>
-          y la <a href="/debito-automatico" target="_blank">autorización de débito automático</a>.
+          Al continuar aceptás los <a href="/terminos-y-condiciones" target="_blank">Términos y Condiciones</a>.
         </p>
       </section>
 
@@ -184,6 +180,8 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
 
   <RegistroModal />
 </BaseLayout>
+
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
 <script>
   function openModal() {
@@ -372,6 +370,17 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
     text-align: center;
     display: grid;
     gap: 0.9rem;
+  }
+  .cta-badge {
+    display: inline-block;
+    background: rgba(249,38,6,0.18);
+    border: 1px solid rgba(249,38,6,0.35);
+    color: #ff6b3d;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.3rem 0.9rem;
+    border-radius: 99px;
+    letter-spacing: 0.02em;
   }
   .cta-eyebrow {
     margin: 0;

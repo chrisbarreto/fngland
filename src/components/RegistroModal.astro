@@ -32,27 +32,39 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       <div class="form-step active" data-step="1">
         <div class="form-grid">
           <div class="form-group full">
+            <label for="ruc">RUC / CI <span class="required">*</span></label>
+            <div style="display:flex;gap:0.5rem;align-items:stretch;">
+              <input type="text" id="ruc" name="ruc" required placeholder="Ej: 1234567-8" maxlength="20" style="flex:1;min-width:0;" />
+              <button type="button" id="btn-confirmar-ci" style="padding:0 1.1rem;background:#f9a606;border:none;border-radius:8px;color:#111;font-weight:700;cursor:pointer;font-size:0.85rem;white-space:nowrap;flex-shrink:0;">Confirmar</button>
+            </div>
+            <span class="field-error"></span>
+          </div>
+          <!-- Loading indicator mientras se busca el CI -->
+          <div class="form-group full" id="ci-lookup-loading" style="display:none;">
+            <div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0;color:rgba(255,255,255,0.55);font-size:0.85rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:ci-spin 0.8s linear infinite;flex-shrink:0;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+              Buscando tu registro...
+            </div>
+          </div>
+          <!-- Campos personales — ocultos hasta resolver el lookup -->
+          <div class="form-group full personal-field" style="display:none;">
             <label for="nombre">Nombre completo <span class="required">*</span></label>
             <input type="text" id="nombre" name="nombre" required placeholder="Ej: Juan Pérez" maxlength="200" />
             <span class="field-error"></span>
           </div>
-          <div class="form-group">
-            <label for="ruc">RUC / CI <span class="required">*</span></label>
-            <input type="text" id="ruc" name="ruc" required placeholder="Ej: 1234567-8" maxlength="20" />
-            <span class="field-error"></span>
-          </div>
-          <div class="form-group">
+          <div class="form-group personal-field" style="display:none;">
             <label for="telefono">Teléfono / WhatsApp <span class="required">*</span></label>
             <input type="tel" id="telefono" name="telefono" required placeholder="Ej: 0981 123 456" maxlength="20" />
             <span class="field-error"></span>
           </div>
-          <div class="form-group full">
+          <div class="form-group personal-field" style="display:none;">
             <label for="email">Email <span class="required">*</span></label>
             <input type="email" id="email" name="email" required placeholder="tu@email.com" />
             <span class="field-error"></span>
           </div>
         </div>
-        <div class="form-actions">
+        <!-- Acción oculta hasta resolver el lookup -->
+        <div class="form-actions" id="step1-actions" style="display:none;">
           <button type="button" class="btn-next" data-next="2">Siguiente</button>
         </div>
       </div>
@@ -96,10 +108,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               <option value="1">Auto</option>
               <option value="2">Camioneta</option>
               <option value="3">SUV</option>
-              <option value="6">Pickup</option>
-              <option value="7">Van</option>
               <option value="4">Moto</option>
-              <option value="8">Otro</option>
+              <option value="5">Doble Cabina</option>
             </select>
             <span class="field-error"></span>
           </div>
@@ -178,6 +188,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         <h3>Registrá tu tarjeta de pago</h3>
         <p>Ingresá los datos de tu tarjeta para habilitar el débito automático obligatorio y activar tu Plan Premium.</p>
       </div>
+      <!-- Loading spinner — visible while Bancard iframe is loading -->
+      <div id="bancard-loading" style="display:none;text-align:center;padding:3rem 0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:ci-spin 0.8s linear infinite;display:inline-block;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+        <p style="margin:0.75rem 0 0;color:rgba(255,255,255,0.55);font-size:0.88rem;">Cargando formulario de pago seguro…</p>
+      </div>
       <div id="bancard-iframe"></div>
       <p class="checkout-secure-note">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -212,6 +227,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   @keyframes modalFadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+  }
+  @keyframes ci-spin {
+    to { transform: rotate(360deg); }
   }
 
   .modal-container {
@@ -559,15 +577,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     font-size: 0.9rem;
   }
   #bancard-iframe {
-    min-height: 400px;
     background: #fff;
     border-radius: 12px;
     overflow: hidden;
   }
   #bancard-iframe iframe {
     width: 100% !important;
-    min-height: 400px !important;
     border: none !important;
+    display: block !important;
+    margin: 0 auto !important;
   }
   .checkout-secure-note {
     display: flex;
@@ -626,10 +644,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   .turnstile-wrapper {
     display: inline-flex;
     margin-top: 1.25rem;
-    padding: 0.5rem;
-    border-radius: 12px;
-    background: #0f0e12;
-    border: 1px dashed rgba(255, 255, 255, 0.1);
   }
 
   /* Auto-debit section */
@@ -668,41 +682,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     font-size: 0.85rem;
     line-height: 1.45;
   }
-  .debit-day-wrapper {
-    margin-top: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-  .debit-day-wrapper label {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--sl-color-gray-2, #ccc);
-  }
-  .debit-day-wrapper select {
-    background: var(--sl-color-gray-6, #1a1a1a);
-    border: 1px solid var(--sl-color-hairline, rgba(255,255,255,0.1));
-    border-radius: 10px;
-    padding: 0.75rem 1rem;
-    color: var(--sl-color-white, #fff);
-    font-size: 0.95rem;
-    outline: none;
-    font-family: inherit;
-    transition: border-color 0.2s;
-  }
-  .debit-day-wrapper select:focus {
-    border-color: #f92606;
-  }
-  .debit-day-wrapper select option {
-    background: var(--sl-color-gray-6, #1a1a1a);
-    color: var(--sl-color-white, #fff);
-  }
-  .debit-day-hint {
-    font-size: 0.75rem;
-    color: var(--sl-color-gray-4, #555);
-    font-style: italic;
-  }
-
   /* Responsive */
   @media (max-width: 548px) {
     .modal-container {
@@ -745,6 +724,39 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     let currentStep = 1;
     let marcasLoaded = false;
     let planesLoaded = false;
+    let modoNuevoVehiculo = false;
+    let modoActualizarVehiculo = false;
+    let lastLookedUpCI = "";      // evita re-disparar lookup para el mismo CI
+    let lookupInProgress = false; // evita lookups simultáneos (race condition)
+
+    // Helpers for censoring displayed data
+    function censurar(valor: string, visibles = 3): string {
+      if (!valor || valor.length <= visibles) return valor;
+      return valor.slice(0, visibles) + "***";
+    }
+    function censurarEmail(email: string): string {
+      const [user, domain] = email.split("@");
+      return (user ? user[0] + "***" : "***") + "@" + (domain ?? "");
+    }
+
+    // Revela los campos personales (nombre/tel/email) y el botón Siguiente del paso 1
+    function revelarCamposPersonales() {
+      document.querySelectorAll<HTMLElement>(".personal-field").forEach(el => { el.style.display = ""; });
+      const actions = document.getElementById("step1-actions") as HTMLElement | null;
+      if (actions) actions.style.display = "";
+      const loading = document.getElementById("ci-lookup-loading") as HTMLElement | null;
+      if (loading) loading.style.display = "none";
+    }
+
+    // Oculta los campos personales y el botón Siguiente (estado inicial / reset)
+    function ocultarCamposPersonales() {
+      document.querySelectorAll<HTMLElement>(".personal-field").forEach(el => { el.style.display = "none"; });
+      const actions = document.getElementById("step1-actions") as HTMLElement | null;
+      if (actions) actions.style.display = "none";
+      const loading = document.getElementById("ci-lookup-loading") as HTMLElement | null;
+      if (loading) loading.style.display = "none";
+    }
+
     const defaultSuccessTitle = "Plan activado";
     const defaultSuccessMessage =
       "Tu Plan Premium quedó activo correctamente. Ya podés disfrutar de tus beneficios y agendar tus servicios.";
@@ -775,8 +787,26 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       restoreSuccessState();
       goToStep(1);
       clearErrors();
+      ocultarCamposPersonales();
+      // Limpiar todos los campos del paso 1
+      (document.getElementById("ruc") as HTMLInputElement).value = "";
+      (document.getElementById("nombre") as HTMLInputElement).value = "";
+      (document.getElementById("telefono") as HTMLInputElement).value = "";
+      (document.getElementById("email") as HTMLInputElement).value = "";
+      document.getElementById("rp-resume-banner")?.remove();
+      document.getElementById("rp-opciones-panel")?.remove();
+      document.getElementById("rp-info-banner")?.remove();
+      sessionStorage.removeItem("formulang_idCliente");
+      sessionStorage.removeItem("formulang_idRegistroPendiente");
+      sessionStorage.removeItem("formulang_idMembresiaActivar");
+      sessionStorage.removeItem("formulang_idVehiculo");
+      modoNuevoVehiculo = false;
+      modoActualizarVehiculo = false;
+      lastLookedUpCI = "";
+      lookupInProgress = false;
       form.style.display = "";
       bancardContainer.style.display = "none";
+
       successDiv.style.display = "none";
       submitBtn.disabled = false;
       submitText.style.display = "inline";
@@ -1073,6 +1103,472 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
     }
 
+    // ---- Bancard iframe loading spinner helpers ----
+    function showBancardLoading() {
+      const spinner = document.getElementById("bancard-loading") as HTMLElement | null;
+      const iframeDiv = document.getElementById("bancard-iframe") as HTMLElement | null;
+      if (spinner) spinner.style.display = "block";
+      if (iframeDiv) iframeDiv.style.display = "none";
+    }
+
+    function hideBancardLoading() {
+      const spinner = document.getElementById("bancard-loading") as HTMLElement | null;
+      const iframeDiv = document.getElementById("bancard-iframe") as HTMLElement | null;
+      if (spinner) spinner.style.display = "none";
+      if (iframeDiv) iframeDiv.style.display = "";
+    }
+
+    /**
+     * Shows the red loading spinner and hides #bancard-iframe while Bancard SDK
+     * loads. Uses MutationObserver to detect the injected <iframe>, then waits
+     * for its load event (or a 15 s fallback). Guarantees the spinner is visible
+     * for at least 400 ms so the browser has time to paint it.
+     */
+    function waitForBancardIframe() {
+      showBancardLoading();
+      const container = document.getElementById("bancard-iframe") as HTMLElement;
+      if (!container) return;
+
+      const shownAt = Date.now();
+      const MIN_VISIBLE_MS = 400;
+
+      function done() {
+        const elapsed = Date.now() - shownAt;
+        const delay = Math.max(0, MIN_VISIBLE_MS - elapsed);
+        setTimeout(hideBancardLoading, delay);
+      }
+
+      const fallbackTimer = setTimeout(done, 15000);
+
+      function forceIframeHeight(iframe: HTMLIFrameElement) {
+        iframe.style.setProperty("height", "480px", "important");
+        iframe.style.setProperty("min-height", "480px", "important");
+        iframe.setAttribute("height", "480");
+        iframe.scrollTop = 0;
+      }
+
+      const observer = new MutationObserver(() => {
+        const iframe = container.querySelector("iframe");
+        if (!iframe) return;
+        observer.disconnect();
+        forceIframeHeight(iframe);
+
+        // Cross-origin iframes still fire the load event even if contentDocument is inaccessible.
+        iframe.addEventListener("load", () => {
+          forceIframeHeight(iframe);
+          clearTimeout(fallbackTimer);
+          done();
+        }, { once: true });
+      });
+
+      observer.observe(container, { childList: true, subtree: true });
+    }
+
+    // ---- Retry checkout with another card (same idCliente + idRegistroPendiente) ----
+    async function startRetryCheckout(idCliente: string) {
+      // Remove old retry buttons and reset to iframe state
+      successDiv.querySelectorAll("button.btn-next:not(#success-close)").forEach(b => b.remove());
+      successDiv.style.display = "none";
+      bancardContainer.style.display = "none";
+      // Mostrar paso 3 en el stepper (registro de tarjeta = último paso)
+      goToStep(3);
+
+      try {
+        const checkoutRes = await fetchWithTimeout("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            idCliente,
+            diaDebito: new Date().getDate(),
+            urlRedirect: window.location.origin + "/api/callback",
+          }),
+        }, 30000);
+
+        const checkoutBody = await checkoutRes.json().catch(() => ({}));
+        if (!checkoutRes.ok || !checkoutBody.processId) {
+          showResult("Error", "No pudimos iniciar el proceso de pago. Intentá de nuevo más tarde.", true);
+          return;
+        }
+
+        bancardContainer.style.display = "block";
+
+        (document.querySelector(".modal-container") as HTMLElement | null)?.scrollTo({ top: 0 });
+        const iframeDiv = document.getElementById("bancard-iframe") as HTMLElement;
+        if (iframeDiv) iframeDiv.innerHTML = "";
+
+        if (!(window as any).Bancard) {
+          await new Promise<void>((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = "/bancard-checkout-5.0.1.js";
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error("Error al cargar Bancard SDK"));
+            document.head.appendChild(script);
+          });
+        }
+
+        waitForBancardIframe();
+        (window as any).Bancard.Cards.createForm("bancard-iframe", checkoutBody.processId, {
+          styles: {
+            "input-background-color": "#ffffff",
+            "input-text-color": "#333333",
+            "input-placeholder-color": "#999999",
+            "input-border-color": "#dddddd",
+            "button-background-color": "#4f46e5",
+            "button-text-color": "#ffffff",
+            "form-background-color": "#ffffff",
+          },
+        });
+      } catch (err: any) {
+        showResult("Error", err.message || "Error al intentar de nuevo.", true);
+      }
+    }
+
+    // ---- CI lookup ----
+    const rucInput = document.getElementById("ruc") as HTMLInputElement;
+
+    async function dispararLookupCI(ci: string) {
+      // Guardia anti race-condition: no relanzar si ya está en curso o para el mismo CI
+      if (lookupInProgress || ci === lastLookedUpCI) return;
+      lookupInProgress = true;
+      lastLookedUpCI = ci;
+
+      // Mostrar loading, ocultar campos mientras busca
+      const loadingEl = document.getElementById("ci-lookup-loading") as HTMLElement | null;
+      if (loadingEl) loadingEl.style.display = "";
+
+      // Clear previous lookup state
+      document.getElementById("rp-resume-banner")?.remove();
+      document.getElementById("rp-opciones-panel")?.remove();
+      document.getElementById("rp-info-banner")?.remove();
+      sessionStorage.removeItem("formulang_idCliente");
+      sessionStorage.removeItem("formulang_idRegistroPendiente");
+      sessionStorage.removeItem("formulang_idMembresiaActivar");
+      sessionStorage.removeItem("formulang_idVehiculo");
+      modoNuevoVehiculo = false;
+      modoActualizarVehiculo = false;
+
+      try {
+        const res = await fetchWithTimeout(
+          `/api/registro-pendiente?ci=${encodeURIComponent(ci)}`,
+          {},
+          12000,
+        );
+        if (!res.ok) {
+          // Error de red/servidor → revelar campos igual para no bloquear al usuario
+          revelarCamposPersonales();
+          return;
+        }
+        const data = await res.json().catch(() => null);
+        if (!data?.found) {
+          // CI no registrada → cliente nuevo, revelar campos vacíos
+          revelarCamposPersonales();
+          return;
+        }
+
+        // Helper to set a field value by id
+        const setVal = (id: string, val: string | number | null | undefined) => {
+          const el = document.getElementById(id) as HTMLInputElement | null;
+          if (el && val != null && val !== "") el.value = String(val);
+        };
+
+        const step1El = rucInput.closest(".form-step");
+
+        // ---- Scenario A: has pending registration ----
+        if (data.registroPendiente) {
+          const rp = data.registroPendiente;
+
+          // Pre-fill step 1
+          setVal("nombre", data.nombre);
+          setVal("telefono", data.telefono);
+          setVal("email", data.email);
+
+          // Pre-fill step 2
+          setVal("chapa", rp.chapa ? String(rp.chapa).toUpperCase() : null);
+          if (rp.anio) setVal("anio", rp.anio);
+          setVal("color", rp.color);
+          if (rp.idTipoVehiculo) {
+            const tipoSel = document.getElementById("tipoVehiculo") as HTMLSelectElement | null;
+            if (tipoSel) tipoSel.value = String(rp.idTipoVehiculo);
+          }
+          if (rp.idMarca) {
+            const marcaSel = document.getElementById("idMarca") as HTMLSelectElement | null;
+            if (marcaSel) {
+              marcaSel.value = String(rp.idMarca);
+              marcaSel.dispatchEvent(new Event("change"));
+              if (rp.idModelo) setTimeout(() => setVal("idModelo", rp.idModelo), 800);
+            }
+          }
+          if (rp.idPlan) {
+            setVal("idPlan", rp.idPlan);
+            const planCard = document.querySelector(`[data-plan-id="${rp.idPlan}"]`);
+            if (planCard) {
+              document.querySelectorAll(".plan-card").forEach(c => c.classList.remove("selected"));
+              planCard.classList.add("selected");
+            }
+          }
+
+          sessionStorage.setItem("formulang_idCliente", data.idCliente);
+          sessionStorage.setItem("formulang_idRegistroPendiente", rp.idRegistroPendiente);
+
+          const nombreCensurado = censurar(data.nombre, 4);
+          const emailCensurado = censurarEmail(data.email);
+          const banner = document.createElement("div");
+          banner.id = "rp-resume-banner";
+          banner.style.cssText = "margin-top:1rem;padding:0.85rem 1rem;background:rgba(249,166,6,0.12);border:1px solid rgba(249,166,6,0.35);border-radius:10px;font-size:0.85rem;color:#f9a606;";
+          banner.innerHTML = `<strong>Encontramos tu registro: ${nombreCensurado}, ${emailCensurado}</strong><br/>Tus datos fueron completados automáticamente. Revisalos y continuá al pago.`;
+          step1El?.appendChild(banner);
+          revelarCamposPersonales();
+          return;
+        }
+
+        // ---- Scenario B: existing membership(s), no pending registration ----
+        if (data.membresias && data.membresias.length > 0) {
+          sessionStorage.setItem("formulang_idCliente", data.idCliente);
+
+          const nombreCensurado = censurar(data.nombre, 4);
+          const memPagopar = data.membresias.filter((m: any) => m.renovacionAutomatica);
+          const memEfectivo = data.membresias.filter((m: any) => !m.renovacionAutomatica);
+          const hayPagopar = memPagopar.length > 0;
+          const hayEfectivo = memEfectivo.length > 0;
+
+          const btnActualizarHTML = hayPagopar ? `
+            <button id="rp-btn-actualizar" type="button" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:rgba(255,255,255,0.05);border:1px solid rgba(249,166,6,0.4);border-radius:10px;color:#fff;cursor:pointer;text-align:left;">
+              <span style="font-size:1.3rem;">💳</span>
+              <span><strong style="display:block;font-size:0.875rem;">Actualizar tarjeta de débito</strong><small style="color:#aaa;font-size:0.78rem;">Registrá una nueva tarjeta para tu débito automático</small></span>
+            </button>` : "";
+
+          // Para membresía única: siempre mostrar código + chapa visibles al usuario
+          const membershipInfoHTML = (m: any) =>
+            `<p style="margin:0.4rem 0 0;padding-left:2.2rem;font-size:0.78rem;color:rgba(255,255,255,0.55);">Membresía <strong style="color:#fff;">${m.codigo}</strong> · Chapa <strong style="color:#fff;">${censurar(m.chapa ?? "", 2)}</strong></p>`;
+
+          const dropdownEfectivo = memEfectivo.length > 1
+            ? `<select id="rp-select-membresia" style="width:100%;margin-top:0.5rem;padding:0.4rem 0.6rem;background:#1a1a2e;border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:#fff;font-size:0.82rem;">${memEfectivo.map((m: any) => `<option value="${m.idMembresia}">Chapa ${censurar(m.chapa ?? "", 2)} — ${m.codigo}</option>`).join("")}</select>`
+            : `<input type="hidden" id="rp-select-membresia" value="${memEfectivo[0]?.idMembresia ?? ""}"/>`;
+
+          // Botones "Actualizar datos del vehículo" — solo para membresías NO activas (idEstado ≠ 1)
+          const botonesActualizarVehiculoHTML = memEfectivo.filter((m: any) => m.idEstado !== 1).map((m: any, i: number) => `
+            <button id="rp-btn-actualizar-vehiculo-${i}" type="button"
+              data-id-vehiculo="${m.idVehiculo}"
+              data-id-membresia="${m.idMembresia}"
+              data-chapa="${m.chapa ?? ""}"
+              data-id-marca="${m.idMarca ?? ""}"
+              data-id-modelo="${m.idModelo ?? ""}"
+              data-anio="${m.anio ?? ""}"
+              data-color="${m.color ?? ""}"
+              data-id-tipo-vehiculo="${m.idTipoVehiculo ?? ""}"
+              style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;cursor:pointer;text-align:left;">
+              <span style="font-size:1.3rem;">🔧</span>
+              <span>
+                <strong style="display:block;font-size:0.875rem;">Actualizar datos del vehículo</strong>
+                <small style="color:#aaa;font-size:0.78rem;">Membresía ${m.codigo} · Chapa ${censurar(m.chapa ?? "", 2)}</small>
+              </span>
+            </button>`).join("");
+
+          // El select NO puede estar dentro del <button> — el clic en el dropdown
+          // propaga al botón y dispara el checkout sin que el usuario lo pida.
+          // Se usa un <div> contenedor con el select separado y un botón de confirmar.
+          const btnActivarHTML = hayEfectivo ? `
+            <div style="display:flex;flex-direction:column;gap:0.1rem;padding:0.75rem 1rem;background:rgba(255,255,255,0.05);border:1px solid rgba(79,70,229,0.5);border-radius:10px;color:#fff;">
+              <div style="display:flex;align-items:center;gap:0.75rem;">
+                <span style="font-size:1.3rem;">🔄</span>
+                <span><strong style="display:block;font-size:0.875rem;">Activar débito automático</strong><small style="color:#aaa;font-size:0.78rem;">Registrá tu tarjeta y automatizá el pago mensual</small></span>
+              </div>
+              ${memEfectivo.length > 1
+                ? `<div style="padding-left:2.2rem;">${dropdownEfectivo}</div>`
+                : membershipInfoHTML(memEfectivo[0]) + dropdownEfectivo}
+              <button id="rp-btn-activar" type="button" style="margin-top:0.6rem;margin-left:auto;padding:0.35rem 1.1rem;background:#4f46e5;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:0.82rem;font-weight:600;">Activar →</button>
+            </div>` : "";
+
+          const panel = document.createElement("div");
+          panel.id = "rp-opciones-panel";
+          panel.style.cssText = "margin-top:1rem;padding:1rem;background:rgba(249,166,6,0.08);border:1px solid rgba(249,166,6,0.3);border-radius:12px;";
+          panel.innerHTML = `
+            <p style="font-size:0.9rem;color:#f9a606;font-weight:700;margin:0 0 0.75rem;">👋 Hola ${nombreCensurado}, ya sos cliente.</p>
+            <div style="display:flex;flex-direction:column;gap:0.6rem;">
+              ${btnActualizarHTML}
+              ${btnActivarHTML}
+              ${botonesActualizarVehiculoHTML}
+              <button id="rp-btn-nuevo-vehiculo" type="button" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;cursor:pointer;text-align:left;">
+                <span style="font-size:1.3rem;">🚗</span>
+                <span><strong style="display:block;font-size:0.875rem;">Registrar un vehículo nuevo</strong><small style="color:#aaa;font-size:0.78rem;">Añadí otro vehículo con su propia membresía</small></span>
+              </button>
+            </div>
+          `;
+          step1El?.appendChild(panel);
+          // Escenario B: el panel reemplaza el form — ocultar loading, NO revelar campos
+          if (loadingEl) loadingEl.style.display = "none";
+
+          document.getElementById("rp-btn-actualizar")?.addEventListener("click", async () => {
+            panel.remove();
+            form.style.display = "none";
+            await startRetryCheckout(data.idCliente);
+          });
+
+          document.getElementById("rp-btn-activar")?.addEventListener("click", () => {
+            const selectEl = document.getElementById("rp-select-membresia") as HTMLSelectElement | HTMLInputElement;
+            const idMembresia = selectEl?.value;
+            if (!idMembresia) return;
+
+            // Ocultar el botón y mostrar aviso de migración de plan antes de continuar
+            const btnActivar = document.getElementById("rp-btn-activar") as HTMLElement;
+            btnActivar.style.display = "none";
+
+            const aviso = document.createElement("div");
+            aviso.id = "rp-aviso-upgrade";
+            aviso.style.cssText = "margin-top:0.5rem;padding:0.75rem;background:rgba(249,166,6,0.1);border:1px solid rgba(249,166,6,0.4);border-radius:8px;font-size:0.82rem;";
+            aviso.innerHTML = `
+              <p style="margin:0 0 0.4rem;font-weight:600;color:#f9a606;">⚠️ Tu plan pasará a Gs. 200.000/mes</p>
+              <p style="margin:0 0 0.65rem;color:rgba(255,255,255,0.65);font-size:0.78rem;">Al activar el débito automático, tu membresía se migra al Plan Premium (Gs. 200.000/mes). El primer cobro se realizará el próximo ciclo.</p>
+              <label style="display:flex;align-items:flex-start;gap:0.5rem;margin:0.5rem 0 0.65rem;cursor:pointer;font-size:0.78rem;color:rgba(255,255,255,0.75);">
+                <input type="checkbox" id="rp-accept-legal-b" style="margin-top:2px;accent-color:#4f46e5;" />
+                <span>Acepto los <a href="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer" style="color:#f9a606;">Términos y Condiciones</a>, <a href="/politica-de-privacidad" target="_blank" rel="noopener noreferrer" style="color:#f9a606;">Política de Privacidad</a> y la <a href="/debito-automatico" target="_blank" rel="noopener noreferrer" style="color:#f9a606;">autorización de débito automático</a>.</span>
+              </label>
+              <span id="rp-legal-b-error" style="color:#ef4444;font-size:0.75rem;display:none;">Debés aceptar los Términos y Condiciones para continuar.</span>
+              <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+                <button id="rp-aviso-cancelar" type="button" style="padding:0.3rem 0.75rem;background:transparent;border:1px solid rgba(255,255,255,0.25);border-radius:6px;color:#fff;cursor:pointer;font-size:0.78rem;">Cancelar</button>
+                <button id="rp-aviso-confirmar" type="button" style="padding:0.3rem 0.9rem;background:#4f46e5;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:0.78rem;font-weight:600;">Confirmar y registrar tarjeta →</button>
+              </div>
+            `;
+            btnActivar.parentElement?.appendChild(aviso);
+
+            document.getElementById("rp-aviso-cancelar")?.addEventListener("click", () => {
+              aviso.remove();
+              btnActivar.style.display = "";
+            });
+
+            document.getElementById("rp-aviso-confirmar")?.addEventListener("click", async () => {
+              const legalCheckbox = document.getElementById("rp-accept-legal-b") as HTMLInputElement;
+              const legalError = document.getElementById("rp-legal-b-error") as HTMLElement;
+              if (legalCheckbox && !legalCheckbox.checked) {
+                if (legalError) legalError.style.display = "block";
+                return;
+              }
+              if (legalError) legalError.style.display = "none";
+              sessionStorage.setItem("formulang_idMembresiaActivar", idMembresia);
+              panel.remove();
+              form.style.display = "none";
+              await startRetryCheckout(data.idCliente);
+            });
+          });
+
+          // Handlers para "Actualizar datos del vehículo" — solo membresías NO activas (idEstado ≠ 1)
+          memEfectivo.filter((m: any) => m.idEstado !== 1).forEach((_m: any, i: number) => {
+            document.getElementById(`rp-btn-actualizar-vehiculo-${i}`)?.addEventListener("click", (e) => {
+              const btn = e.currentTarget as HTMLElement;
+              const idVehiculo = btn.dataset.idVehiculo ?? "";
+              const chapa = btn.dataset.chapa ?? "";
+              const idMarca = btn.dataset.idMarca ? Number(btn.dataset.idMarca) : null;
+              const idModelo = btn.dataset.idModelo ? Number(btn.dataset.idModelo) : null;
+              const anio = btn.dataset.anio ? Number(btn.dataset.anio) : null;
+              const color = btn.dataset.color ?? "";
+              const idTipoVehiculo = btn.dataset.idTipoVehiculo ? Number(btn.dataset.idTipoVehiculo) : null;
+
+              panel.remove();
+              modoActualizarVehiculo = true;
+              modoNuevoVehiculo = false;
+              sessionStorage.setItem("formulang_idVehiculo", idVehiculo);
+
+              // Pre-llenar datos del vehículo
+              setVal("chapa", chapa);
+              if (color) setVal("color", color);
+              if (anio) setVal("anio", anio);
+              if (idTipoVehiculo) {
+                const tipoSel = document.getElementById("tipoVehiculo") as HTMLSelectElement | null;
+                if (tipoSel) tipoSel.value = String(idTipoVehiculo);
+              }
+              if (idMarca) {
+                const marcaSel = document.getElementById("idMarca") as HTMLSelectElement | null;
+                if (marcaSel) {
+                  marcaSel.value = String(idMarca);
+                  marcaSel.dispatchEvent(new Event("change"));
+                  if (idModelo) setTimeout(() => setVal("idModelo", idModelo), 800);
+                }
+              }
+
+              const infoBanner = document.createElement("div");
+              infoBanner.id = "rp-info-banner";
+              infoBanner.style.cssText = "margin-top:1rem;padding:0.75rem 1rem;background:rgba(79,70,229,0.12);border:1px solid rgba(79,70,229,0.35);border-radius:10px;font-size:0.82rem;color:#a5b4fc;";
+              infoBanner.innerHTML = `<strong>Actualizando datos del vehículo.</strong> Modificá los campos que necesitás y confirmá.`;
+              step1El?.appendChild(infoBanner);
+              goToStep(2);
+            });
+          });
+
+          document.getElementById("rp-btn-nuevo-vehiculo")?.addEventListener("click", () => {
+            panel.remove();
+            modoNuevoVehiculo = true;
+            setVal("nombre", data.nombre);
+            setVal("telefono", data.telefono);
+            setVal("email", data.email);
+            const infoBanner = document.createElement("div");
+            infoBanner.id = "rp-info-banner";
+            infoBanner.style.cssText = "margin-top:1rem;padding:0.75rem 1rem;background:rgba(79,70,229,0.12);border:1px solid rgba(79,70,229,0.35);border-radius:10px;font-size:0.82rem;color:#a5b4fc;";
+            infoBanner.innerHTML = `<strong>Tus datos personales ya están guardados.</strong> Completá los datos del nuevo vehículo.`;
+            step1El?.appendChild(infoBanner);
+            goToStep(2);
+          });
+          return;
+        }
+
+        // ---- Scenario C: client exists but no membership or pending registration ----
+        // Pre-fill step 1 and let them register normally (via registro-vehiculo endpoint)
+        setVal("nombre", data.nombre);
+        setVal("telefono", data.telefono);
+        setVal("email", data.email);
+        sessionStorage.setItem("formulang_idCliente", data.idCliente);
+        modoNuevoVehiculo = true;
+
+        const banner = document.createElement("div");
+        banner.id = "rp-resume-banner";
+        banner.style.cssText = "margin-top:1rem;padding:0.85rem 1rem;background:rgba(79,70,229,0.12);border:1px solid rgba(79,70,229,0.35);border-radius:10px;font-size:0.85rem;color:#a5b4fc;";
+        banner.innerHTML = `<strong>Encontramos tu cuenta, ${censurar(data.nombre, 4)}.</strong><br/>Tus datos personales fueron cargados. Completá los datos de tu vehículo para continuar.`;
+        step1El?.appendChild(banner);
+        revelarCamposPersonales();
+      } catch {
+        // Error inesperado → revelar campos para no bloquear al usuario
+        revelarCamposPersonales();
+      } finally {
+        // Siempre liberar la guardia al terminar el lookup
+        lookupInProgress = false;
+      }
+    }
+
+    // Lookup manual — se dispara al hacer clic en "Confirmar" o presionar Enter
+    async function confirmarCI() {
+      const ci = rucInput.value.trim();
+      if (!ci || ci.length < 5) {
+        showFieldError("ruc", "Ingresá tu RUC o CI para continuar.");
+        return;
+      }
+      // Resetear lastLookedUpCI para permitir re-consulta aunque sea el mismo CI
+      lastLookedUpCI = "";
+      await dispararLookupCI(ci);
+    }
+
+    document.getElementById("btn-confirmar-ci")?.addEventListener("click", confirmarCI);
+
+    rucInput?.addEventListener("keydown", (e) => {
+      if ((e as KeyboardEvent).key === "Enter") {
+        e.preventDefault();
+        confirmarCI();
+      }
+    });
+
+    // Cuando el usuario modifica el CI, resetear el estado del lookup anterior
+    rucInput?.addEventListener("input", () => {
+      const ci = rucInput.value.trim();
+      if (ci !== lastLookedUpCI && lastLookedUpCI) {
+        lastLookedUpCI = "";
+        ocultarCamposPersonales();
+        document.getElementById("rp-resume-banner")?.remove();
+        document.getElementById("rp-opciones-panel")?.remove();
+        sessionStorage.removeItem("formulang_idCliente");
+        sessionStorage.removeItem("formulang_idRegistroPendiente");
+        sessionStorage.removeItem("formulang_idMembresiaActivar");
+        modoNuevoVehiculo = false;
+      }
+    });
+
     // ---- Form Submission ----
     form?.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -1143,6 +1639,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         return;
       }
       formData.turnstileToken = turnstileToken;
+      formData.acceptTerminos = true;
 
       // Adjuntar atribución UTM si está disponible
       try {
@@ -1151,38 +1648,131 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       } catch { /* ignorar errores de parsing */ }
 
       try {
-        // Step 1: Register client + vehicle + membership
-        const res = await fetchWithTimeout("/api/registro", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        }, 30000);
+        const idClienteExistente = sessionStorage.getItem("formulang_idCliente");
+        const idRegPendienteExistente = sessionStorage.getItem("formulang_idRegistroPendiente");
 
-        const body = await res.json().catch(() => {
-          throw new Error("Error al procesar la respuesta del servidor. Intentá de nuevo.");
-        });
+        let idCliente: string;
 
-        if (!res.ok) {
-          const serverMsg = body.error || body.message || "";
-          // Show user-friendly error based on status code
-          if (res.status === 409) {
-            throw new Error(serverMsg || "Este RUC o chapa ya está registrado. Si ya sos cliente, comunicate con nosotros.");
-          } else if (res.status === 400) {
-            throw new Error(serverMsg || "Datos inválidos. Revisá los campos e intentá de nuevo.");
-          } else {
-            throw new Error(serverMsg || "Error inesperado al registrar. Intentá de nuevo más tarde.");
+        if (modoActualizarVehiculo && idClienteExistente) {
+          // Actualizar datos de vehículo existente — sin checkout
+          const idVehiculoExistente = sessionStorage.getItem("formulang_idVehiculo");
+          if (!idVehiculoExistente) throw new Error("No se encontró el vehículo a actualizar.");
+          const chapaMV = (document.getElementById("chapa") as HTMLInputElement)?.value.trim();
+          if (!chapaMV || chapaMV.length < 3) throw new Error("Ingresá la chapa del vehículo.");
+
+          const actualizarPayload: Record<string, unknown> = {
+            idCliente: idClienteExistente,
+            idVehiculo: idVehiculoExistente,
+            chapa: chapaMV.toUpperCase(),
+          };
+          const colorMV = (document.getElementById("color") as HTMLInputElement)?.value.trim();
+          if (colorMV) actualizarPayload.color = colorMV;
+          const anioMV = (document.getElementById("anio") as HTMLInputElement)?.value;
+          if (anioMV) actualizarPayload.anio = Number(anioMV);
+          const marcaMV = (document.getElementById("idMarca") as HTMLSelectElement)?.value;
+          if (marcaMV) actualizarPayload.idMarca = Number(marcaMV);
+          const modeloMV = (document.getElementById("idModelo") as HTMLSelectElement)?.value;
+          if (modeloMV) actualizarPayload.idModelo = Number(modeloMV);
+          const tipoMV = (document.getElementById("tipoVehiculo") as HTMLSelectElement)?.value;
+          if (tipoMV) actualizarPayload.idTipoVehiculo = Number(tipoMV);
+
+          const actuRes = await fetchWithTimeout("/api/actualizar-vehiculo", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(actualizarPayload),
+          }, 15000);
+
+          if (!actuRes.ok) {
+            const errBody = await actuRes.json().catch(() => ({}));
+            throw new Error(errBody.error || "No se pudieron actualizar los datos del vehículo.");
           }
-        }
 
-        const idCliente = body.data?.idCliente || body.idCliente;
-        if (!idCliente) {
-          throw new Error("No pudimos iniciar la activacion de tu plan. Intenta nuevamente.");
+          showResult(
+            "Datos actualizados",
+            "Los datos de tu vehículo fueron actualizados correctamente.",
+            false,
+          );
+          return;
+
+        } else if (idClienteExistente && idRegPendienteExistente) {
+          // Resume existing registration — skip POST /api/registro
+          idCliente = idClienteExistente;
+        } else if (modoNuevoVehiculo && idClienteExistente) {
+          // Existing client adding a new vehicle — use /api/registro-vehiculo
+          const vehiculoPayload: Record<string, unknown> = {
+            idCliente: idClienteExistente,
+            chapa: (document.getElementById("chapa") as HTMLInputElement)?.value.trim().toUpperCase(),
+            idPlan: (document.getElementById("idPlan") as HTMLInputElement)?.value,
+          };
+          const chapaMV = (document.getElementById("chapa") as HTMLInputElement)?.value.trim();
+          if (!chapaMV || chapaMV.length < 3) throw new Error("Ingresá la chapa del vehículo.");
+          const idPlanMV = (document.getElementById("idPlan") as HTMLInputElement)?.value;
+          if (!idPlanMV) throw new Error("Seleccioná un plan para continuar.");
+          const anioMV = (document.getElementById("anio") as HTMLInputElement)?.value;
+          if (anioMV) vehiculoPayload.anio = Number(anioMV);
+          const colorMV = (document.getElementById("color") as HTMLInputElement)?.value.trim();
+          if (colorMV) vehiculoPayload.color = colorMV;
+          const marcaMV = (document.getElementById("idMarca") as HTMLSelectElement)?.value;
+          if (marcaMV) vehiculoPayload.idMarca = Number(marcaMV);
+          const modeloMV = (document.getElementById("idModelo") as HTMLSelectElement)?.value;
+          if (modeloMV) vehiculoPayload.idModelo = Number(modeloMV);
+          const tipoMV = (document.getElementById("tipoVehiculo") as HTMLSelectElement)?.value;
+          if (tipoMV) vehiculoPayload.idTipoVehiculo = Number(tipoMV);
+
+          const regVehRes = await fetchWithTimeout("/api/registro-vehiculo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(vehiculoPayload),
+          }, 20000);
+
+          const regVehBody = await regVehRes.json().catch(() => {
+            throw new Error("Error al registrar el vehículo. Intentá de nuevo.");
+          });
+
+          if (!regVehRes.ok) {
+            const msg = regVehBody.error || regVehBody.message || "";
+            if (regVehRes.status === 409) throw new Error(msg || "Esta chapa ya está registrada.");
+            throw new Error(msg || "No se pudo registrar el vehículo. Intentá de nuevo.");
+          }
+
+          const idRegPendiente = regVehBody.idRegistroPendiente;
+          if (!idRegPendiente) throw new Error("No pudimos iniciar el pago. Intentá de nuevo.");
+          sessionStorage.setItem("formulang_idRegistroPendiente", idRegPendiente);
+          idCliente = idClienteExistente;
+        } else {
+          // New client — full registration
+          const res = await fetchWithTimeout("/api/registro", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData),
+          }, 30000);
+
+          const body = await res.json().catch(() => {
+            throw new Error("Error al procesar la respuesta del servidor. Intentá de nuevo.");
+          });
+
+          if (!res.ok) {
+            const serverMsg = body.error || body.message || "";
+            if (res.status === 409) {
+              throw new Error(serverMsg || "Este RUC o chapa ya está registrado. Si ya sos cliente, comunicate con nosotros.");
+            } else if (res.status === 400) {
+              throw new Error(serverMsg || "Datos inválidos. Revisá los campos e intentá de nuevo.");
+            } else {
+              throw new Error(serverMsg || "Error inesperado al registrar. Intentá de nuevo más tarde.");
+            }
+          }
+
+          idCliente = body.data?.idCliente || body.idCliente;
+          if (!idCliente) {
+            throw new Error("No pudimos iniciar la activacion de tu plan. Intenta nuevamente.");
+          }
+
+          sessionStorage.setItem("formulang_idCliente", idCliente);
+          const idRegistroPendiente = body.data?.idRegistroPendiente;
+          if (idRegistroPendiente) sessionStorage.setItem("formulang_idRegistroPendiente", idRegistroPendiente);
         }
 
         submitLoading.textContent = "Redirigiendo a Pagopar...";
-
-        // Store idCliente for callback confirmation
-        sessionStorage.setItem("formulang_idCliente", idCliente);
 
         const checkoutRes = await fetchWithTimeout("/api/checkout", {
           method: "POST",
@@ -1212,6 +1802,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         if (processId) {
           form.style.display = "none";
           bancardContainer.style.display = "block";
+  
+          (document.querySelector(".modal-container") as HTMLElement | null)?.scrollTo({ top: 0 });
           // Meta Pixel: AddPaymentInfo
           if (typeof (window as any).fbq === "function") {
             (window as any).fbq("track", "AddPaymentInfo", {
@@ -1233,6 +1825,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           }
 
           // Render the Bancard card enrollment form
+          waitForBancardIframe();
           (window as any).Bancard.Cards.createForm("bancard-iframe", processId, {
             styles: {
               "input-background-color": "#ffffff",
@@ -1255,6 +1848,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         return;
       } catch (err: any) {
         sessionStorage.removeItem("formulang_idCliente");
+        sessionStorage.removeItem("formulang_idRegistroPendiente");
         // Filter out raw technical errors (SyntaxError, TypeError, etc.)
         const isTechnical = err instanceof SyntaxError || err instanceof TypeError ||
           (err.message && (err.message.includes("Unexpected token") || err.message.includes("undefined")));
@@ -1288,38 +1882,82 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           "Tu tarjeta fue registrada exitosamente. Tu Plan Premium quedó activo y los débitos automáticos mensuales están habilitados.",
         );
 
-        // Confirm tarjeta in the backend (await result to ensure consistency)
+        // Confirm card + charge first installment in the backend
         const storedClienteId = sessionStorage.getItem("formulang_idCliente");
+        const storedIdRegistroPendiente = sessionStorage.getItem("formulang_idRegistroPendiente");
+        const storedIdMembresiaActivar = sessionStorage.getItem("formulang_idMembresiaActivar");
         if (storedClienteId) {
           try {
+            const confirmPayload: Record<string, any> = { idCliente: storedClienteId, acceptTerminos: true };
+            if (storedIdRegistroPendiente) confirmPayload.idRegistroPendiente = storedIdRegistroPendiente;
+            if (storedIdMembresiaActivar) confirmPayload.idMembresiaActivar = storedIdMembresiaActivar;
+
             const confirmRes = await fetch("/api/confirmar", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ idCliente: storedClienteId }),
+              body: JSON.stringify(confirmPayload),
             });
+
             if (!confirmRes.ok) {
               const confirmBody = await confirmRes.json().catch(() => ({}));
               console.error("Error confirming card:", confirmBody);
-              if (successMessage) {
-                successMessage.textContent =
-                  "Tu tarjeta fue registrada, pero hubo un problema confirmando la activación automática de tu plan. Contactanos para asistencia.";
-              }
+              // Payment was rejected — offer retry with another card
+              const errMsg = confirmBody.error || confirmBody.message || "Tu tarjeta fue rechazada.";
+              showResult(
+                "Pago rechazado",
+                `${errMsg} Podés intentar registrar otra tarjeta.`,
+                true,
+              );
+              // Inject retry button
+              const retryBtn = document.createElement("button");
+              retryBtn.type = "button";
+              retryBtn.className = "btn-next";
+              retryBtn.style.marginTop = "1rem";
+              retryBtn.textContent = "Intentar con otra tarjeta";
+              retryBtn.addEventListener("click", () => startRetryCheckout(storedClienteId));
+              successDiv.appendChild(retryBtn);
+              return;
             }
+            // Success — fire Meta Pixel Purchase event and clean up
+            if (typeof (window as any).fbq === "function") {
+              (window as any).fbq("track", "Purchase", {
+                value: 200000,
+                currency: "PYG",
+                content_name: "Plan Premium - Débito Automático",
+                content_type: "product",
+              });
+            }
+            sessionStorage.removeItem("formulang_idCliente");
+            sessionStorage.removeItem("formulang_idRegistroPendiente");
+            sessionStorage.removeItem("formulang_idMembresiaActivar");
           } catch (err) {
             console.error("Error confirming card:", err);
-            if (successMessage) {
-              successMessage.textContent =
-                "Tu tarjeta fue registrada, pero no pudimos confirmar la activación automática de tu plan. Contactanos para asistencia.";
-            }
-          } finally {
+            showResult(
+              "Error de conexión",
+              "Tu tarjeta fue registrada pero no pudimos confirmar el cobro. Contactanos para asistencia.",
+              true,
+            );
             sessionStorage.removeItem("formulang_idCliente");
+            sessionStorage.removeItem("formulang_idRegistroPendiente");
           }
         }
       } else {
-        // Show error
-        const msg = params.get("checkout_msg") || "No se pudo registrar la tarjeta. Intentá de nuevo más tarde.";
+        // Bancard enrollment error — offer retry if there's a pending registration
+        const msg = params.get("checkout_msg") || "No se pudo registrar la tarjeta.";
         openModal();
-        showResult("Error al registrar tarjeta", msg, true);
+        const storedClienteId = sessionStorage.getItem("formulang_idCliente");
+        if (storedClienteId) {
+          showResult("Error al registrar tarjeta", `${msg} Podés intentar con otra tarjeta.`, true);
+          const retryBtn = document.createElement("button");
+          retryBtn.type = "button";
+          retryBtn.className = "btn-next";
+          retryBtn.style.marginTop = "1rem";
+          retryBtn.textContent = "Intentar con otra tarjeta";
+          retryBtn.addEventListener("click", () => startRetryCheckout(storedClienteId));
+          successDiv.appendChild(retryBtn);
+        } else {
+          showResult("Error al registrar tarjeta", msg, true);
+        }
       }
     })();
   }

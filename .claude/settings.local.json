@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"C:\\\\Users\\\\efactu\\\\formulang\")",
+      "Bash(dir \"C:\\\\Users\\\\efactu\\\\formulang\\\\apps\")",
+      "Bash(dir \"C:\\\\Users\\\\efactu\\\\formulang\\\\src\")",
+      "Bash(dir \"C:\\\\Users\\\\efactu\\\\formulang\\\\apps\\\\api\")",
+      "Bash(dir \"C:\\\\Users\\\\efactu\\\\formulang\\\\apps\\\\api\\\\src\")",
+      "Bash(dir \"C:\\\\Users\\\\efactu\\\\formulang\\\\apps\\\\api\\\\src\\\\pagopar\")",
+      "Bash(dir \"C:\\\\Users\\\\efactu\\\\formulang\\\\apps\\\\api\\\\src\\\\public-pagopar\")",
+      "Bash(dir \"C:\\\\Users\\\\efactu\\\\formulang\\\\apps\\\\web\\\\src\")",
+      "Bash(dir \"C:\\\\Users\\\\efactu\\\\formulang\\\\apps\\\\web\\\\src\\\\app\")",
+      "Bash(dir \"C:\\\\Users\\\\efactu\\\\formulang\\\\apps\\\\web\\\\src\\\\app\\\\\\(admin\\)\")",
+      "Bash(dir \"C:\\\\Users\\\\efactu\\\\formulang\\\\apps\\\\web\\\\src\\\\app\\\\\\(admin\\)\\\\membresias\")",
+      "Bash(dir \"C:\\\\Users\\\\efactu\\\\formulang\\\\apps\\\\web\\\\src\\\\app\\\\\\(admin\\)\\\\membresias\\\\[id]\")",
+      "Bash(dir \"C:\\\\Users\\\\efactu\\\\formulang\\\\packages\\\\database\")",
+      "Bash(npx tsc:*)",
+      "Bash(find . -name .env -not -path */node_modules/*)",
+      "Bash(psql \"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\" -c \"SELECT metodo_pago, COUNT\\(*\\) as count FROM renovaciones_membresia GROUP BY metodo_pago ORDER BY count DESC;\")",
+      "Bash(npx -w:*)",
+      "Bash(npx prisma:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\" npx prisma db execute --stdin --url \"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\" <<'SQL':*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@db.jqausxojjplawnynmuhg.supabase.co:5432/postgres\" npx prisma db execute --stdin --url \"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@db.jqausxojjplawnynmuhg.supabase.co:5432/postgres\" <<'SQL':*)",
+      "Bash(DIRECT_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\" DATABASE_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\" npx prisma validate)",
+      "Bash(grep -r DIRECT_URL /c/Users/efactu/formulang --include=.env* --include=*.env)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\" DIRECT_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:5432/postgres\" npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --script)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\" npx prisma db execute --file prisma/migrations/manual_cat_metodo_pago_dia_debito.sql --url \"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\")",
+      "Bash(DATABASE_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\" DIRECT_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:5432/postgres\" npx prisma generate)"
+    ]
+  }
+}

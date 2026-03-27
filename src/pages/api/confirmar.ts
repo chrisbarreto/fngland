@@ -20,6 +20,14 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
+  const ip =
+    request.headers.get("cf-connecting-ip") ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    null;
+  const ua = request.headers.get("user-agent") || null;
+  if (ip) body.ipAddress = ip;
+  if (ua) body.userAgent = ua;
+
   const { data, error, status } = await apiFetch("/pagopar/confirmar", {
     method: "POST",
     body: JSON.stringify(body),
