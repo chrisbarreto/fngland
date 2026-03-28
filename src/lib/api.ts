@@ -6,7 +6,7 @@
 const PROD_API_URL = "https://api.formulang.com.py/api";
 
 function resolveApiUrl(): string {
-  const configured = String(import.meta.env.API_URL || "").trim();
+  const configured = String(process.env.API_URL || import.meta.env.API_URL || "").trim();
 
   if (!configured) {
     return import.meta.env.PROD ? PROD_API_URL : "http://localhost:3001/api";
@@ -36,7 +36,7 @@ function resolveApiUrl(): string {
 }
 
 const API_URL = resolveApiUrl();
-const API_KEY = import.meta.env.API_KEY_LANDING;
+const API_KEY = process.env.API_KEY_LANDING || import.meta.env.API_KEY_LANDING;
 
 export async function apiFetch<T = any>(
   path: string,

@@ -1,7 +1,7 @@
 ---
 // This component renders a full-screen registration modal.
 // All logic is client-side JavaScript (no framework needed).
-const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
+const siteKey = process.env.TURNSTILE_SITE_KEY || import.meta.env.TURNSTILE_SITE_KEY;
 ---
 
 <!-- Registration Modal -->
