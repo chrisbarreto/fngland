@@ -39,6 +39,17 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             </div>
             <span class="field-error"></span>
           </div>
+          <!-- Turnstile captcha — validar antes de consultar CI -->
+          <div class="form-group full" id="turnstile-step1">
+            <div class="turnstile-wrapper" style="margin:0.5rem 0;">
+              <div
+                class="cf-turnstile"
+                data-sitekey={siteKey}
+                data-theme="dark"
+              ></div>
+            </div>
+            <span class="field-error" id="turnstile-error"></span>
+          </div>
           <!-- Loading indicator mientras se busca el CI -->
           <div class="form-group full" id="ci-lookup-loading" style="display:none;">
             <div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0;color:rgba(255,255,255,0.55);font-size:0.85rem;">
@@ -153,15 +164,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             </span>
           </label>
           <span class="field-error" id="legal-accept-error"></span>
-        </div>
-
-        <!-- Turnstile captcha -->
-        <div class="turnstile-wrapper">
-          <div
-            class="cf-turnstile"
-            data-sitekey={siteKey}
-            data-theme="dark"
-          ></div>
         </div>
 
         <div class="form-actions">
@@ -1540,6 +1542,17 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         showFieldError("ruc", "Ingresá tu RUC o CI para continuar.");
         return;
       }
+      // Validar Turnstile captcha antes de consultar
+      const turnstileField = form.querySelector("[name='cf-turnstile-response']") as HTMLInputElement | null;
+      const turnstileToken = turnstileField?.value || "";
+      if (!turnstileToken) {
+        const tsError = document.getElementById("turnstile-error");
+        if (tsError) tsError.textContent = "Completá la verificación de seguridad para continuar.";
+        return;
+      }
+      // Limpiar error de turnstile si existía
+      const tsError = document.getElementById("turnstile-error");
+      if (tsError) tsError.textContent = "";
       // Resetear lastLookedUpCI para permitir re-consulta aunque sea el mismo CI
       lastLookedUpCI = "";
       await dispararLookupCI(ci);
@@ -1627,17 +1640,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       const idPlan = (document.getElementById("idPlan") as HTMLInputElement).value;
       if (idPlan) formData.idPlan = idPlan;
 
-      // Turnstile captcha token
+      // Turnstile captcha token (ya validado en Step 1)
       const turnstileField = form.querySelector("[name='cf-turnstile-response']") as HTMLInputElement | null;
       const turnstileToken = turnstileField?.value || "";
-      if (!turnstileToken) {
-        errorMsg.textContent = "Completá la verificación de seguridad (captcha) para continuar.";
-        errorBanner.style.display = "block";
-        submitBtn.disabled = false;
-        submitText.style.display = "inline";
-        submitLoading.style.display = "none";
-        return;
-      }
       formData.turnstileToken = turnstileToken;
       formData.acceptTerminos = true;
 
