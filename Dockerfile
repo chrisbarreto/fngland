@@ -3,6 +3,15 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+
+# Variables necesarias en build time para páginas prerenderizadas
+ARG TURNSTILE_SITE_KEY
+ENV TURNSTILE_SITE_KEY=$TURNSTILE_SITE_KEY
+ARG API_URL
+ENV API_URL=$API_URL
+ARG API_KEY_LANDING
+ENV API_KEY_LANDING=$API_KEY_LANDING
+
 RUN npm run build
 
 FROM node:20-bookworm-slim AS runtime
