@@ -10,18 +10,27 @@ export const prerender = false;
  * client-side JS in RegistroModal can react accordingly.
  */
 export const GET: APIRoute = async ({ url }) => {
-  const status = url.searchParams.get("status") || "";
-  const description = url.searchParams.get("description") || "";
+  try {
+    const status = url.searchParams.get("status") || "";
+    const description = url.searchParams.get("description") || "";
 
-  // Redirect to thank-you/result page with checkout params
-  const redirectUrl = new URL("/gracias", url.origin);
-  redirectUrl.searchParams.set(
-    "checkout",
-    status === "add_new_card_success" ? "ok" : "error",
-  );
-  if (description) {
-    redirectUrl.searchParams.set("checkout_msg", description);
+    const redirectUrl = new URL("/gracias", url.origin);
+    redirectUrl.searchParams.set(
+      "checkout",
+      status === "add_new_card_success" ? "ok" : "error",
+    );
+    if (description) {
+      redirectUrl.searchParams.set("checkout_msg", description);
+    }
+
+    return new Response(null, {
+      status: 302,
+      headers: { Location: redirectUrl.toString() },
+    });
+  } catch {
+    return new Response(null, {
+      status: 302,
+      headers: { Location: "/gracias?checkout=error" },
+    });
   }
-
-  return Response.redirect(redirectUrl.toString(), 302);
 };
