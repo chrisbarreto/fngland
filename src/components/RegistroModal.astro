@@ -1121,6 +1121,96 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     }
 
     /**
+     * Handler para la respuesta del iframe de Bancard.
+     * Bancard SDK llama a este callback en lugar de hacer window.location.replace().
+     * El objeto data contiene: { status, description, ... }
+     */
+    function handleBancardResponse(data: any) {
+      const status = data?.status || data?.Status || "";
+      const description = data?.description || data?.Description || "";
+
+      if (status === "add_new_card_success") {
+        // Tarjeta catastrada exitosamente — confirmar y cobrar
+        const storedClienteId = sessionStorage.getItem("formulang_idCliente");
+        const storedIdRegistroPendiente = sessionStorage.getItem("formulang_idRegistroPendiente");
+        const storedIdMembresiaActivar = sessionStorage.getItem("formulang_idMembresiaActivar");
+
+        if (!storedClienteId) {
+          showResult("Error", "No se encontró el cliente. Intentá de nuevo.", true);
+          return;
+        }
+
+        bancardContainer.style.display = "none";
+        showResult("Confirmando tarjeta", "Estamos procesando tu pago, esperá un momento...");
+
+        const confirmPayload: Record<string, any> = { idCliente: storedClienteId, acceptTerminos: true };
+        if (storedIdRegistroPendiente) confirmPayload.idRegistroPendiente = storedIdRegistroPendiente;
+        if (storedIdMembresiaActivar) confirmPayload.idMembresiaActivar = storedIdMembresiaActivar;
+
+        fetch("/api/confirmar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(confirmPayload),
+        })
+          .then(async (res) => {
+            if (!res.ok) {
+              const body = await res.json().catch(() => ({}));
+              const errMsg = body.error || body.message || "Tu tarjeta fue rechazada.";
+              showResult("Pago rechazado", `${errMsg} Podés intentar registrar otra tarjeta.`, true);
+              const retryBtn = document.createElement("button");
+              retryBtn.type = "button";
+              retryBtn.className = "btn-next";
+              retryBtn.style.marginTop = "1rem";
+              retryBtn.textContent = "Intentar con otra tarjeta";
+              retryBtn.addEventListener("click", () => startRetryCheckout(storedClienteId));
+              successDiv.appendChild(retryBtn);
+              return;
+            }
+            // Éxito
+            showResult(
+              "Plan activado",
+              "Tu tarjeta fue registrada exitosamente. Tu Plan Premium quedó activo y los débitos automáticos mensuales están habilitados.",
+            );
+            if (typeof (window as any).fbq === "function") {
+              (window as any).fbq("track", "Purchase", {
+                value: 200000,
+                currency: "PYG",
+                content_name: "Plan Premium - Débito Automático",
+                content_type: "product",
+              });
+            }
+            sessionStorage.removeItem("formulang_idCliente");
+            sessionStorage.removeItem("formulang_idRegistroPendiente");
+            sessionStorage.removeItem("formulang_idMembresiaActivar");
+          })
+          .catch(() => {
+            showResult(
+              "Error de conexión",
+              "Tu tarjeta fue registrada pero no pudimos confirmar el cobro. Contactanos para asistencia.",
+              true,
+            );
+          });
+      } else {
+        // Error en catastro
+        bancardContainer.style.display = "none";
+        const msg = description || "No se pudo registrar la tarjeta.";
+        const storedClienteId = sessionStorage.getItem("formulang_idCliente");
+        if (storedClienteId) {
+          showResult("Error al registrar tarjeta", `${msg} Podés intentar con otra tarjeta.`, true);
+          const retryBtn = document.createElement("button");
+          retryBtn.type = "button";
+          retryBtn.className = "btn-next";
+          retryBtn.style.marginTop = "1rem";
+          retryBtn.textContent = "Intentar con otra tarjeta";
+          retryBtn.addEventListener("click", () => startRetryCheckout(storedClienteId));
+          successDiv.appendChild(retryBtn);
+        } else {
+          showResult("Error al registrar tarjeta", msg, true);
+        }
+      }
+    }
+
+    /**
      * Shows the red loading spinner and hides #bancard-iframe while Bancard SDK
      * loads. Uses MutationObserver to detect the injected <iframe>, then waits
      * for its load event (or a 15 s fallback). Guarantees the spinner is visible
@@ -1210,6 +1300,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
         waitForBancardIframe();
         (window as any).Bancard.Cards.createForm("bancard-iframe", checkoutBody.processId, {
+          responseHandler: handleBancardResponse,
           styles: {
             "input-background-color": "#ffffff",
             "input-text-color": "#333333",
@@ -1832,6 +1923,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           // Render the Bancard card enrollment form
           waitForBancardIframe();
           (window as any).Bancard.Cards.createForm("bancard-iframe", processId, {
+            responseHandler: handleBancardResponse,
             styles: {
               "input-background-color": "#ffffff",
               "input-text-color": "#333333",
