@@ -14,18 +14,15 @@ export const GET: APIRoute = async ({ url }) => {
     const status = url.searchParams.get("status") || "";
     const description = url.searchParams.get("description") || "";
 
-    const redirectUrl = new URL("/gracias", url.origin);
-    redirectUrl.searchParams.set(
-      "checkout",
-      status === "add_new_card_success" ? "ok" : "error",
-    );
+    const checkout = status === "add_new_card_success" ? "ok" : "error";
+    const params = new URLSearchParams({ checkout });
     if (description) {
-      redirectUrl.searchParams.set("checkout_msg", description);
+      params.set("checkout_msg", description);
     }
 
     return new Response(null, {
       status: 302,
-      headers: { Location: redirectUrl.toString() },
+      headers: { Location: `/gracias?${params.toString()}` },
     });
   } catch {
     return new Response(null, {
