@@ -22,12 +22,12 @@ export const GET: APIRoute = async ({ url }) => {
 
     return new Response(null, {
       status: 302,
-      headers: { Location: `/gracias?${params.toString()}` },
+      headers: { Location: `/membresia?${params.toString()}` },
     });
   } catch {
     return new Response(null, {
       status: 302,
-      headers: { Location: "/gracias?checkout=error" },
+      headers: { Location: "/membresia?checkout=error" },
     });
   }
 };
