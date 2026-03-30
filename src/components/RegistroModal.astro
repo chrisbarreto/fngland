@@ -7,6 +7,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 <!-- Registration Modal -->
 <div id="registro-modal" class="modal-overlay" style="display:none;">
   <div class="modal-container">
+    <!-- Overlay de procesamiento -->
+    <div id="processing-overlay" class="processing-overlay" style="display:none;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="processing-spinner"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+      <p class="processing-text">Procesando pago...</p>
+      <p class="processing-subtext">Esperá un momento, no cierres esta ventana.</p>
+    </div>
     <button id="modal-close" class="modal-close" aria-label="Cerrar">&times;</button>
     
     <div class="modal-header">
@@ -181,7 +187,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       <div class="success-icon">&#10003;</div>
       <h3>Plan activado</h3>
       <p>Tu Plan Premium quedó activo correctamente. Ya podés disfrutar de tus beneficios y agendar tus servicios.</p>
-      <button type="button" class="btn-next" id="success-close">Cerrar</button>
     </div>
 
     <!-- Bancard Checkout iframe container -->
@@ -245,6 +250,38 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
     max-height: 90vh;
     overflow-y: auto;
+  }
+
+  .processing-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+    background: rgba(26, 26, 26, 0.92);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+  .processing-spinner {
+    animation: proc-spin 0.8s linear infinite;
+  }
+  @keyframes proc-spin {
+    to { transform: rotate(360deg); }
+  }
+  .processing-text {
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  .processing-subtext {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.9rem;
+    margin: 0;
   }
 
   .modal-close {
@@ -548,6 +585,27 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     justify-content: center;
     margin: 0 auto 1.5rem;
   }
+  .btn-receipt {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    color: white;
+    padding: 0.75rem 2rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);
+  }
+  .btn-receipt:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(22, 163, 74, 0.5);
+  }
+  .btn-receipt:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
   .success-message h3 {
     font-size: 1.3rem;
     color: var(--sl-color-white, #fff);
@@ -714,11 +772,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     const successDiv = document.getElementById("registro-success") as HTMLElement;
     const errorBanner = document.getElementById("registro-error") as HTMLElement;
     const errorMsg = document.getElementById("error-message") as HTMLElement;
-    const successClose = document.getElementById("success-close") as HTMLElement;
     const submitBtn = document.getElementById("btn-submit") as HTMLButtonElement;
     const submitText = submitBtn?.querySelector(".btn-submit-text") as HTMLElement;
     const submitLoading = submitBtn?.querySelector(".btn-submit-loading") as HTMLElement;
     const bancardContainer = document.getElementById("bancard-checkout-container") as HTMLElement;
+    const processingOverlay = document.getElementById("processing-overlay") as HTMLElement;
     const successTitle = successDiv?.querySelector("h3") as HTMLElement;
     const successMessage = successDiv?.querySelector("p") as HTMLElement;
     const successIcon = successDiv?.querySelector(".success-icon") as HTMLElement;
@@ -772,9 +830,21 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         successIcon.textContent = "\u2713";
         successIcon.style.background = "#22c55e";
       }
+      hideProcessing();
+      unlockModal();
+      // Limpiar botón de comprobante si existe
+      successDiv?.querySelector("#btn-download-receipt")?.remove();
+    }
+
+    function showProcessing() {
+      if (processingOverlay) processingOverlay.style.display = "";
+    }
+    function hideProcessing() {
+      if (processingOverlay) processingOverlay.style.display = "none";
     }
 
     function showResult(title: string, message: string, isError = false) {
+      hideProcessing();
       restoreSuccessState();
       if (successTitle) successTitle.textContent = title;
       if (successMessage) successMessage.textContent = message;
@@ -785,6 +855,31 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       form.style.display = "none";
       bancardContainer.style.display = "none";
       successDiv.style.display = "block";
+    }
+
+    function addReceiptButton(comprobante: any) {
+      if (!comprobante) return;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-receipt";
+      btn.id = "btn-download-receipt";
+      btn.textContent = "Descargar comprobante";
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        btn.textContent = "Generando PDF...";
+        try {
+          const { generateReceipt } = await import("../lib/receipt");
+          await generateReceipt(comprobante);
+          unlockModal();
+          btn.textContent = "Descargar de nuevo";
+        } catch (err) {
+          console.error("Error generando PDF:", err);
+          btn.textContent = "Descargar comprobante";
+        }
+        btn.disabled = false;
+      });
+      successDiv.appendChild(btn);
+      lockModal();
     }
 
     function resetModalState() {
@@ -872,7 +967,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     (window as any).__openRegistroModal = openModal;
 
     closeBtn?.addEventListener("click", closeModal);
-    successClose?.addEventListener("click", closeModal);
     modal?.addEventListener("click", (e) => {
       if (e.target === modal) closeModal();
     });
@@ -1188,7 +1282,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         }
 
         bancardContainer.style.display = "none";
-        showResult("Confirmando tarjeta", "Estamos procesando tu pago, esperá un momento...");
+        showProcessing();
 
         const confirmPayload: Record<string, any> = { idCliente: storedClienteId, acceptTerminos: true };
         if (storedIdRegistroPendiente) confirmPayload.idRegistroPendiente = storedIdRegistroPendiente;
@@ -1238,10 +1332,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                       retryPayBtn.textContent = "Reintentar cobro";
                       return;
                     }
+                    const retryBody = await r.json().catch(() => ({}));
                     showResult(
                       "Plan activado",
                       "El cobro se realizó exitosamente. Tu Plan Premium quedó activo.",
                     );
+                    addReceiptButton(retryBody.comprobante);
                     if (typeof (window as any).fbq === "function") {
                       (window as any).fbq("track", "Purchase", {
                         value: 200000,
@@ -1280,10 +1376,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             }
             // Éxito
             unlockModal();
+            const successBody = await res.json().catch(() => ({}));
             showResult(
               "Plan activado",
               "Tu tarjeta fue registrada exitosamente. Tu Plan Premium quedó activo y los débitos automáticos mensuales están habilitados.",
             );
+            addReceiptButton(successBody.comprobante);
             if (typeof (window as any).fbq === "function") {
               (window as any).fbq("track", "Purchase", {
                 value: 200000,
@@ -1325,7 +1423,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                     retryCatchBtn.textContent = "Reintentar cobro";
                     return;
                   }
+                  const catchRetryBody = await r.json().catch(() => ({}));
                   showResult("Plan activado", "El cobro se realizó exitosamente. Tu Plan Premium quedó activo.");
+                  addReceiptButton(catchRetryBody.comprobante);
                   sessionStorage.removeItem("formulang_idCliente");
                   sessionStorage.removeItem("formulang_idRegistroPendiente");
                   sessionStorage.removeItem("formulang_idMembresiaActivar");
@@ -1407,7 +1507,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     async function startRetryCheckout(idCliente: string) {
       _bancardResponseHandled = false; // reset para nuevo intento
       // Remove old retry buttons and reset to iframe state
-      successDiv.querySelectorAll("button.btn-next:not(#success-close)").forEach(b => b.remove());
+      successDiv.querySelectorAll("#btn-download-receipt").forEach(b => b.remove());
       successDiv.style.display = "none";
       bancardContainer.style.display = "none";
       // Mostrar paso 3 en el stepper (registro de tarjeta = último paso)
@@ -2165,6 +2265,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               return;
             }
             // Success — fire Meta Pixel Purchase event and clean up
+            const callbackBody = await confirmRes.json().catch(() => ({}));
+            showResult(
+              "Plan activado",
+              "Tu tarjeta fue registrada exitosamente. Tu Plan Premium quedó activo y los débitos automáticos mensuales están habilitados.",
+            );
+            addReceiptButton(callbackBody.comprobante);
             if (typeof (window as any).fbq === "function") {
               (window as any).fbq("track", "Purchase", {
                 value: 200000,
