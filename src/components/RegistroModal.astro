@@ -743,6 +743,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
     // Revela los campos personales (nombre/tel/email) y el botón Siguiente del paso 1
     function revelarCamposPersonales() {
+      _modalDirty = true;
+      updateBeforeUnload();
       document.querySelectorAll<HTMLElement>(".personal-field").forEach(el => { el.style.display = ""; });
       const actions = document.getElementById("step1-actions") as HTMLElement | null;
       if (actions) actions.style.display = "";
@@ -850,7 +852,17 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (!planesLoaded) loadPlanes();
     }
 
+    let _modalLocked = false;   // true = bloqueo total (iframe/cobro en curso)
+    let _modalDirty = false;    // true = datos cargados, pedir confirmación al salir
+
     function closeModal() {
+      if (_modalLocked) return;
+      if (_modalDirty) {
+        if (!confirm("¿Estás seguro que querés salir? Se perderán los datos ingresados.")) return;
+      }
+      _modalDirty = false;
+      _modalLocked = false;
+      updateBeforeUnload();
       modal.style.display = "none";
       document.body.style.overflow = "";
       resetModalState();
@@ -873,6 +885,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     // ---- Step Navigation ----
     function goToStep(step: number) {
       currentStep = step;
+      if (step >= 2) _modalDirty = true;
       document.querySelectorAll(".form-step").forEach((el) => {
         (el as HTMLElement).classList.toggle("active", el.getAttribute("data-step") === String(step));
       });
@@ -1125,12 +1138,46 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
      * Bancard SDK llama a este callback en lugar de hacer window.location.replace().
      * El objeto data contiene: { status, description, ... }
      */
+    let _bancardResponseHandled = false;
+
+    function preventUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+    }
+
+    function updateBeforeUnload() {
+      if (_modalLocked || _modalDirty) {
+        window.addEventListener("beforeunload", preventUnload);
+      } else {
+        window.removeEventListener("beforeunload", preventUnload);
+      }
+    }
+
+    function lockModal() {
+      _modalLocked = true;
+      closeBtn.style.display = "none";
+      updateBeforeUnload();
+    }
+
+    function unlockModal() {
+      _modalLocked = false;
+      closeBtn.style.display = "";
+      updateBeforeUnload();
+    }
+
     function handleBancardResponse(data: any) {
-      const status = data?.status || data?.Status || "";
-      const description = data?.description || data?.Description || "";
+      console.log("[Bancard responseHandler] data:", JSON.stringify(data));
+      if (_bancardResponseHandled) {
+        console.warn("[Bancard responseHandler] duplicate call ignored");
+        return;
+      }
+      _bancardResponseHandled = true;
+
+      const status = data?.message || data?.status || data?.Status || "";
+      const description = data?.details || data?.description || data?.Description || "";
 
       if (status === "add_new_card_success") {
         // Tarjeta catastrada exitosamente — confirmar y cobrar
+        lockModal();
         const storedClienteId = sessionStorage.getItem("formulang_idCliente");
         const storedIdRegistroPendiente = sessionStorage.getItem("formulang_idRegistroPendiente");
         const storedIdMembresiaActivar = sessionStorage.getItem("formulang_idMembresiaActivar");
@@ -1155,18 +1202,84 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           .then(async (res) => {
             if (!res.ok) {
               const body = await res.json().catch(() => ({}));
-              const errMsg = body.error || body.message || "Tu tarjeta fue rechazada.";
-              showResult("Pago rechazado", `${errMsg} Podés intentar registrar otra tarjeta.`, true);
-              const retryBtn = document.createElement("button");
-              retryBtn.type = "button";
-              retryBtn.className = "btn-next";
-              retryBtn.style.marginTop = "1rem";
-              retryBtn.textContent = "Intentar con otra tarjeta";
-              retryBtn.addEventListener("click", () => startRetryCheckout(storedClienteId));
-              successDiv.appendChild(retryBtn);
+              const errMsg = body.error || body.message || "El cobro fue rechazado.";
+              showResult(
+                "Cobro rechazado",
+                `Tu tarjeta fue registrada correctamente, pero el cobro de Gs. 200.000 fue rechazado (${errMsg}). ` +
+                `El sistema reintentará automáticamente en las próximas horas.`,
+                true,
+              );
+
+              unlockModal();
+
+              // Botón "Reintentar cobro"
+              const retryPayBtn = document.createElement("button");
+              retryPayBtn.type = "button";
+              retryPayBtn.className = "btn-next";
+              retryPayBtn.style.marginTop = "1rem";
+              retryPayBtn.textContent = "Reintentar cobro";
+              retryPayBtn.addEventListener("click", () => {
+                retryPayBtn.disabled = true;
+                retryPayBtn.textContent = "Procesando...";
+                fetch("/api/confirmar", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(confirmPayload),
+                })
+                  .then(async (r) => {
+                    if (!r.ok) {
+                      const b = await r.json().catch(() => ({}));
+                      const msg = b.error || b.message || "Cobro rechazado nuevamente.";
+                      showResult("Cobro rechazado", `${msg} El sistema reintentará automáticamente.`, true);
+                      // Re-agregar botones
+                      successDiv.appendChild(retryPayBtn);
+                      successDiv.appendChild(newCardBtn);
+                      retryPayBtn.disabled = false;
+                      retryPayBtn.textContent = "Reintentar cobro";
+                      return;
+                    }
+                    showResult(
+                      "Plan activado",
+                      "El cobro se realizó exitosamente. Tu Plan Premium quedó activo.",
+                    );
+                    if (typeof (window as any).fbq === "function") {
+                      (window as any).fbq("track", "Purchase", {
+                        value: 200000,
+                        currency: "PYG",
+                        content_name: "Plan Premium - Débito Automático",
+                        content_type: "product",
+                      });
+                    }
+                    sessionStorage.removeItem("formulang_idCliente");
+                    sessionStorage.removeItem("formulang_idRegistroPendiente");
+                    sessionStorage.removeItem("formulang_idMembresiaActivar");
+                  })
+                  .catch(() => {
+                    retryPayBtn.disabled = false;
+                    retryPayBtn.textContent = "Reintentar cobro";
+                    showResult("Error de conexión", "No se pudo procesar. Intentá de nuevo.", true);
+                    successDiv.appendChild(retryPayBtn);
+                    successDiv.appendChild(newCardBtn);
+                  });
+              });
+              successDiv.appendChild(retryPayBtn);
+
+              // Botón "Intentar con otra tarjeta"
+              const newCardBtn = document.createElement("button");
+              newCardBtn.type = "button";
+              newCardBtn.className = "btn-next";
+              newCardBtn.style.marginTop = "0.5rem";
+              newCardBtn.style.background = "transparent";
+              newCardBtn.style.border = "1px solid var(--color-primary, #2563eb)";
+              newCardBtn.style.color = "var(--color-primary, #2563eb)";
+              newCardBtn.textContent = "Intentar con otra tarjeta";
+              newCardBtn.addEventListener("click", () => startRetryCheckout(storedClienteId));
+              successDiv.appendChild(newCardBtn);
+
               return;
             }
             // Éxito
+            unlockModal();
             showResult(
               "Plan activado",
               "Tu tarjeta fue registrada exitosamente. Tu Plan Premium quedó activo y los débitos automáticos mensuales están habilitados.",
@@ -1184,11 +1297,45 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             sessionStorage.removeItem("formulang_idMembresiaActivar");
           })
           .catch(() => {
+            unlockModal();
             showResult(
               "Error de conexión",
-              "Tu tarjeta fue registrada pero no pudimos confirmar el cobro. Contactanos para asistencia.",
+              "Tu tarjeta fue registrada pero no pudimos confirmar el cobro. El sistema reintentará automáticamente en las próximas horas.",
               true,
             );
+            const retryCatchBtn = document.createElement("button");
+            retryCatchBtn.type = "button";
+            retryCatchBtn.className = "btn-next";
+            retryCatchBtn.style.marginTop = "1rem";
+            retryCatchBtn.textContent = "Reintentar cobro";
+            retryCatchBtn.addEventListener("click", () => {
+              retryCatchBtn.disabled = true;
+              retryCatchBtn.textContent = "Procesando...";
+              fetch("/api/confirmar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(confirmPayload),
+              })
+                .then(async (r) => {
+                  if (!r.ok) {
+                    const b = await r.json().catch(() => ({}));
+                    showResult("Cobro rechazado", b.error || b.message || "No se pudo cobrar.", true);
+                    successDiv.appendChild(retryCatchBtn);
+                    retryCatchBtn.disabled = false;
+                    retryCatchBtn.textContent = "Reintentar cobro";
+                    return;
+                  }
+                  showResult("Plan activado", "El cobro se realizó exitosamente. Tu Plan Premium quedó activo.");
+                  sessionStorage.removeItem("formulang_idCliente");
+                  sessionStorage.removeItem("formulang_idRegistroPendiente");
+                  sessionStorage.removeItem("formulang_idMembresiaActivar");
+                })
+                .catch(() => {
+                  retryCatchBtn.disabled = false;
+                  retryCatchBtn.textContent = "Reintentar cobro";
+                });
+            });
+            successDiv.appendChild(retryCatchBtn);
           });
       } else {
         // Error en catastro
@@ -1258,6 +1405,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
     // ---- Retry checkout with another card (same idCliente + idRegistroPendiente) ----
     async function startRetryCheckout(idCliente: string) {
+      _bancardResponseHandled = false; // reset para nuevo intento
       // Remove old retry buttons and reset to iframe state
       successDiv.querySelectorAll("button.btn-next:not(#success-close)").forEach(b => b.remove());
       successDiv.style.display = "none";
@@ -1921,6 +2069,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           }
 
           // Render the Bancard card enrollment form
+          _bancardResponseHandled = false;
           waitForBancardIframe();
           (window as any).Bancard.Cards.createForm("bancard-iframe", processId, {
             responseHandler: handleBancardResponse,
