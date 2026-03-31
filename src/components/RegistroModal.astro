@@ -106,11 +106,21 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             </select>
             <span class="field-error"></span>
           </div>
+          <div class="form-group" id="marcaNueva-group" style="display:none;">
+            <label for="marcaNueva">Especificá la marca</label>
+            <input type="text" id="marcaNueva" name="marcaNueva" placeholder="Ej: BYD" maxlength="80" />
+            <span class="field-error"></span>
+          </div>
           <div class="form-group">
             <label for="idModelo">Modelo</label>
             <select id="idModelo" name="idModelo" disabled>
               <option value="">Primero seleccioná la marca</option>
             </select>
+            <span class="field-error"></span>
+          </div>
+          <div class="form-group" id="modeloNuevo-group" style="display:none;">
+            <label for="modeloNuevo">Especificá el modelo</label>
+            <input type="text" id="modeloNuevo" name="modeloNuevo" placeholder="Ej: Dolphin" maxlength="80" />
             <span class="field-error"></span>
           </div>
           <div class="form-group">
@@ -187,6 +197,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       <div class="success-icon">&#10003;</div>
       <h3>Plan activado</h3>
       <p>Tu Plan Premium quedó activo correctamente. Ya podés disfrutar de tus beneficios y agendar tus servicios.</p>
+      <button type="button" class="btn-next btn-receipt-green" id="btn-download-receipt" style="display:none;">Descargar comprobante</button>
     </div>
 
     <!-- Bancard Checkout iframe container -->
@@ -585,23 +596,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     justify-content: center;
     margin: 0 auto 1.5rem;
   }
-  .btn-receipt {
-    background: linear-gradient(135deg, #16a34a, #22c55e);
-    color: white;
-    padding: 0.75rem 2rem;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 0.95rem;
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);
+  .btn-receipt-green {
+    background: linear-gradient(135deg, #16a34a, #22c55e) !important;
+    box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3) !important;
   }
-  .btn-receipt:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(22, 163, 74, 0.5);
+  .btn-receipt-green:hover {
+    box-shadow: 0 6px 20px rgba(22, 163, 74, 0.5) !important;
   }
-  .btn-receipt:disabled {
+  .btn-receipt-green:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
@@ -832,8 +834,10 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
       hideProcessing();
       unlockModal();
-      // Limpiar botón de comprobante si existe
-      successDiv?.querySelector("#btn-download-receipt")?.remove();
+      // Ocultar y resetear botón de comprobante
+      const receiptBtn = document.getElementById("btn-download-receipt") as HTMLButtonElement | null;
+      if (receiptBtn) { receiptBtn.style.display = "none"; receiptBtn.textContent = "Descargar comprobante"; receiptBtn.disabled = false; }
+      _receiptListenerAttached = false;
     }
 
     function showProcessing() {
@@ -857,28 +861,31 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       successDiv.style.display = "block";
     }
 
+    let _receiptListenerAttached = false;
+
     function addReceiptButton(comprobante: any) {
       if (!comprobante) return;
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "btn-receipt";
-      btn.id = "btn-download-receipt";
-      btn.textContent = "Descargar comprobante";
-      btn.addEventListener("click", async () => {
-        btn.disabled = true;
-        btn.textContent = "Generando PDF...";
-        try {
-          const { generateReceipt } = await import("../lib/receipt");
-          await generateReceipt(comprobante);
-          unlockModal();
-          btn.textContent = "Descargar de nuevo";
-        } catch (err) {
-          console.error("Error generando PDF:", err);
-          btn.textContent = "Descargar comprobante";
-        }
-        btn.disabled = false;
-      });
-      successDiv.appendChild(btn);
+      const btn = document.getElementById("btn-download-receipt") as HTMLButtonElement | null;
+      if (!btn) return;
+      btn.style.display = "";
+      if (!_receiptListenerAttached) {
+        _receiptListenerAttached = true;
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          btn.textContent = "Generando PDF...";
+          try {
+            const { generateReceipt } = await import("../lib/receipt");
+            await generateReceipt((btn as any)._comprobante);
+            unlockModal();
+            btn.textContent = "Descargar de nuevo";
+          } catch (err) {
+            console.error("Error generando PDF:", err);
+            btn.textContent = "Descargar comprobante";
+          }
+          btn.disabled = false;
+        });
+      }
+      (btn as any)._comprobante = comprobante;
       lockModal();
     }
 
@@ -903,6 +910,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       modoActualizarVehiculo = false;
       lastLookedUpCI = "";
       lookupInProgress = false;
+      // Ocultar inputs de "Otro" y limpiar valores
+      (document.getElementById("marcaNueva-group") as HTMLElement | null)?.style && ((document.getElementById("marcaNueva-group") as HTMLElement).style.display = "none");
+      (document.getElementById("modeloNuevo-group") as HTMLElement | null)?.style && ((document.getElementById("modeloNuevo-group") as HTMLElement).style.display = "none");
+      (document.getElementById("marcaNueva") as HTMLInputElement | null) && ((document.getElementById("marcaNueva") as HTMLInputElement).value = "");
+      (document.getElementById("modeloNuevo") as HTMLInputElement | null) && ((document.getElementById("modeloNuevo") as HTMLInputElement).value = "");
       form.style.display = "";
       bancardContainer.style.display = "none";
 
@@ -1037,6 +1049,16 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (step === 2) {
         const chapa = (document.getElementById("chapa") as HTMLInputElement).value.trim();
         if (!chapa || chapa.length < 3) { showFieldError("chapa", "La chapa es requerida (mín. 3 caracteres)"); valid = false; }
+        const idMarcaV = (document.getElementById("idMarca") as HTMLSelectElement).value;
+        if (idMarcaV === "otro") {
+          const mn = (document.getElementById("marcaNueva") as HTMLInputElement).value.trim();
+          if (!mn) { showFieldError("marcaNueva", "Especificá la marca del vehículo"); valid = false; }
+        }
+        const idModeloV = (document.getElementById("idModelo") as HTMLSelectElement).value;
+        if (idModeloV === "otro") {
+          const mo = (document.getElementById("modeloNuevo") as HTMLInputElement).value.trim();
+          if (!mo) { showFieldError("modeloNuevo", "Especificá el modelo del vehículo"); valid = false; }
+        }
       }
 
       if (step === 3) {
@@ -1118,6 +1140,10 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             opt.textContent = marca.nombre;
             select.appendChild(opt);
           });
+          const otroMarca = document.createElement("option");
+          otroMarca.value = "otro";
+          otroMarca.textContent = "Otro";
+          select.appendChild(otroMarca);
           marcasLoaded = true;
         } else {
           select.innerHTML = '<option value="">Error: respuesta inválida</option>';
@@ -1132,15 +1158,33 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     const marcaSelect = document.getElementById("idMarca") as HTMLSelectElement;
     const modeloSelect = document.getElementById("idModelo") as HTMLSelectElement;
 
+    const marcaNuevaGroup = document.getElementById("marcaNueva-group") as HTMLElement;
+    const modeloNuevoGroup = document.getElementById("modeloNuevo-group") as HTMLElement;
+    const marcaNuevaInput = document.getElementById("marcaNueva") as HTMLInputElement;
+    const modeloNuevoInput = document.getElementById("modeloNuevo") as HTMLInputElement;
+
     marcaSelect?.addEventListener("change", async () => {
       const idMarca = marcaSelect.value;
       modeloSelect.innerHTML = '<option value="">Cargando...</option>';
       modeloSelect.disabled = true;
+      modeloNuevoGroup.style.display = "none";
 
       if (!idMarca) {
+        marcaNuevaGroup.style.display = "none";
         modeloSelect.innerHTML = '<option value="">Primero seleccioná la marca</option>';
         return;
       }
+
+      if (idMarca === "otro") {
+        marcaNuevaGroup.style.display = "";
+        modeloSelect.innerHTML = '<option value="">Seleccionar modelo...</option>';
+        modeloSelect.disabled = true;
+        modeloNuevoGroup.style.display = "";
+        return;
+      }
+
+      marcaNuevaGroup.style.display = "none";
+      marcaNuevaInput.value = "";
 
       try {
         const res = await fetchWithTimeout(`/api/modelos?idMarca=${idMarca}`, {}, 15000);
@@ -1158,10 +1202,23 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             modeloSelect.appendChild(opt);
           });
         }
+        const otroModelo = document.createElement("option");
+        otroModelo.value = "otro";
+        otroModelo.textContent = "Otro";
+        modeloSelect.appendChild(otroModelo);
         modeloSelect.disabled = false;
       } catch (err: any) {
         modeloSelect.innerHTML = `<option value="">Error al cargar modelos</option>`;
         console.error("Error loading modelos:", err);
+      }
+    });
+
+    modeloSelect?.addEventListener("change", () => {
+      if (modeloSelect.value === "otro") {
+        modeloNuevoGroup.style.display = "";
+      } else {
+        modeloNuevoGroup.style.display = "none";
+        modeloNuevoInput.value = "";
       }
     });
 
@@ -1962,10 +2019,20 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       formData.chapa = chapa;
 
       const idMarcaVal = (document.getElementById("idMarca") as HTMLSelectElement).value;
-      if (idMarcaVal) formData.idMarca = Number(idMarcaVal);
+      const marcaNuevaVal = (document.getElementById("marcaNueva") as HTMLInputElement).value.trim();
+      if (idMarcaVal === "otro") {
+        if (marcaNuevaVal) formData.marcaNueva = marcaNuevaVal;
+      } else if (idMarcaVal) {
+        formData.idMarca = Number(idMarcaVal);
+      }
 
       const idModeloVal = (document.getElementById("idModelo") as HTMLSelectElement).value;
-      if (idModeloVal) formData.idModelo = Number(idModeloVal);
+      const modeloNuevoVal = (document.getElementById("modeloNuevo") as HTMLInputElement).value.trim();
+      if (idModeloVal === "otro" || idMarcaVal === "otro") {
+        if (modeloNuevoVal) formData.modeloNuevo = modeloNuevoVal;
+      } else if (idModeloVal) {
+        formData.idModelo = Number(idModeloVal);
+      }
 
       const anio = (document.getElementById("anio") as HTMLInputElement).value;
       if (anio) formData.anio = Number(anio);
