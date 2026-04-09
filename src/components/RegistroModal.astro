@@ -52,6 +52,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                 class="cf-turnstile"
                 data-sitekey={siteKey}
                 data-theme="dark"
+                data-refresh-expired="auto"
               ></div>
             </div>
             <span class="field-error" id="turnstile-error"></span>
@@ -71,7 +72,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           </div>
           <div class="form-group personal-field" style="display:none;">
             <label for="telefono">Teléfono / WhatsApp <span class="required">*</span></label>
-            <input type="tel" id="telefono" name="telefono" required placeholder="Ej: 0981 123 456" maxlength="20" />
+            <input type="tel" id="telefono" name="telefono" required placeholder="Ej: 0981 123 456" maxlength="20" minlength="10" />
             <span class="field-error"></span>
           </div>
           <div class="form-group personal-field" style="display:none;">
@@ -1036,7 +1037,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
         if (!nombre) { showFieldError("nombre", "El nombre es requerido"); valid = false; }
         if (!ruc) { showFieldError("ruc", "El RUC/CI es requerido"); valid = false; }
-        if (!telefono) { showFieldError("telefono", "El teléfono es requerido"); valid = false; }
+        if (!telefono) {
+          showFieldError("telefono", "El teléfono es requerido");
+          valid = false;
+        } else if (telefono.replace(/\D/g, "").length < 10) {
+          showFieldError("telefono", "El teléfono debe tener al menos 10 dígitos");
+          valid = false;
+        }
         if (!email) {
           showFieldError("email", "El email es requerido para activar tu plan");
           valid = false;
