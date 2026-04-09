@@ -1940,7 +1940,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
     // Lookup manual — se dispara al hacer clic en "Confirmar" o presionar Enter
     async function confirmarCI() {
-      const ci = rucInput.value.trim();
+      // Eliminar dígito verificador: "755014-6" → "755014", "1234567-8" → "1234567"
+      const ci = rucInput.value.trim().replace(/-\d+$/, "");
       if (!ci || ci.length < 5) {
         showFieldError("ruc", "Ingresá tu RUC o CI para continuar.");
         return;
