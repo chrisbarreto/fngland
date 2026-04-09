@@ -2014,7 +2014,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
       // Collect form data
       const formData: any = {
-        nombre: (document.getElementById("nombre") as HTMLInputElement).value.trim(),
+        nombre: (document.getElementById("nombre") as HTMLInputElement).value.trim().toUpperCase(),
         ruc: (document.getElementById("ruc") as HTMLInputElement).value.trim(),
         telefono: (document.getElementById("telefono") as HTMLInputElement).value.trim(),
       };
