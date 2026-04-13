@@ -16,7 +16,7 @@ const {
 } = Astro.props;
 
 const siteName = config.site?.title || "Fórmula NG";
-const searchSiteName = "Fórmula NG";
+const searchSiteName = "Fórmula NG - Detailing";
 const defaultDescription =
   "Membresía de estética automotriz en Asunción, Paraguay. Detailing premium con lavado exterior y aspirado. Estrená tu vehículo cada mañana.";
 const description = descriptionProp || defaultDescription;
@@ -87,10 +87,10 @@ if (pf) {
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
         "@id": "https://formulang.com.py",
-        name: "Fórmula NG",
-        legalName: "FORMULA NG E.A.S. ",
+        name: "Fórmula NG - Detailing",
+        legalName: "FORMULA NG E.A.S.",
         taxID: "80156407-7",
-        alternateName: "Fórmula NG Detailing",
+        alternateName: ["Fórmula NG", "Formula NG Detailing"],
         description:
           "Membresía de estética automotriz en Asunción, Paraguay. Lavados ilimitados, detailing premium, lavado exterior, aspirado, cera líquida, lavado de motor y servicio de chofer.",
         url: "https://formulang.com.py",
@@ -133,10 +133,43 @@ if (pf) {
               "@type": "Offer",
               itemOffered: {
                 "@type": "Service",
-                name: "Membresía Premium",
-                description: "Lavados ilimitados todos los dias, cera líquida, lavado de motor, hidratación de plásticos y 2 traslados gratis al mes.",
+                name: "Plan Fórmula",
+                description: "Lavados ilimitados, cera líquida, lavado de motor, hidratación de plásticos y 2 traslados gratis al mes.",
               },
               price: "200000",
+              priceCurrency: "PYG",
+              availability: "https://schema.org/InStock",
+            },
+            {
+              "@type": "Offer",
+              itemOffered: {
+                "@type": "Service",
+                name: "Plan Premium",
+                description: "Lavados ilimitados, cera líquida, lavado de motor y 2 lavados a domicilio al mes.",
+              },
+              price: "250000",
+              priceCurrency: "PYG",
+              availability: "https://schema.org/InStock",
+            },
+            {
+              "@type": "Offer",
+              itemOffered: {
+                "@type": "Service",
+                name: "Plan Gold",
+                description: "Lavados ilimitados, cera líquida, limpieza de tapizado anual, pulida comercial anual y 1 traslado al mes.",
+              },
+              price: "300000",
+              priceCurrency: "PYG",
+              availability: "https://schema.org/InStock",
+            },
+            {
+              "@type": "Offer",
+              itemOffered: {
+                "@type": "Service",
+                name: "Plan Lavado a Domicilio",
+                description: "4 servicios de detailing profesional a domicilio por mes.",
+              },
+              price: "500000",
               priceCurrency: "PYG",
               availability: "https://schema.org/InStock",
             },
@@ -151,8 +184,8 @@ if (pf) {
           "@context": "https://schema.org",
           "@type": "WebSite",
           url: "https://formulang.com.py/",
-          name: searchSiteName,
-          alternateName: "Formula NG",
+          name: "Fórmula NG - Detailing",
+          alternateName: ["Fórmula NG", "Formula NG", "Formula NG Detailing"],
         })}
       </script>
     )}
