@@ -7,8 +7,6 @@ import Hero from "@/components/Hero.astro";
 import Footer from "@/components/Footer.astro";
 
 import Section from "@/components/sections/Section.astro";
-import Card from "@/components/ui/Card.astro";
-import Grid from "@/components/ui/Grid.astro";
 import GoogleReviews from "@/components/sections/GoogleReviews.astro";
 import AccordionContainer from "@/components/sections/AccordionContainer.astro";
 import Accordion from "@/components/sections/Accordion.astro";
@@ -17,8 +15,8 @@ import RegistroModal from "@/components/RegistroModal.astro";
 ---
 
 <BaseLayout
-  title="Plan Premium de cuidado automotriz | Fórmula NG"
-  description="Membresía de lavado ilimitado en Asunción. Plan Premium de Fórmula NG: Gs. 200.000 por mes, detailing profesional, protección y servicio a domicilio."
+  title="Club de cuidado automotriz | Fórmula NG"
+  description="Membresías de lavado ilimitado en Asunción. Fórmula NG: planes desde Gs. 200.000 por mes con detailing profesional, protección, traslados y servicio a domicilio."
 >
   <div class="page">
     <!-- Hero background video -->
@@ -57,27 +55,108 @@ import RegistroModal from "@/components/RegistroModal.astro";
     <!-- Main content -->
     <div class="sl-markdown-content" style="position: relative; z-index: 2; background-color: var(--sl-color-black); margin-top: -120px; padding-top: 40px;">
 
-      {/* Features Section */}
-      <Section
-        id="beneficios"
-        title="Beneficios <span class='light-text'>de tu Plan Premium</span>"
-        description="Todo lo que incluye tu membresía mensual de Gs. 200.000"
-      >
-        <Grid columns={4}>
-          <Card title="Lavado Ilimitado" icon="car-wash" iconColor="#FF8585">
-            Lavados ilimitados en cada ciclo mensual activo: exterior completo, aspirado profundo y desinfección de interiores. Máximo 1 lavado por día por vehículo.
-          </Card>
-          <Card title="Protección & Brillo" icon="shine-protection" iconColor="#7BE1A4">
-            1 aplicación de cera líquida con protección de hasta 4 meses y 1 lavado de motor profesional incluidos en cada ciclo mensual activo.
-          </Card>
-          <Card title="Servicio de Chofer" icon="driver-service" iconColor="#FFD97B">
-            2 traslados gratis para retiro o entrega de tu vehículo en cada ciclo mensual activo, con agenda previa y sujeto a disponibilidad.
-          </Card>
-          <Card title="Cuidado Interior" icon="interior-care" iconColor="#979BFF">
-            1 tratamiento de hidratación de plásticos interiores y revitalización de neumáticos incluidos en cada ciclo mensual activo.
-          </Card>
-        </Grid>
-      </Section>
+      {/* Plans Section */}
+      <section class="planes-section" id="planes">
+        <h2 class="planes-title">Nuestros planes</h2>
+        <p class="planes-sub">Todos los planes incluyen lavados ilimitados*, lavado exterior, aspirado, desinfección y revitalización de neumáticos.</p>
+        <div class="planes-grid">
+
+          <!-- Plan Fórmula -->
+          <div class="plan-card" data-plan-id="a9ee77bc-96ce-4217-ad0f-c817b9e58687">
+            <div class="plan-header">
+              <span class="plan-tag">Plan Fórmula</span>
+              <div class="plan-price-wrap">
+                <span class="plan-price">Gs. 200.000</span>
+                <span class="plan-price-mo">/mes</span>
+              </div>
+            </div>
+            <ul class="plan-features">
+              <li><span class="feat-check">✓</span><span>Lavados <strong>ilimitados</strong> (máx. 1/día)</span></li>
+              <li><span class="feat-check">✓</span><span>Lavado exterior completo</span></li>
+              <li><span class="feat-check">✓</span><span>Aspirado profundo</span></li>
+              <li><span class="feat-check">✓</span><span>Desinfección de interiores</span></li>
+              <li><span class="feat-check">✓</span><span>Revitalización de neumáticos</span></li>
+              <li><span class="feat-check">✓</span><span>Cera líquida (prot. 4 meses) <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Lavado de motor profesional <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Hidratación de plásticos interiores <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Traslados GRATIS (retiro/entrega) <em class="feat-freq">— dos veces al mes</em></span></li>
+            </ul>
+            <button type="button" class="btn-plan" data-plan-id="a9ee77bc-96ce-4217-ad0f-c817b9e58687">Contratar Plan Fórmula</button>
+          </div>
+
+          <!-- Plan Premium -->
+          <div class="plan-card plan-card-popular" data-plan-id="7ad4bfae-b1f2-47c9-8c3c-d4615607ad04">
+            <div class="plan-badge">MÁS POPULAR</div>
+            <div class="plan-header">
+              <span class="plan-tag">Plan Premium</span>
+              <div class="plan-price-wrap">
+                <span class="plan-price">Gs. 250.000</span>
+                <span class="plan-price-mo">/mes</span>
+              </div>
+            </div>
+            <ul class="plan-features">
+              <li><span class="feat-check">✓</span><span>Lavados <strong>ilimitados</strong> (máx. 1/día)</span></li>
+              <li><span class="feat-check">✓</span><span>Lavado exterior completo</span></li>
+              <li><span class="feat-check">✓</span><span>Aspirado profundo</span></li>
+              <li><span class="feat-check">✓</span><span>Desinfección de interiores</span></li>
+              <li><span class="feat-check">✓</span><span>Revitalización de neumáticos</span></li>
+              <li><span class="feat-check">✓</span><span>Cera líquida (prot. 4 meses) <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Lavado de motor profesional <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Hidratación de plásticos interiores <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Lavado a domicilio <em class="feat-freq">— dos veces al mes</em></span></li>
+            </ul>
+            <button type="button" class="btn-plan btn-plan-featured" data-plan-id="7ad4bfae-b1f2-47c9-8c3c-d4615607ad04">Contratar Plan Premium</button>
+          </div>
+
+          <!-- Plan Gold -->
+          <div class="plan-card plan-card-featured" data-plan-id="5a9b7b48-2e37-45f2-8ba9-f1a234b85f80">
+            <div class="plan-badge plan-badge-featured">RECOMENDADO</div>
+            <div class="plan-header">
+              <span class="plan-tag">Plan Gold</span>
+              <div class="plan-price-wrap">
+                <span class="plan-price">Gs. 300.000</span>
+                <span class="plan-price-mo">/mes</span>
+              </div>
+            </div>
+            <ul class="plan-features">
+              <li><span class="feat-check">✓</span><span>Lavados <strong>ilimitados</strong> (máx. 1/día)</span></li>
+              <li><span class="feat-check">✓</span><span>Lavado exterior completo</span></li>
+              <li><span class="feat-check">✓</span><span>Aspirado profundo</span></li>
+              <li><span class="feat-check">✓</span><span>Desinfección de interiores</span></li>
+              <li><span class="feat-check">✓</span><span>Revitalización de neumáticos</span></li>
+              <li><span class="feat-check">✓</span><span>Cera líquida (prot. 4 meses) <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Lavado de tapizado <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Hidratación de plásticos interiores <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Traslado GRATIS (retiro/entrega) <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Pulida comercial <em class="feat-freq feat-freq-annual">— una vez al año</em></span></li>
+            </ul>
+            <button type="button" class="btn-plan btn-plan-featured" data-plan-id="5a9b7b48-2e37-45f2-8ba9-f1a234b85f80">Contratar Plan Gold</button>
+          </div>
+
+          <!-- Plan Lavado a Domicilio -->
+          <div class="plan-card plan-card-domicilio" data-plan-id="ae949f1e-90c5-4d4e-879c-3e2724c89c79">
+            <div class="plan-header">
+              <span class="plan-tag">Plan Domicilio</span>
+              <div class="plan-price-wrap">
+                <span class="plan-price">Gs. 500.000</span>
+                <span class="plan-price-mo">/mes</span>
+              </div>
+            </div>
+            <ul class="plan-features">
+              <li><span class="feat-check">✓</span><span>Lavado exterior con shampoo pH neutro</span></li>
+              <li><span class="feat-check">✓</span><span>Aspirado profundo</span></li>
+              <li><span class="feat-check">✓</span><span>Desinfección de interiores</span></li>
+              <li><span class="feat-check">✓</span><span>Revitalización de neumáticos</span></li>
+              <li><span class="feat-check">✓</span><span>Hidratación de plásticos interiores</span></li>
+              <li><span class="feat-check">✓</span><span>Servicios de detailing <strong>a domicilio</strong> <em class="feat-freq">— cuatro veces al mes</em></span></li>
+            </ul>
+            <p class="plan-domicilio-note">Todo el servicio se realiza en tu casa u oficina.</p>
+            <button type="button" class="btn-plan" data-plan-id="ae949f1e-90c5-4d4e-879c-3e2724c89c79">Contratar Plan Domicilio</button>
+          </div>
+
+        </div>
+        <p class="planes-footnote">* Máximo 1 lavado por día por vehículo durante el ciclo mensual activo. Los servicios con límite (1/mes, 2/mes, 1/año) se renuevan según el período indicado.</p>
+      </section>
 
 
       {/* Google Reviews Section */}
@@ -87,7 +166,7 @@ import RegistroModal from "@/components/RegistroModal.astro";
       <Section
         id="preguntas"
         title="Preguntas <span class='light-text'>frecuentes</span>"
-        description="Todo lo que necesitás saber sobre el Plan Premium de Fórmula NG."
+        description="Todo lo que necesitás saber sobre los planes de Fórmula NG."
       >
         <AccordionContainer tabList={[
           {
@@ -129,8 +208,8 @@ import RegistroModal from "@/components/RegistroModal.astro";
         ]}>
           {/* Membresía Fórmula NG */}
           <Accordion
-            question="¿Qué incluye el Plan Premium de Gs. 200.000 por mes?"
-            answer="Incluye lavados ILIMITADOS en cada ciclo mensual activo (máximo 1 lavado por día por vehículo) y los siguientes servicios: lavado exterior completo, aspirado profundo, desinfección de interiores, revitalización de neumáticos, 1 aplicación de cera líquida (protección hasta 4 meses), 1 lavado de motor profesional, 1 tratamiento de hidratación de plásticos interiores y 2 traslados gratis con agenda previa."
+            question="¿Qué planes de membresía ofrecen?"
+            answer="Ofrecemos 4 planes: Plan Fórmula (Gs. 200.000/mes) con lavados ilimitados, cera, motor y 2 traslados; Plan Premium (Gs. 250.000/mes) con lavados ilimitados, cera, motor y 2 lavados a domicilio; Plan Gold (Gs. 300.000/mes) con lavados ilimitados, cera, tapizado, pulida comercial anual y 1 traslado; y Plan Lavado a Domicilio (Gs. 500.000/mes) con 4 servicios de detailing en tu casa. Todos incluyen lavado exterior, aspirado, desinfección y revitalización de neumáticos."
             type="membresia"
           />
           <Accordion
@@ -145,7 +224,7 @@ import RegistroModal from "@/components/RegistroModal.astro";
           />
           <Accordion
             question="¿La membresía tiene vencimiento?"
-            answer="Sí. El contrato del Plan Premium tiene una permanencia mínima de 12 meses. Los beneficios se habilitan por ciclos mensuales de 30 días y se mantienen activos mientras los pagos estén al día."
+            answer="Sí. Todos los planes tienen una permanencia mínima de 12 meses. Los beneficios se habilitan por ciclos mensuales de 30 días y se mantienen activos mientras los pagos estén al día."
             type="membresia"
           />
           <Accordion
@@ -167,7 +246,7 @@ import RegistroModal from "@/components/RegistroModal.astro";
           />
           <Accordion
             question="¿La membresía se renueva automáticamente?"
-            answer="Sí. El Plan Premium se cobra por débito automático obligatorio y mantiene la membresía activa durante la vigencia contratada, siempre que los pagos mensuales estén aprobados."
+            answer="Sí. Todos los planes se cobran por débito automático obligatorio y mantienen la membresía activa durante la vigencia contratada, siempre que los pagos mensuales estén aprobados."
             type="pagos"
           />
           <Accordion
@@ -338,6 +417,178 @@ import RegistroModal from "@/components/RegistroModal.astro";
     font-size: 0.95rem;
     color: var(--sl-color-gray-3);
   }
+  /* ─── Planes section ─── */
+  .planes-section {
+    padding: 4rem 1.5rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .planes-title {
+    text-align: center;
+    margin: 0 0 0.6rem;
+    font-size: clamp(1.4rem, 3.5vw, 1.9rem);
+    color: #fff;
+  }
+  .planes-sub {
+    text-align: center;
+    color: rgba(255,255,255,0.5);
+    font-size: 0.92rem;
+    margin: 0 0 2.5rem;
+  }
+  /* ─── Plan cards ─── */
+  .planes-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.1rem;
+    align-items: start;
+  }
+  .plan-card {
+    position: relative;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    padding: 1.75rem 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .plan-card-popular {
+    border-color: rgba(249,38,6,0.4);
+  }
+  .plan-card-featured {
+    border-color: #f92606;
+    background: rgba(249,38,6,0.07);
+    box-shadow: 0 0 32px rgba(249,38,6,0.12);
+  }
+  .plan-card-domicilio {
+    border-color: rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.03);
+  }
+  .plan-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(249,38,6,0.85);
+    color: #fff;
+    font-size: 0.63rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    padding: 3px 14px;
+    border-radius: 99px;
+    white-space: nowrap;
+  }
+  .plan-badge-featured {
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+  }
+  .plan-header { display: grid; gap: 0.4rem; }
+  .plan-tag {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.45);
+  }
+  .plan-price-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3rem;
+  }
+  .plan-price {
+    font-size: 1.55rem;
+    font-weight: 900;
+    color: #ff6b3d;
+  }
+  .plan-price-mo {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.4);
+  }
+  .plan-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+  }
+  .plan-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.83rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.4;
+  }
+  .feat-check {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-width: 28px;
+    text-align: center;
+    color: #22c55e;
+    background: rgba(34,197,94,0.12);
+    border-radius: 5px;
+    padding: 1px 4px;
+    margin-top: 1px;
+  }
+  .feat-freq {
+    font-style: normal;
+    color: rgba(255,255,255,0.38);
+    font-size: 0.79em;
+  }
+  .feat-freq-annual {
+    color: rgba(167,139,250,0.65);
+  }
+  .plan-domicilio-note {
+    margin: 0;
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.35);
+    font-style: italic;
+  }
+  .btn-plan {
+    background: rgba(249,38,6,0.15);
+    border: 1px solid rgba(249,38,6,0.4);
+    color: #ff6b3d;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+  }
+  .btn-plan:hover {
+    background: rgba(249,38,6,0.25);
+    border-color: #f92606;
+  }
+  .btn-plan-featured {
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 6px 20px rgba(249,38,6,0.3);
+  }
+  .btn-plan-featured:hover {
+    background: linear-gradient(135deg, #d42005, #f55c2e);
+    box-shadow: 0 8px 28px rgba(249,38,6,0.5);
+    transform: translateY(-1px);
+  }
+  .planes-footnote {
+    margin: 1.75rem 0 0;
+    text-align: center;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.3);
+    line-height: 1.55;
+  }
+  @media (max-width: 1000px) {
+    .planes-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .planes-grid { grid-template-columns: 1fr; }
+  }
+
   .hero-video-mobile {
     display: none;
   }
@@ -384,6 +635,18 @@ import RegistroModal from "@/components/RegistroModal.astro";
         }
       });
       accordion.classList.toggle("active");
+    });
+  });
+</script>
+
+<script>
+  // Plan buttons → open modal with planId
+  document.querySelectorAll<HTMLButtonElement>("button[data-plan-id]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const planId = btn.getAttribute("data-plan-id") || undefined;
+      if (typeof (window as any).__openRegistroModal === "function") {
+        (window as any).__openRegistroModal(planId ? { planId } : undefined);
+      }
     });
   });
 </script>

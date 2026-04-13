@@ -9,8 +9,8 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
 ---
 
 <BaseLayout
-  title="Plan Premium de lavado automotriz | Fórmula NG"
-  description="Lavados ilimitados, protección premium y servicio a domicilio por Gs. 200.000 al mes. Activá tu membresía hoy en Fórmula NG, Asunción."
+  title="Planes de lavado automotriz | Fórmula NG"
+  description="Elegí el plan ideal para tu auto. Planes desde Gs. 200.000 al mes con lavados ilimitados, detailing profesional y servicio a domicilio en Asunción, Paraguay."
   canonicalPath="/membresia"
 >
   <div class="membresia-page">
@@ -28,20 +28,14 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
       <section class="hero">
         <div class="hero-inner">
           <p class="eyebrow">Membresía oficial · Asunción, Paraguay</p>
-          <h1>Tu auto impecable,<br />todos los días.</h1>
+          <h1>Elegí el plan ideal<br />para tu auto.</h1>
           <p class="hero-sub">
             Lavados ilimitados, protección profesional y beneficios exclusivos.
-            Un solo pago mensual. Sin sorpresas.
+            Desde Gs. 200.000 por mes. Sin sorpresas.
           </p>
-          <div class="price-wrap">
-            <span class="price">Gs. 200.000</span>
-            <span class="price-mo">/ mes</span>
-          </div>
-          <button type="button" class="btn-hero" id="hero-cta">
-            Quiero mi Plan Premium
-          </button>
+          <a href="#planes" class="btn-hero">Ver los planes</a>
           <p class="legal-note">
-            Al continuar aceptás los
+            Al contratar aceptás los
             <a href="/terminos-y-condiciones" target="_blank">Términos y Condiciones</a>,
             <a href="/politica-de-privacidad" target="_blank">Política de Privacidad</a>
             y la <a href="/debito-automatico" target="_blank">autorización de débito automático</a>.
@@ -49,71 +43,269 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
         </div>
       </section>
 
-      <!-- BENEFICIOS -->
-      <section class="benefits">
-        <h2>¿Qué incluye el Plan Premium?</h2>
-        <div class="benefits-grid">
-          <div class="benefit-card">
-            <div class="benefit-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 7.9 7 6c-.29 1.9-1.57 2.9-2.29 3.1C3.57 10.0 3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></svg>
+      <!-- PLANES -->
+      <section class="planes-section" id="planes">
+        <h2>Nuestros planes</h2>
+        <p class="planes-sub">Todos los planes incluyen lavados ilimitados*, lavado exterior, aspirado, desinfección y revitalización de neumáticos.</p>
+        <div class="planes-grid">
+
+          <!-- Plan Fórmula -->
+          <div class="plan-card" data-plan-id="a9ee77bc-96ce-4217-ad0f-c817b9e58687">
+            <div class="plan-header">
+              <span class="plan-tag">Plan Fórmula</span>
+              <div class="plan-price-wrap">
+                <span class="plan-price">Gs. 200.000</span>
+                <span class="plan-price-mo">/mes</span>
+              </div>
             </div>
-            <h3>Lavados ilimitados</h3>
-            <p>Hasta 1 lavado por día por vehículo durante todo el mes activo.</p>
+            <ul class="plan-features">
+              <li><span class="feat-check">✓</span><span>Lavados <strong>ilimitados</strong> (máx. 1/día)</span></li>
+              <li><span class="feat-check">✓</span><span>Lavado exterior completo</span></li>
+              <li><span class="feat-check">✓</span><span>Aspirado profundo</span></li>
+              <li><span class="feat-check">✓</span><span>Desinfección de interiores</span></li>
+              <li><span class="feat-check">✓</span><span>Revitalización de neumáticos</span></li>
+              <li><span class="feat-check">✓</span><span>Cera líquida (prot. 4 meses) <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Lavado de motor profesional <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Hidratación de plásticos interiores <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Traslados GRATIS (retiro/entrega) <em class="feat-freq">— dos veces al mes</em></span></li>
+            </ul>
+            <button type="button" class="btn-plan" data-plan-id="a9ee77bc-96ce-4217-ad0f-c817b9e58687">Contratar Plan Fórmula</button>
           </div>
-          <div class="benefit-card">
-            <div class="benefit-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+
+          <!-- Plan Premium -->
+          <div class="plan-card plan-card-popular" data-plan-id="7ad4bfae-b1f2-47c9-8c3c-d4615607ad04">
+            <div class="plan-badge">MÁS POPULAR</div>
+            <div class="plan-header">
+              <span class="plan-tag">Plan Premium</span>
+              <div class="plan-price-wrap">
+                <span class="plan-price">Gs. 250.000</span>
+                <span class="plan-price-mo">/mes</span>
+              </div>
             </div>
-            <h3>Protección y brillo</h3>
-            <p>1 aplicación de cera líquida con protección de hasta 4 meses incluida por ciclo.</p>
+            <ul class="plan-features">
+              <li><span class="feat-check">✓</span><span>Lavados <strong>ilimitados</strong> (máx. 1/día)</span></li>
+              <li><span class="feat-check">✓</span><span>Lavado exterior completo</span></li>
+              <li><span class="feat-check">✓</span><span>Aspirado profundo</span></li>
+              <li><span class="feat-check">✓</span><span>Desinfección de interiores</span></li>
+              <li><span class="feat-check">✓</span><span>Revitalización de neumáticos</span></li>
+              <li><span class="feat-check">✓</span><span>Cera líquida (prot. 4 meses) <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Lavado de motor profesional <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Hidratación de plásticos interiores <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Lavado a domicilio <em class="feat-freq">— dos veces al mes</em></span></li>
+            </ul>
+            <button type="button" class="btn-plan btn-plan-featured" data-plan-id="7ad4bfae-b1f2-47c9-8c3c-d4615607ad04">Contratar Plan Premium</button>
           </div>
-          <div class="benefit-card">
-            <div class="benefit-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+
+          <!-- Plan Gold -->
+          <div class="plan-card plan-card-featured" data-plan-id="5a9b7b48-2e37-45f2-8ba9-f1a234b85f80">
+            <div class="plan-badge plan-badge-featured">RECOMENDADO</div>
+            <div class="plan-header">
+              <span class="plan-tag">Plan Gold</span>
+              <div class="plan-price-wrap">
+                <span class="plan-price">Gs. 300.000</span>
+                <span class="plan-price-mo">/mes</span>
+              </div>
             </div>
-            <h3>Lavado de motor</h3>
-            <p>1 lavado de motor profesional incluido por ciclo mensual activo.</p>
+            <ul class="plan-features">
+              <li><span class="feat-check">✓</span><span>Lavados <strong>ilimitados</strong> (máx. 1/día)</span></li>
+              <li><span class="feat-check">✓</span><span>Lavado exterior completo</span></li>
+              <li><span class="feat-check">✓</span><span>Aspirado profundo</span></li>
+              <li><span class="feat-check">✓</span><span>Desinfección de interiores</span></li>
+              <li><span class="feat-check">✓</span><span>Revitalización de neumáticos</span></li>
+              <li><span class="feat-check">✓</span><span>Cera líquida (prot. 4 meses) <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Lavado de tapizado <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Hidratación de plásticos interiores <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Traslado GRATIS (retiro/entrega) <em class="feat-freq">— una vez al mes</em></span></li>
+              <li><span class="feat-check">✓</span><span>Pulida comercial <em class="feat-freq feat-freq-annual">— una vez al año</em></span></li>
+            </ul>
+            <button type="button" class="btn-plan btn-plan-featured" data-plan-id="5a9b7b48-2e37-45f2-8ba9-f1a234b85f80">Contratar Plan Gold</button>
           </div>
-          <div class="benefit-card">
-            <div class="benefit-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+
+          <!-- Plan Lavado a Domicilio -->
+          <div class="plan-card plan-card-domicilio" data-plan-id="ae949f1e-90c5-4d4e-879c-3e2724c89c79">
+            <div class="plan-header">
+              <span class="plan-tag">Plan Domicilio</span>
+              <div class="plan-price-wrap">
+                <span class="plan-price">Gs. 500.000</span>
+                <span class="plan-price-mo">/mes</span>
+              </div>
             </div>
-            <h3>Interior completo</h3>
-            <p>Aspirado profundo, desinfección, hidratación de plásticos y revitalización de neumáticos.</p>
+            <ul class="plan-features">
+              <li><span class="feat-check">✓</span><span>Lavado exterior con shampoo pH neutro</span></li>
+              <li><span class="feat-check">✓</span><span>Aspirado profundo</span></li>
+              <li><span class="feat-check">✓</span><span>Desinfección de interiores</span></li>
+              <li><span class="feat-check">✓</span><span>Revitalización de neumáticos</span></li>
+              <li><span class="feat-check">✓</span><span>Hidratación de plásticos interiores</span></li>
+              <li><span class="feat-check">✓</span><span>Servicios de detailing <strong>a domicilio</strong> <em class="feat-freq">— cuatro veces al mes</em></span></li>
+            </ul>
+            <p class="plan-domicilio-note">Todo el servicio se realiza en tu casa u oficina.</p>
+            <button type="button" class="btn-plan" data-plan-id="ae949f1e-90c5-4d4e-879c-3e2724c89c79">Contratar Plan Domicilio</button>
           </div>
-          <div class="benefit-card">
-            <div class="benefit-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            </div>
-            <h3>Servicio a domicilio</h3>
-            <p>2 traslados gratuitos por mes con agenda previa, sujeto a disponibilidad.</p>
-          </div>
-          <div class="benefit-card">
-            <div class="benefit-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-            </div>
-            <h3>Activación inmediata</h3>
-            <p>Tu membresía queda activa en el momento que registrás tu tarjeta y se aprueba el pago.</p>
-          </div>
+
         </div>
+        <p class="planes-footnote">* Máximo 1 lavado por día por vehículo durante el ciclo mensual activo. Los servicios con límite (1/mes, 2/mes, 1/año) se renuevan según el período indicado.</p>
       </section>
 
-      <!-- PRECIO + CTA CENTRAL -->
-      <section class="cta-section">
-        <span class="cta-badge">🔥 Precio de lanzamiento</span>
-        <p class="cta-eyebrow">Todo eso por</p>
-        <div class="cta-price-wrap">
-          <span class="cta-price">Gs. 200.000</span>
-          <span class="cta-price-mo">/ mes</span>
+      <!-- COMPARATIVO -->
+      <section class="comparativo-section" id="comparativo">
+        <h2>Comparativo de planes</h2>
+        <p class="comparativo-sub">¿No sabés cuál elegir? Compará todo lo que incluye cada plan.</p>
+        <div class="table-wrap">
+          <table class="comp-table">
+            <thead>
+              <tr>
+                <th class="comp-feature-col">Servicio</th>
+                <th>
+                  <span class="th-plan-name">Fórmula</span>
+                  <span class="th-plan-price">Gs. 200.000</span>
+                </th>
+                <th class="th-popular">
+                  <span class="th-plan-badge">Popular</span>
+                  <span class="th-plan-name">Premium</span>
+                  <span class="th-plan-price">Gs. 250.000</span>
+                </th>
+                <th class="th-featured">
+                  <span class="th-plan-badge th-plan-badge-featured">Recomendado</span>
+                  <span class="th-plan-name">Gold</span>
+                  <span class="th-plan-price">Gs. 300.000</span>
+                </th>
+                <th>
+                  <span class="th-plan-name">Domicilio</span>
+                  <span class="th-plan-price">Gs. 500.000</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="comp-category-row">
+                <td colspan="5">Servicios base incluidos en todos los lavados</td>
+              </tr>
+              <tr>
+                <td>Lavado exterior completo</td>
+                <td><span class="comp-yes">✓</span></td>
+                <td class="td-popular"><span class="comp-yes">✓</span></td>
+                <td class="td-featured"><span class="comp-yes">✓</span></td>
+                <td><span class="comp-yes">✓</span></td>
+              </tr>
+              <tr>
+                <td>Aspirado profundo</td>
+                <td><span class="comp-yes">✓</span></td>
+                <td class="td-popular"><span class="comp-yes">✓</span></td>
+                <td class="td-featured"><span class="comp-yes">✓</span></td>
+                <td><span class="comp-yes">✓</span></td>
+              </tr>
+              <tr>
+                <td>Desinfección de interiores</td>
+                <td><span class="comp-yes">✓</span></td>
+                <td class="td-popular"><span class="comp-yes">✓</span></td>
+                <td class="td-featured"><span class="comp-yes">✓</span></td>
+                <td><span class="comp-yes">✓</span></td>
+              </tr>
+              <tr>
+                <td>Revitalización de neumáticos</td>
+                <td><span class="comp-yes">✓</span></td>
+                <td class="td-popular"><span class="comp-yes">✓</span></td>
+                <td class="td-featured"><span class="comp-yes">✓</span></td>
+                <td><span class="comp-yes">✓</span></td>
+              </tr>
+              <tr class="comp-category-row">
+                <td colspan="5">Lavados ilimitados</td>
+              </tr>
+              <tr>
+                <td>Lavados ilimitados en local (máx. 1/día)</td>
+                <td><span class="comp-yes">✓</span></td>
+                <td class="td-popular"><span class="comp-yes">✓</span></td>
+                <td class="td-featured"><span class="comp-yes">✓</span></td>
+                <td><span class="comp-no">—</span></td>
+              </tr>
+              <tr class="comp-category-row">
+                <td colspan="5">Servicios mensuales con límite</td>
+              </tr>
+              <tr>
+                <td>Hidratación de plásticos interiores <em class="comp-freq">— una vez al mes</em></td>
+                <td><span class="comp-yes">✓</span></td>
+                <td class="td-popular"><span class="comp-yes">✓</span></td>
+                <td class="td-featured"><span class="comp-yes">✓</span></td>
+                <td><span class="comp-yes">✓</span></td>
+              </tr>
+              <tr>
+                <td>Cera líquida (prot. 4 meses) <em class="comp-freq">— una vez al mes</em></td>
+                <td><span class="comp-yes">✓</span></td>
+                <td class="td-popular"><span class="comp-yes">✓</span></td>
+                <td class="td-featured"><span class="comp-yes">✓</span></td>
+                <td><span class="comp-no">—</span></td>
+              </tr>
+              <tr>
+                <td>Lavado de motor profesional <em class="comp-freq">— una vez al mes</em></td>
+                <td><span class="comp-yes">✓</span></td>
+                <td class="td-popular"><span class="comp-yes">✓</span></td>
+                <td class="td-featured"><span class="comp-no">—</span></td>
+                <td><span class="comp-no">—</span></td>
+              </tr>
+              <tr>
+                <td>Traslados GRATIS (retiro/entrega) <em class="comp-freq">— dos veces al mes</em></td>
+                <td><span class="comp-yes">✓</span></td>
+                <td class="td-popular"><span class="comp-no">—</span></td>
+                <td class="td-featured"><span class="comp-no">—</span></td>
+                <td><span class="comp-no">—</span></td>
+              </tr>
+              <tr>
+                <td>Traslado GRATIS (retiro/entrega) <em class="comp-freq">— una vez al mes</em></td>
+                <td><span class="comp-no">—</span></td>
+                <td class="td-popular"><span class="comp-no">—</span></td>
+                <td class="td-featured"><span class="comp-yes">✓</span></td>
+                <td><span class="comp-no">—</span></td>
+              </tr>
+              <tr>
+                <td>Lavado a domicilio <em class="comp-freq">— dos veces al mes</em></td>
+                <td><span class="comp-no">—</span></td>
+                <td class="td-popular"><span class="comp-yes">✓</span></td>
+                <td class="td-featured"><span class="comp-no">—</span></td>
+                <td><span class="comp-no">—</span></td>
+              </tr>
+              <tr>
+                <td>Lavado de tapizado <em class="comp-freq">— una vez al mes</em></td>
+                <td><span class="comp-no">—</span></td>
+                <td class="td-popular"><span class="comp-no">—</span></td>
+                <td class="td-featured"><span class="comp-yes">✓</span></td>
+                <td><span class="comp-no">—</span></td>
+              </tr>
+              <tr>
+                <td>Detailing completo a domicilio <em class="comp-freq">— cuatro veces al mes</em></td>
+                <td><span class="comp-no">—</span></td>
+                <td class="td-popular"><span class="comp-no">—</span></td>
+                <td class="td-featured"><span class="comp-no">—</span></td>
+                <td><span class="comp-yes">✓</span></td>
+              </tr>
+              <tr class="comp-category-row">
+                <td colspan="5">Servicios anuales con límite</td>
+              </tr>
+              <tr>
+                <td>Pulida comercial <em class="comp-freq comp-freq-annual">— una vez al año</em></td>
+                <td><span class="comp-no">—</span></td>
+                <td class="td-popular"><span class="comp-no">—</span></td>
+                <td class="td-featured"><span class="comp-yes">✓</span></td>
+                <td><span class="comp-no">—</span></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="comp-cta-row">
+                <td></td>
+                <td>
+                  <button type="button" class="btn-table-cta" data-plan-id="a9ee77bc-96ce-4217-ad0f-c817b9e58687">Contratar</button>
+                </td>
+                <td class="td-popular">
+                  <button type="button" class="btn-table-cta btn-table-cta-featured" data-plan-id="7ad4bfae-b1f2-47c9-8c3c-d4615607ad04">Contratar</button>
+                </td>
+                <td class="td-featured">
+                  <button type="button" class="btn-table-cta btn-table-cta-featured" data-plan-id="5a9b7b48-2e37-45f2-8ba9-f1a234b85f80">Contratar</button>
+                </td>
+                <td>
+                  <button type="button" class="btn-table-cta" data-plan-id="ae949f1e-90c5-4d4e-879c-3e2724c89c79">Contratar</button>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
-        <p class="cta-sub">Débito automático mensual · Activación inmediata</p>
-        <button type="button" class="btn-cta" id="cta-mid">
-          Activar mi Plan Premium ahora
-        </button>
-        <p class="legal-note">
-          Al continuar aceptás los <a href="/terminos-y-condiciones" target="_blank">Términos y Condiciones</a>
-          y la <a href="/debito-automatico" target="_blank">autorización de débito automático</a>.
-        </p>
       </section>
 
       <!-- PRUEBA SOCIAL -->
@@ -165,9 +357,7 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
       <section class="final-cta">
         <h2>Empezá hoy mismo</h2>
         <p>Registrate en minutos. Tu auto te lo va a agradecer.</p>
-        <button type="button" class="btn-cta" id="cta-final">
-          Quiero mi Plan Premium
-        </button>
+        <a href="#planes" class="btn-cta">Elegir mi plan</a>
         <p class="legal-note">
           Al continuar aceptás los <a href="/terminos-y-condiciones" target="_blank">Términos y Condiciones</a>.
         </p>
@@ -184,25 +374,26 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
 <script>
-  function openModal() {
+  function openModal(planId?: string) {
     if (typeof (window as any).__openRegistroModal === "function") {
-      (window as any).__openRegistroModal();
+      (window as any).__openRegistroModal(planId ? { planId } : undefined);
     }
   }
 
   // ViewContent Meta Pixel event
   if (typeof (window as any).fbq === "function") {
     (window as any).fbq("track", "ViewContent", {
-      content_name: "Plan Premium",
+      content_name: "Planes Membresia",
       content_category: "Membresia",
-      value: 200000,
-      currency: "PYG",
     });
   }
 
-  document.getElementById("hero-cta")?.addEventListener("click", openModal);
-  document.getElementById("cta-mid")?.addEventListener("click", openModal);
-  document.getElementById("cta-final")?.addEventListener("click", openModal);
+  // Bind all "Contratar" buttons (plan cards + comparison table)
+  document.querySelectorAll<HTMLButtonElement>("button[data-plan-id]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openModal(btn.getAttribute("data-plan-id") || undefined);
+    });
+  });
 </script>
 
 <style>
@@ -266,25 +457,10 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
     max-width: 520px;
     justify-self: center;
   }
-  .price-wrap {
-    display: flex;
-    align-items: baseline;
-    gap: 0.4rem;
-    justify-content: center;
-    margin-top: 0.5rem;
-  }
-  .price {
-    font-size: clamp(2.2rem, 6vw, 3rem);
-    font-weight: 900;
-    color: #ff6b3d;
-  }
-  .price-mo {
-    font-size: 1.1rem;
-    color: rgba(255,255,255,0.55);
-  }
   .btn-hero {
     margin-top: 0.5rem;
     justify-self: center;
+    display: inline-block;
     background: linear-gradient(135deg, #f92606, #ff6b3d);
     color: #fff;
     border: none;
@@ -296,6 +472,7 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
     box-shadow: 0 8px 28px rgba(249,38,6,0.35);
     transition: transform 0.2s, box-shadow 0.2s;
     letter-spacing: 0.01em;
+    text-decoration: none;
   }
   .btn-hero:hover {
     transform: translateY(-2px);
@@ -313,119 +490,304 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
   }
   .legal-note a:hover { color: #ff6b3d; }
 
-  /* ─── BENEFICIOS ─── */
-  .benefits {
-    padding: 3.5rem 1.5rem;
-    max-width: 1080px;
+  /* ─── PLANES SECTION ─── */
+  .planes-section {
+    padding: 4rem 1.5rem 2rem;
+    max-width: 1200px;
     margin: 0 auto;
     width: 100%;
+    box-sizing: border-box;
   }
-  .benefits h2, .reviews-section h2, .final-cta h2 {
+  .planes-section h2,
+  .comparativo-section h2,
+  .reviews-section h2,
+  .final-cta h2 {
     text-align: center;
-    margin: 0 0 2rem;
+    margin: 0 0 0.6rem;
     font-size: clamp(1.4rem, 3.5vw, 1.9rem);
     color: #fff;
   }
-  .benefits-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.1rem;
-  }
-  .benefit-card {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 1.5rem 1.25rem;
-    display: grid;
-    gap: 0.65rem;
-  }
-  .benefit-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    background: rgba(249,38,6,0.12);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #ff6b3d;
-  }
-  .benefit-icon svg { width: 22px; height: 22px; }
-  .benefit-card h3 {
-    margin: 0;
-    font-size: 0.98rem;
-    font-weight: 700;
-    color: #fff;
-  }
-  .benefit-card p {
-    margin: 0;
-    font-size: 0.85rem;
-    color: rgba(255,255,255,0.58);
-    line-height: 1.5;
-  }
-
-  /* ─── CTA CENTRAL ─── */
-  .cta-section {
-    background: radial-gradient(ellipse at center, rgba(249,38,6,0.15), transparent 70%);
-    padding: 3.5rem 1.5rem;
+  .planes-sub, .comparativo-sub {
     text-align: center;
+    color: rgba(255,255,255,0.5);
+    font-size: 0.92rem;
+    margin: 0 0 2.5rem;
+  }
+  .planes-grid {
     display: grid;
-    gap: 0.9rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.1rem;
+    align-items: start;
   }
-  .cta-badge {
-    display: inline-block;
-    background: rgba(249,38,6,0.18);
-    border: 1px solid rgba(249,38,6,0.35);
-    color: #ff6b3d;
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 0.3rem 0.9rem;
+  .plan-card {
+    position: relative;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    padding: 1.75rem 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .plan-card-popular {
+    border-color: rgba(249,38,6,0.4);
+  }
+  .plan-card-featured {
+    border-color: #f92606;
+    background: rgba(249,38,6,0.07);
+    box-shadow: 0 0 32px rgba(249,38,6,0.12);
+  }
+  .plan-card-domicilio {
+    border-color: rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.03);
+  }
+  .plan-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(249,38,6,0.85);
+    color: #fff;
+    font-size: 0.63rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    padding: 3px 14px;
     border-radius: 99px;
-    letter-spacing: 0.02em;
+    white-space: nowrap;
   }
-  .cta-eyebrow {
-    margin: 0;
-    font-size: 0.78rem;
-    letter-spacing: 0.12em;
+  .plan-badge-featured {
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+  }
+  .plan-header { display: grid; gap: 0.4rem; }
+  .plan-tag {
+    font-size: 0.72rem;
+    font-weight: 800;
     text-transform: uppercase;
+    letter-spacing: 0.1em;
     color: rgba(255,255,255,0.45);
-    font-weight: 600;
   }
-  .cta-price-wrap {
+  .plan-price-wrap {
     display: flex;
     align-items: baseline;
-    gap: 0.4rem;
-    justify-content: center;
+    gap: 0.3rem;
   }
-  .cta-price {
-    font-size: clamp(2.5rem, 7vw, 3.8rem);
+  .plan-price {
+    font-size: 1.55rem;
     font-weight: 900;
     color: #ff6b3d;
   }
-  .cta-price-mo {
-    font-size: 1.15rem;
-    color: rgba(255,255,255,0.45);
+  .plan-price-mo {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.4);
   }
-  .cta-sub {
+  .plan-features {
+    list-style: none;
+    padding: 0;
     margin: 0;
-    font-size: 0.85rem;
-    color: rgba(255,255,255,0.45);
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    flex: 1;
   }
-  .btn-cta {
-    justify-self: center;
-    background: linear-gradient(135deg, #f92606, #ff6b3d);
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    padding: 1rem 2.5rem;
-    font-size: 1.05rem;
-    font-weight: 800;
+  .plan-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.83rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.4;
+  }
+  .feat-check {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-width: 28px;
+    text-align: center;
+    color: #22c55e;
+    background: rgba(34,197,94,0.12);
+    border-radius: 5px;
+    padding: 1px 4px;
+    margin-top: 1px;
+  }
+  .feat-freq {
+    font-style: normal;
+    color: rgba(255,255,255,0.38);
+    font-size: 0.79em;
+  }
+  .feat-freq-annual {
+    color: rgba(167,139,250,0.65);
+  }
+  .plan-domicilio-note {
+    margin: 0;
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.35);
+    font-style: italic;
+  }
+  .btn-plan {
+    background: rgba(249,38,6,0.15);
+    border: 1px solid rgba(249,38,6,0.4);
+    color: #ff6b3d;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 8px 28px rgba(249,38,6,0.35);
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.2s;
+    width: 100%;
   }
-  .btn-cta:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 36px rgba(249,38,6,0.5);
+  .btn-plan:hover {
+    background: rgba(249,38,6,0.25);
+    border-color: #f92606;
+  }
+  .btn-plan-featured {
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 6px 20px rgba(249,38,6,0.3);
+  }
+  .btn-plan-featured:hover {
+    background: linear-gradient(135deg, #d42005, #f55c2e);
+    box-shadow: 0 8px 28px rgba(249,38,6,0.5);
+    transform: translateY(-1px);
+  }
+  .planes-footnote {
+    margin: 1.75rem 0 0;
+    text-align: center;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.3);
+    line-height: 1.55;
+  }
+
+  /* ─── COMPARATIVO ─── */
+  .comparativo-section {
+    padding: 3.5rem 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+    min-width: 640px;
+  }
+  .comp-table thead tr {
+    background: rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .comp-table th {
+    padding: 1.1rem 0.9rem;
+    text-align: center;
+    vertical-align: bottom;
+    font-weight: 600;
+  }
+  .comp-feature-col {
+    text-align: left;
+    min-width: 220px;
+    color: rgba(255,255,255,0.6);
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+  .th-plan-name {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #fff;
+  }
+  .th-plan-price {
+    display: block;
+    font-size: 0.78rem;
+    color: #ff6b3d;
+    margin-top: 2px;
+    font-weight: 600;
+  }
+  .th-plan-badge {
+    display: inline-block;
+    background: rgba(249,38,6,0.7);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    border-radius: 99px;
+    margin-bottom: 5px;
+  }
+  .th-plan-badge-featured {
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+  }
+  .th-popular { background: rgba(249,38,6,0.05); }
+  .th-featured { background: rgba(249,38,6,0.1); border-left: 1px solid rgba(249,38,6,0.3); border-right: 1px solid rgba(249,38,6,0.3); }
+  .comp-table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.15s;
+  }
+  .comp-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+  .comp-table td {
+    padding: 0.75rem 0.9rem;
+    text-align: center;
+    color: rgba(255,255,255,0.65);
+  }
+  .comp-table td:first-child {
+    text-align: left;
+    color: rgba(255,255,255,0.75);
+    font-weight: 500;
+  }
+  .td-popular { background: rgba(249,38,6,0.03); }
+  .td-featured { background: rgba(249,38,6,0.06); border-left: 1px solid rgba(249,38,6,0.2); border-right: 1px solid rgba(249,38,6,0.2); }
+  .comp-category-row td {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.03);
+    padding: 0.55rem 0.9rem;
+    text-align: left;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .comp-yes { color: #22c55e; font-weight: 700; font-size: 1rem; }
+  .comp-no { color: rgba(255,255,255,0.2); font-size: 1rem; }
+  .comp-freq {
+    font-style: normal;
+    color: rgba(255,255,255,0.35);
+    font-size: 0.78em;
+    font-weight: 400;
+  }
+  .comp-freq-annual {
+    color: rgba(167,139,250,0.6);
+  }
+  .comp-cta-row td {
+    padding: 1.1rem 0.9rem;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.02);
+  }
+  .btn-table-cta {
+    background: rgba(249,38,6,0.15);
+    border: 1px solid rgba(249,38,6,0.35);
+    color: #ff6b3d;
+    border-radius: 8px;
+    padding: 0.55rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-table-cta:hover { background: rgba(249,38,6,0.25); }
+  .btn-table-cta-featured {
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    border-color: transparent;
+    color: #fff;
+  }
+  .btn-table-cta-featured:hover {
+    background: linear-gradient(135deg, #d42005, #f55c2e);
+    transform: translateY(-1px);
   }
 
   /* ─── REVIEWS ─── */
@@ -434,6 +796,7 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
     max-width: 1080px;
     margin: 0 auto;
     width: 100%;
+    box-sizing: border-box;
   }
   .reviews-grid {
     display: grid;
@@ -534,20 +897,44 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
     color: rgba(255,255,255,0.6);
     font-size: 1rem;
   }
+  .btn-cta {
+    justify-self: center;
+    display: inline-block;
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 2.5rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 8px 28px rgba(249,38,6,0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-decoration: none;
+  }
+  .btn-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 36px rgba(249,38,6,0.5);
+  }
 
   /* ─── RESPONSIVE ─── */
+  @media (max-width: 1000px) {
+    .planes-grid { grid-template-columns: repeat(2, 1fr); }
+  }
   @media (max-width: 860px) {
-    .benefits-grid, .reviews-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
+    .reviews-grid { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 560px) {
-    .benefits-grid, .reviews-grid {
-      grid-template-columns: 1fr;
-    }
+    .planes-grid { grid-template-columns: 1fr; }
+    .reviews-grid { grid-template-columns: 1fr; }
     .hero { padding: 3rem 1.25rem 2.5rem; }
-    .benefits, .reviews-section { padding: 2.5rem 1.25rem; }
-    .cta-section, .final-cta { padding: 2.5rem 1.25rem; }
+    .planes-section, .comparativo-section, .reviews-section { padding: 2.5rem 1.25rem; }
+    .final-cta { padding: 2.5rem 1.25rem; }
     .trust-items { gap: 1.5rem; }
+  }
+
+  /* ─── COMPARATIVO: solo desktop ─── */
+  @media (max-width: 700px) {
+    .comparativo-section { display: none; }
   }
 </style>

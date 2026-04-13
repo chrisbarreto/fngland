@@ -8,7 +8,7 @@ import Footer from "@/components/Footer.astro";
 
 <BaseLayout
   title="Resultado de activación | Fórmula NG"
-  description="Estado de activación del Plan Premium de Fórmula NG."
+  description="Estado de activación de tu membresía en Fórmula NG."
   canonicalPath="/gracias"
   noindex={true}
 >
@@ -19,7 +19,7 @@ import Footer from "@/components/Footer.astro";
       <section class="status-card" id="status-card" data-status="pending">
         <div class="status-icon" id="status-icon">!</div>
         <p class="status-eyebrow" id="status-eyebrow">Estamos validando tu pago</p>
-        <h1 id="status-title">Finalizá la activación de tu Plan Premium</h1>
+        <h1 id="status-title">Finalizá la activación de tu membresía</h1>
         <p id="status-description">
           Si acabás de completar el registro de tarjeta, esperá unos segundos y actualizá esta página.
         </p>
@@ -63,7 +63,7 @@ import Footer from "@/components/Footer.astro";
       card.dataset.status = "success";
       icon.textContent = "✓";
       eyebrow.textContent = "Pago confirmado";
-      title.textContent = "Tu Plan Premium quedó activo";
+      title.textContent = "Tu membresía quedó activa";
       description.textContent =
         "Tu tarjeta fue registrada correctamente y el débito automático mensual quedó habilitado. Podés agendar tu primer servicio escribiéndonos por WhatsApp.";
       if (actionPrimary) {
@@ -75,10 +75,18 @@ import Footer from "@/components/Footer.astro";
 
       // Meta Pixel Purchase event
       if (typeof (window as any).fbq === "function") {
+        const PLAN_PRICES: Record<string, number> = {
+          "a9ee77bc-96ce-4217-ad0f-c817b9e58687": 200000,
+          "7ad4bfae-b1f2-47c9-8c3c-d4615607ad04": 250000,
+          "5a9b7b48-2e37-45f2-8ba9-f1a234b85f80": 300000,
+          "ae949f1e-90c5-4d4e-879c-3e2724c89c79": 500000,
+        };
+        const storedPlanId = sessionStorage.getItem("formulang_planId") || "";
+        const pixelValue = PLAN_PRICES[storedPlanId] || 200000;
         (window as any).fbq("track", "Purchase", {
-          value: 200000,
+          value: pixelValue,
           currency: "PYG",
-          content_name: "Plan Premium",
+          content_name: "Membresía Fórmula NG",
         });
       }
 

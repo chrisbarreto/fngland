@@ -16,8 +16,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     <button id="modal-close" class="modal-close" aria-label="Cerrar">&times;</button>
     
     <div class="modal-header">
-      <h2 class="modal-title">Activá tu Plan Premium</h2>
-      <p class="modal-subtitle">Completá tus datos, elegí tu día de débito y registrá tu tarjeta para activar tu membresía de Gs. 200.000 por mes.</p>
+      <h2 class="modal-title">Activá tu <span id="modal-plan-name">plan</span></h2>
+      <p class="modal-subtitle">Completá tus datos, registrá tu tarjeta y activá tu membresía de <span id="modal-plan-price">—</span> por mes.</p>
       <!-- Step indicators -->
       <div class="steps-indicator">
         <div class="step-dot active" data-step="1"><span>1</span></div>
@@ -160,7 +160,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           <p class="auto-debit-eyebrow">Débito automático obligatorio</p>
           <h3 class="auto-debit-title">Tu membresía se activa con pago inmediato</h3>
           <p class="auto-debit-copy">
-            El Plan Premium tiene permanencia mínima de 12 meses y se cobra automáticamente por Gs. 200.000 en cada ciclo mensual activo.
+            El plan seleccionado tiene permanencia mínima de 12 meses y se cobra automáticamente por <span id="auto-debit-price">Gs. 200.000</span> en cada ciclo mensual activo.
           </p>
           <ul class="auto-debit-list">
             <li>Tu primer débito se realizará un mes después de la activación, siempre en el mismo día del mes.</li>
@@ -197,7 +197,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     <div id="registro-success" class="success-message" style="display:none;">
       <div class="success-icon">&#10003;</div>
       <h3>Plan activado</h3>
-      <p>Tu Plan Premium quedó activo correctamente. Ya podés disfrutar de tus beneficios y agendar tus servicios.</p>
+      <p>Tu membresía quedó activa correctamente. Ya podés disfrutar de tus beneficios y agendar tus servicios.</p>
       <button type="button" class="btn-next btn-receipt-green" id="btn-download-receipt" style="display:none;">Descargar comprobante</button>
     </div>
 
@@ -205,7 +205,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     <div id="bancard-checkout-container" style="display:none;">
       <div class="checkout-header">
         <h3>Registrá tu tarjeta de pago</h3>
-        <p>Ingresá los datos de tu tarjeta para habilitar el débito automático obligatorio y activar tu Plan Premium.</p>
+        <p id="checkout-plan-info">Ingresá los datos de tu tarjeta para habilitar el débito automático obligatorio y activar tu membresía.</p>
       </div>
       <!-- Loading spinner — visible while Bancard iframe is loading -->
       <div id="bancard-loading" style="display:none;text-align:center;padding:3rem 0;">
@@ -579,6 +579,23 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     border-color: #f92606;
     color: white;
   }
+  :global(.btn-cambiar-plan) {
+    width: 100%;
+    background: none;
+    border: 1px dashed rgba(255,255,255,0.18);
+    border-radius: 10px;
+    color: rgba(255,255,255,0.45);
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 0.65rem 1rem;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    margin-top: 0.25rem;
+  }
+  :global(.btn-cambiar-plan:hover) {
+    color: #ff6b3d;
+    border-color: rgba(249,38,6,0.4);
+  }
 
   /* Success */
   .success-message {
@@ -823,12 +840,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     }
 
     const defaultSuccessTitle = "Plan activado";
-    const defaultSuccessMessage =
-      "Tu Plan Premium quedó activo correctamente. Ya podés disfrutar de tus beneficios y agendar tus servicios.";
+    function getSuccessMessage() {
+      const meta = currentPlanMeta();
+      return `Tu ${meta.name} quedó activo correctamente. Ya podés disfrutar de tus beneficios y agendar tus servicios.`;
+    }
 
     function restoreSuccessState() {
       if (successTitle) successTitle.textContent = defaultSuccessTitle;
-      if (successMessage) successMessage.textContent = defaultSuccessMessage;
+      if (successMessage) successMessage.textContent = getSuccessMessage();
       if (successIcon) {
         successIcon.textContent = "\u2713";
         successIcon.style.background = "#22c55e";
@@ -943,8 +962,49 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     // ---- Auto-debit: día calculado automáticamente al activar ----
     // No se muestra selector; se usa el día del mes de la fecha de activación (estilo Netflix)
 
+    // ---- Plan metadata map (UUID → display info) ----
+    const PLAN_META: Record<string, { name: string; price: string }> = {
+      "a9ee77bc-96ce-4217-ad0f-c817b9e58687": { name: "Plan Fórmula",            price: "200.000" },
+      "7ad4bfae-b1f2-47c9-8c3c-d4615607ad04": { name: "Plan Premium",            price: "250.000" },
+      "5a9b7b48-2e37-45f2-8ba9-f1a234b85f80": { name: "Plan Gold",               price: "300.000" },
+      "ae949f1e-90c5-4d4e-879c-3e2724c89c79": { name: "Plan Lavado a Domicilio", price: "500.000" },
+    };
+
+    function currentPlanMeta() {
+      const id = _pendingPlanId
+        || (document.getElementById("idPlan") as HTMLInputElement)?.value
+        || "";
+      return PLAN_META[id] || { name: "Plan Fórmula", price: "200.000" };
+    }
+
+    function updateModalHeader(planId?: string) {
+      const meta = planId ? (PLAN_META[planId] || { name: "Plan Fórmula", price: "200.000" }) : { name: "tu plan", price: "—" };
+      const headerName  = document.getElementById("modal-plan-name");
+      const headerPrice = document.getElementById("modal-plan-price");
+      if (headerName)  headerName.textContent  = meta.name;
+      if (headerPrice) headerPrice.textContent = meta.price !== "—" ? `Gs. ${meta.price}` : "—";
+
+      // También actualiza el subtítulo del checkout de Bancard
+      const checkoutInfo = document.getElementById("checkout-plan-info");
+      if (checkoutInfo && meta.name !== "tu plan") {
+        checkoutInfo.textContent =
+          `Ingresá los datos de tu tarjeta para habilitar el débito automático obligatorio y activar tu ${meta.name}.`;
+      }
+    }
+
     // ---- Open / Close Modal ----
-    function openModal() {
+    let _pendingPlanId: string | undefined;
+
+    function openModal(options?: { planId?: string }) {
+      // Preserve planId: if called without options (e.g. from Bancard callback),
+      // restore from sessionStorage so currentPlanMeta() keeps working.
+      if (options?.planId) {
+        _pendingPlanId = options.planId;
+        sessionStorage.setItem("formulang_planId", _pendingPlanId);
+      } else if (!_pendingPlanId) {
+        _pendingPlanId = sessionStorage.getItem("formulang_planId") || undefined;
+      }
+      updateModalHeader(_pendingPlanId);
       resetModalState();
       modal.style.display = "flex";
       document.body.style.overflow = "hidden";
@@ -952,12 +1012,35 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       // Meta Pixel: InitiateCheckout
       if (typeof (window as any).fbq === "function") {
         (window as any).fbq("track", "InitiateCheckout", {
-          content_name: "Plan Premium",
-          value: 200000,
+          content_name: "Membresia Fórmula NG",
           currency: "PYG",
         });
       }
-      if (!planesLoaded) loadPlanes();
+      if (!planesLoaded) loadPlanes(_pendingPlanId);
+      else if (_pendingPlanId) preselectPlanById(_pendingPlanId);
+    }
+
+    function preselectPlanById(planId: string) {
+      const container = document.getElementById("planes-container") as HTMLElement;
+      // Aplicar estado visual directamente sin click
+      container.querySelectorAll<HTMLElement>(".plan-card").forEach(c => {
+        const isTarget = c.getAttribute("data-plan-id") === planId;
+        c.classList.toggle("selected", isTarget);
+        c.classList.toggle("plan-card-hidden", !isTarget);
+        c.style.display = isTarget ? "" : "none";
+      });
+      // Actualizar campo oculto e header
+      const card = container.querySelector<HTMLElement>(`[data-plan-id="${planId}"]`);
+      if (!card) return;
+      (document.getElementById("idPlan") as HTMLInputElement).value = planId;
+      const planPrice = card.getAttribute("data-plan-price") || "";
+      const planName = (card.querySelector(".plan-name") as HTMLElement)?.textContent?.trim() || "plan";
+      const priceSpan = document.getElementById("auto-debit-price");
+      if (priceSpan && planPrice) priceSpan.textContent = `Gs. ${planPrice}`;
+      const headerName = document.getElementById("modal-plan-name");
+      const headerPrice = document.getElementById("modal-plan-price");
+      if (headerName) headerName.textContent = planName;
+      if (headerPrice && planPrice) headerPrice.textContent = `Gs. ${planPrice}`;
     }
 
     let _modalLocked = false;   // true = bloqueo total (iframe/cobro en curso)
@@ -1004,6 +1087,10 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       document.querySelectorAll(".step-label").forEach((el) => {
         el.classList.toggle("active", el.getAttribute("data-step") === String(step));
       });
+      // Al llegar a step 3, asegurar que el plan quede visualmente seleccionado
+      if (step === 3 && planesLoaded && _pendingPlanId) {
+        requestAnimationFrame(() => preselectPlanById(_pendingPlanId!));
+      }
     }
 
     // Next buttons
@@ -1112,10 +1199,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     }
 
     function getPublicPlanName(plan: any): string {
-      const normalizedName = normalizeText(plan?.nombre);
-      if (normalizedName.includes("premium") || normalizedName.includes("premiun")) {
-        return "Plan Premium";
-      }
+      const n = normalizeText(plan?.nombre);
+      if (n.includes("gold")) return "Plan Gold";
+      if (n.includes("domicilio")) return "Plan Lavado a Domicilio";
+      if (n.includes("premium") || n.includes("premiun")) return "Plan Premium";
+      if (n.includes("formula") || n.includes("fórmula")) return "Plan Fórmula";
       return String(plan?.nombre || "Plan");
     }
 
@@ -1230,7 +1318,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     });
 
     // ---- Load Planes ----
-    async function loadPlanes() {
+    async function loadPlanes(planId?: string) {
       const container = document.getElementById("planes-container") as HTMLElement;
       try {
         const res = await fetchWithTimeout("/api/planes", {}, 15000);
@@ -1241,31 +1329,80 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         const data = await res.json();
 
         if (Array.isArray(data) && data.length > 0) {
-          container.innerHTML = data.map((plan: any) => `
-            <div class="plan-card selected" data-plan-id="${escapeHtml(plan.idPlan)}">
-              <div class="plan-card-badge">Plan oficial</div>
-              <div class="plan-name">${escapeHtml(getPublicPlanName(plan))}</div>
-              <div class="plan-price">Gs. ${Number(plan.precio).toLocaleString("es-PY")}/mes</div>
-              <div class="plan-desc">${getPublicPlanDescription(plan)}</div>
-              <div class="plan-check">&#10003;</div>
-            </div>
-          `).join("");
+          // Determinar cuál card mostrar primero (el plan pre-seleccionado o el primero)
+          const selectedId = planId || data[0]?.idPlan || "";
+
+          const cardsHtml = data.map((plan: any) => {
+            const isSelected = plan.idPlan === selectedId;
+            return `
+              <div class="plan-card${isSelected ? " selected" : " plan-card-hidden"}" data-plan-id="${escapeHtml(plan.idPlan)}" data-plan-price="${Number(plan.precio).toLocaleString("es-PY")}">
+                <div class="plan-card-badge">Plan oficial</div>
+                <div class="plan-name">${escapeHtml(PLAN_META[plan.idPlan]?.name || getPublicPlanName(plan))}</div>
+                <div class="plan-price">Gs. ${Number(plan.precio).toLocaleString("es-PY")}/mes</div>
+
+                <div class="plan-check">&#10003;</div>
+              </div>
+            `;
+          }).join("");
+
+          container.innerHTML = cardsHtml + `
+            <button type="button" id="btn-cambiar-plan" class="btn-cambiar-plan">
+              Elegir otro plan
+            </button>
+          `;
+
+          // Toggle: mostrar/ocultar todos los planes
+          const btnCambiar = document.getElementById("btn-cambiar-plan") as HTMLButtonElement;
+          let todosVisibles = false;
+          btnCambiar.addEventListener("click", () => {
+            todosVisibles = !todosVisibles;
+            container.querySelectorAll<HTMLElement>(".plan-card-hidden").forEach(c => {
+              c.style.display = todosVisibles ? "" : "none";
+            });
+            btnCambiar.textContent = todosVisibles ? "Ocultar planes" : "Elegir otro plan";
+          });
+          // Asegurar estado inicial oculto
+          container.querySelectorAll<HTMLElement>(".plan-card-hidden").forEach(c => {
+            c.style.display = "none";
+          });
 
           // Plan selection click
           container.querySelectorAll(".plan-card").forEach((card) => {
             card.addEventListener("click", () => {
               container.querySelectorAll(".plan-card").forEach(c => c.classList.remove("selected"));
               card.classList.add("selected");
-              (document.getElementById("idPlan") as HTMLInputElement).value = 
+              (document.getElementById("idPlan") as HTMLInputElement).value =
                 (card as HTMLElement).getAttribute("data-plan-id") || "";
+
+              const planPrice = (card as HTMLElement).getAttribute("data-plan-price") || "";
+              const planName = (card.querySelector(".plan-name") as HTMLElement)?.textContent?.trim() || "plan";
+
+              // Update auto-debit price display
+              const priceSpan = document.getElementById("auto-debit-price");
+              if (priceSpan && planPrice) priceSpan.textContent = `Gs. ${planPrice}`;
+
+              // Update modal header
+              const headerName = document.getElementById("modal-plan-name");
+              const headerPrice = document.getElementById("modal-plan-price");
+              if (headerName) headerName.textContent = planName;
+              if (headerPrice && planPrice) headerPrice.textContent = `Gs. ${planPrice}`;
+
+              // Al elegir un plan diferente, colapsar los otros
+              if (todosVisibles) {
+                todosVisibles = false;
+                container.querySelectorAll<HTMLElement>(".plan-card-hidden").forEach(c => {
+                  c.style.display = "none";
+                });
+                if (btnCambiar) btnCambiar.textContent = "Elegir otro plan";
+              }
             });
           });
 
-          // Auto-select the public plan
-          const selectedCard = container.querySelector(".plan-card") as HTMLElement;
-          if (selectedCard) selectedCard.click();
-
+          // Pre-seleccionar (siempre via preselectPlanById para evitar que el
+          // click handler quite la clase .selected de todos primero)
           planesLoaded = true;
+          const toSelect = planId || selectedId;
+          if (toSelect) preselectPlanById(toSelect);
         } else {
           container.innerHTML = '<div class="planes-loading">No hay planes disponibles en este momento.</div>';
         }
@@ -1399,14 +1536,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                     const retryBody = await r.json().catch(() => ({}));
                     showResult(
                       "Plan activado",
-                      "El cobro se realizó exitosamente. Tu Plan Premium quedó activo.",
+                      `El cobro se realizó exitosamente. Tu ${currentPlanMeta().name} quedó activo.`,
                     );
                     addReceiptButton(retryBody.comprobante);
                     if (typeof (window as any).fbq === "function") {
+                      const _pm = currentPlanMeta();
                       (window as any).fbq("track", "Purchase", {
-                        value: 200000,
+                        value: Number(_pm.price.replace(/\./g, "")),
                         currency: "PYG",
-                        content_name: "Plan Premium - Débito Automático",
+                        content_name: `${_pm.name} - Débito Automático`,
                         content_type: "product",
                       });
                     }
@@ -1443,14 +1581,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             const successBody = await res.json().catch(() => ({}));
             showResult(
               "Plan activado",
-              "Tu tarjeta fue registrada exitosamente. Tu Plan Premium quedó activo y los débitos automáticos mensuales están habilitados.",
+              `Tu tarjeta fue registrada exitosamente. Tu ${currentPlanMeta().name} quedó activo y los débitos automáticos mensuales están habilitados.`,
             );
             addReceiptButton(successBody.comprobante);
             if (typeof (window as any).fbq === "function") {
+              const _pm = currentPlanMeta();
               (window as any).fbq("track", "Purchase", {
-                value: 200000,
+                value: Number(_pm.price.replace(/\./g, "")),
                 currency: "PYG",
-                content_name: "Plan Premium - Débito Automático",
+                content_name: `${_pm.name} - Débito Automático`,
                 content_type: "product",
               });
             }
@@ -1488,7 +1627,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                     return;
                   }
                   const catchRetryBody = await r.json().catch(() => ({}));
-                  showResult("Plan activado", "El cobro se realizó exitosamente. Tu Plan Premium quedó activo.");
+                  showResult("Plan activado", `El cobro se realizó exitosamente. Tu ${currentPlanMeta().name} quedó activo.`);
                   addReceiptButton(catchRetryBody.comprobante);
                   sessionStorage.removeItem("formulang_idCliente");
                   sessionStorage.removeItem("formulang_idRegistroPendiente");
@@ -1731,10 +1870,33 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           sessionStorage.setItem("formulang_idCliente", data.idCliente);
 
           const nombreCensurado = censurar(data.nombre, 4);
+          const planSeleccionado = _pendingPlanId || "";
           const memPagopar = data.membresias.filter((m: any) => m.renovacionAutomatica);
           const memEfectivo = data.membresias.filter((m: any) => !m.renovacionAutomatica);
           const hayPagopar = memPagopar.length > 0;
           const hayEfectivo = memEfectivo.length > 0;
+
+          // Débito automático activo con plan DISTINTO al seleccionado → bloquear
+          const membresiaDebitoConPlanDistinto = memPagopar.find(
+            (m: any) => m.idEstado === 1 && planSeleccionado && m.idPlan !== planSeleccionado,
+          );
+
+          if (membresiaDebitoConPlanDistinto) {
+            const planActualMeta = PLAN_META[membresiaDebitoConPlanDistinto.idPlan as string];
+            const planActualNombre = planActualMeta?.name ?? "tu plan actual";
+            const planNuevoMeta = PLAN_META[planSeleccionado];
+            const planNuevoNombre = planNuevoMeta?.name ?? "el plan seleccionado";
+            const bannerBloqueo = document.createElement("div");
+            bannerBloqueo.id = "rp-info-banner";
+            bannerBloqueo.style.cssText = "margin-top:1rem;padding:1rem 1.1rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.35);border-radius:12px;font-size:0.85rem;";
+            bannerBloqueo.innerHTML = `
+              <p style="margin:0 0 0.45rem;font-weight:700;color:#ef4444;">🔒 Ya tenés débito automático activo</p>
+              <p style="margin:0;color:rgba(255,255,255,0.65);line-height:1.5;">Tenés el <strong style="color:#fff;">${planActualNombre}</strong> con débito automático activo. Los cambios de plan no están disponibles desde esta página.<br/>Para cambiar al <strong style="color:#fff;">${planNuevoNombre}</strong>, contactá a soporte por WhatsApp.</p>
+            `;
+            step1El?.appendChild(bannerBloqueo);
+            if (loadingEl) loadingEl.style.display = "none";
+            return;
+          }
 
           const btnActualizarHTML = hayPagopar ? `
             <button id="rp-btn-actualizar" type="button" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:rgba(255,255,255,0.05);border:1px solid rgba(249,166,6,0.4);border-radius:10px;color:#fff;cursor:pointer;text-align:left;">
@@ -1821,9 +1983,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             const aviso = document.createElement("div");
             aviso.id = "rp-aviso-upgrade";
             aviso.style.cssText = "margin-top:0.5rem;padding:0.75rem;background:rgba(249,166,6,0.1);border:1px solid rgba(249,166,6,0.4);border-radius:8px;font-size:0.82rem;";
+            const _avisoId    = (document.getElementById("idPlan") as HTMLInputElement)?.value || "";
+            const _avisoMeta  = PLAN_META[_avisoId] || { name: "Plan Fórmula", price: "200.000" };
             aviso.innerHTML = `
-              <p style="margin:0 0 0.4rem;font-weight:600;color:#f9a606;">⚠️ Tu plan pasará a Gs. 200.000/mes</p>
-              <p style="margin:0 0 0.65rem;color:rgba(255,255,255,0.65);font-size:0.78rem;">Al activar el débito automático, tu membresía se migra al Plan Premium (Gs. 200.000/mes). El primer cobro se realizará el próximo ciclo.</p>
+              <p style="margin:0 0 0.4rem;font-weight:600;color:#f9a606;">⚠️ Tu plan pasará a Gs. ${_avisoMeta.price}/mes</p>
+              <p style="margin:0 0 0.65rem;color:rgba(255,255,255,0.65);font-size:0.78rem;">Al activar el débito automático, tu membresía se migra al ${_avisoMeta.name} (Gs. ${_avisoMeta.price}/mes). El primer cobro se realizará el próximo ciclo.</p>
               <label style="display:flex;align-items:flex-start;gap:0.5rem;margin:0.5rem 0 0.65rem;cursor:pointer;font-size:0.78rem;color:rgba(255,255,255,0.75);">
                 <input type="checkbox" id="rp-accept-legal-b" style="margin-top:2px;accent-color:#4f46e5;" />
                 <span>Acepto los <a href="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer" style="color:#f9a606;">Términos y Condiciones</a>, <a href="/politica-de-privacidad" target="_blank" rel="noopener noreferrer" style="color:#f9a606;">Política de Privacidad</a> y la <a href="/debito-automatico" target="_blank" rel="noopener noreferrer" style="color:#f9a606;">autorización de débito automático</a>.</span>
@@ -1993,7 +2157,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
       const emailVal = (document.getElementById("email") as HTMLInputElement).value.trim();
       if (!emailVal) {
-        errorMsg.textContent = "El email es requerido para activar tu Plan Premium. Volvé al paso 1 para completarlo.";
+        errorMsg.textContent = `El email es requerido para activar tu ${currentPlanMeta().name}. Volvé al paso 1 para completarlo.`;
         errorBanner.style.display = "block";
         goToStep(1);
         showFieldError("email", "El email es requerido para activar tu plan");
@@ -2225,9 +2389,10 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           (document.querySelector(".modal-container") as HTMLElement | null)?.scrollTo({ top: 0 });
           // Meta Pixel: AddPaymentInfo
           if (typeof (window as any).fbq === "function") {
+            const _pm = currentPlanMeta();
             (window as any).fbq("track", "AddPaymentInfo", {
-              content_name: "Plan Premium",
-              value: 200000,
+              content_name: _pm.name,
+              value: Number(_pm.price.replace(/\./g, "")),
               currency: "PYG",
             });
           }
@@ -2300,7 +2465,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         openModal();
         showResult(
           "Plan activado",
-          "Tu tarjeta fue registrada exitosamente. Tu Plan Premium quedó activo y los débitos automáticos mensuales están habilitados.",
+          `Tu tarjeta fue registrada exitosamente. Tu ${currentPlanMeta().name} quedó activo y los débitos automáticos mensuales están habilitados.`,
         );
 
         // Confirm card + charge first installment in the backend
@@ -2343,20 +2508,22 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             const callbackBody = await confirmRes.json().catch(() => ({}));
             showResult(
               "Plan activado",
-              "Tu tarjeta fue registrada exitosamente. Tu Plan Premium quedó activo y los débitos automáticos mensuales están habilitados.",
+              `Tu tarjeta fue registrada exitosamente. Tu ${currentPlanMeta().name} quedó activo y los débitos automáticos mensuales están habilitados.`,
             );
             addReceiptButton(callbackBody.comprobante);
             if (typeof (window as any).fbq === "function") {
+              const _pm = currentPlanMeta();
               (window as any).fbq("track", "Purchase", {
-                value: 200000,
+                value: Number(_pm.price.replace(/\./g, "")),
                 currency: "PYG",
-                content_name: "Plan Premium - Débito Automático",
+                content_name: `${_pm.name} - Débito Automático`,
                 content_type: "product",
               });
             }
             sessionStorage.removeItem("formulang_idCliente");
             sessionStorage.removeItem("formulang_idRegistroPendiente");
             sessionStorage.removeItem("formulang_idMembresiaActivar");
+            sessionStorage.removeItem("formulang_planId");
           } catch (err) {
             console.error("Error confirming card:", err);
             showResult(

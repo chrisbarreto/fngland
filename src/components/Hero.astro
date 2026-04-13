@@ -23,7 +23,7 @@ import logoDark from "@/assets/logos/logo-dark.svg";
 
     <!-- Botón de Acción -->
     <div class="hero-cta">
-      <button type="button" class="btn btn-primary" id="hero-cta-btn">Quiero mi Plan Premium</button>
+      <a href="#planes" class="btn btn-outline-primary">Quiero mi plan</a>
     </div>
   </div>
 </div>
@@ -40,13 +40,6 @@ import logoDark from "@/assets/logos/logo-dark.svg";
     heroBG.style.height = `${totalHeight}px`;
   }
 
-  // Open registration modal
-  const heroCtaBtn = document.getElementById("hero-cta-btn");
-  heroCtaBtn?.addEventListener("click", () => {
-    if (typeof (window as any).__openRegistroModal === "function") {
-      (window as any).__openRegistroModal();
-    }
-  });
 </script>
 
 <style>
@@ -115,8 +108,8 @@ import logoDark from "@/assets/logos/logo-dark.svg";
     margin-top: 1rem;
   }
   
-  .btn-primary {
-    background: linear-gradient(135deg, #f92606, #ff6b3d);
+  .btn-outline-primary {
+    background: transparent;
     color: white;
     padding: 1rem 2.5rem;
     border-radius: 8px;
@@ -125,14 +118,14 @@ import logoDark from "@/assets/logos/logo-dark.svg";
     text-decoration: none;
     display: inline-block;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 20px rgba(249, 38, 6, 0.3);
-    border: 2px solid transparent;
+    border: 2px solid rgba(249, 38, 6, 0.7);
   }
-  
-  .btn-primary:hover {
+
+  .btn-outline-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(249, 38, 6, 0.5);
-    border-color: rgba(249, 38, 6, 0.5);
+    background: rgba(249, 38, 6, 0.1);
+    border-color: #f92606;
+    box-shadow: 0 8px 30px rgba(249, 38, 6, 0.3);
   }
   
   @keyframes fadeInUp {

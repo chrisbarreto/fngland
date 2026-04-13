@@ -1,7 +1,7 @@
 ---
 import Section from "./Section.astro";
 
-const title = "Activá tu <span class='light-text'>Plan Premium</span> hoy mismo";
+const title = "Empezá <span class='light-text'>hoy mismo</span>";
 
 ---
 
@@ -12,13 +12,12 @@ const title = "Activá tu <span class='light-text'>Plan Premium</span> hoy mismo
   </div>
   <Section title={title}>
     <div class="cta-buttons">
-      <button
-        type="button"
+      <a
+        href="#planes"
         class="cta-btn"
-        id="cta-registro-btn"
       >
-        QUIERO ACTIVAR MI PLAN
-      </button>
+        QUIERO MI PLAN
+      </a>
     </div>
     <p class="cta-disclaimer">
       Permanencia mínima de 12 meses. Débito automático obligatorio. Aplican <a href="/terminos-y-condiciones" style="color:inherit;text-decoration:underline;">términos y condiciones</a>.
@@ -89,11 +88,3 @@ const title = "Activá tu <span class='light-text'>Plan Premium</span> hoy mismo
   }
 </style>
 
-<script>
-  const ctaBtn = document.getElementById("cta-registro-btn");
-  ctaBtn?.addEventListener("click", () => {
-    if (typeof (window as any).__openRegistroModal === "function") {
-      (window as any).__openRegistroModal();
-    }
-  });
-</script>
