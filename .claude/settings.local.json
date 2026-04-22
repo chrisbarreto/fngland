@@ -25,7 +25,11 @@
       "Bash(grep -r DIRECT_URL /c/Users/efactu/formulang --include=.env* --include=*.env)",
       "Bash(DATABASE_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\" DIRECT_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:5432/postgres\" npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --script)",
       "Bash(DATABASE_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\" npx prisma db execute --file prisma/migrations/manual_cat_metodo_pago_dia_debito.sql --url \"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\")",
-      "Bash(DATABASE_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\" DIRECT_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:5432/postgres\" npx prisma generate)"
+      "Bash(DATABASE_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\" DIRECT_URL=\"postgresql://postgres.jqausxojjplawnynmuhg:buRtQUA76XlyehqA@aws-1-sa-east-1.pooler.supabase.com:5432/postgres\" npx prisma generate)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm type-check *)",
+      "Bash(pnpm exec *)",
+      "Bash(node -e ' *)"
     ]
   }
 }
