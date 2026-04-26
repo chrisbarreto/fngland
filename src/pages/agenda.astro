@@ -68,8 +68,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
             <input type="hidden" id="codigoMembresia" name="codigoMembresia" />
 
-            <!-- Sede -->
-            <div class="field">
+            <!-- Sede (oculto cuando hay una sola sede activa; visible solo si hay 2+) -->
+            <div class="field" id="sede-field" style="display:none;">
               <label for="idSede">Sede</label>
               <select id="idSede" name="idSede" required>
                 <option value="">Cargando sedes...</option>
@@ -507,36 +507,52 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     display: none;
   }
 
+  /* Switch (toggle estilo iOS) en lugar del check-mark cuadrado */
   .check-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 26px;
+    border: none;
+    transition: background 0.2s ease;
+    order: 2;
+    margin-left: auto;
+  }
+
+  .check-mark::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 3px;
     width: 20px;
     height: 20px;
-    border-radius: 6px;
-    border: 2px solid rgba(255, 255, 255, 0.25);
-    flex-shrink: 0;
-    transition: border-color 0.2s ease, background 0.2s ease;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   }
 
   .servicio-check:has(input:checked) .check-mark {
-    border-color: var(--agenda-accent);
     background: var(--agenda-accent);
+    border: none;
   }
 
-  .servicio-check:has(input:checked) .check-mark::after {
-    content: "";
-    display: block;
-    width: 5px;
-    height: 9px;
-    border: solid white;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-    margin-top: -1px;
+  .servicio-check:has(input:checked) .check-mark::before {
+    transform: translateX(20px);
+  }
+
+  @media (max-width: 480px) {
+    .check-mark { width: 52px; height: 30px; }
+    .check-mark::before { width: 24px; height: 24px; }
+    .servicio-check:has(input:checked) .check-mark::before { transform: translateX(22px); }
   }
 
   .check-label {
     flex: 1;
+    order: 1;
   }
 
   .check-meta {
@@ -976,6 +992,155 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   }
 </style>
 
+<style is:global>
+  /* Switches de servicios en /agenda. Global porque los <label> se
+     crean dinámicamente vía document.createElement en script y la
+     scoped CSS de Astro no les aplica el atributo de scope. */
+  .servicios-list .servicio-check {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #100f14;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    font-size: 0.95rem;
+    color: #f4f4f5;
+  }
+  .servicios-list .servicio-check:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  .servicios-list .servicio-check:has(input:checked) {
+    border-color: #f92606;
+    background: rgba(249, 38, 6, 0.08);
+  }
+  .servicios-list .servicio-check input[type="checkbox"] {
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none;
+  }
+  .servicios-list .check-label {
+    flex: 1;
+    order: 1;
+  }
+  .servicios-list .check-mark {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 26px;
+    border: none;
+    transition: background 0.2s ease;
+    order: 2;
+    margin-left: auto;
+  }
+  .servicios-list .check-mark::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  }
+  .servicios-list .check-mark::after { content: none !important; }
+  .servicios-list .servicio-check:has(input:checked) .check-mark {
+    background: #f92606;
+    border: none;
+  }
+  .servicios-list .servicio-check:has(input:checked) .check-mark::before {
+    transform: translateX(20px);
+  }
+  @media (max-width: 480px) {
+    .servicios-list .check-mark { width: 52px; height: 30px; }
+    .servicios-list .check-mark::before { width: 24px; height: 24px; }
+    .servicios-list .servicio-check:has(input:checked) .check-mark::before { transform: translateX(22px); }
+  }
+
+  /* Switch para selección de membresía cuando hay 2+ (single-select via radio) */
+  .membresias-list .membresia-option input[type="radio"] {
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none;
+  }
+  .membresias-list.membresias-multi .membresia-option {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #100f14;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .membresias-list.membresias-multi .membresia-option:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  .membresias-list.membresias-multi .membresia-option:has(input:checked) {
+    border-color: #f92606;
+    background: rgba(249, 38, 6, 0.08);
+  }
+  .membresias-list.membresias-multi .membresia-content {
+    flex: 1;
+    order: 1;
+  }
+  .membresias-list.membresias-multi .membresia-mark {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 26px;
+    border-radius: 26px;
+    border: none;
+    background: rgba(255, 255, 255, 0.18);
+    margin: 0;
+    margin-left: auto;
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+    box-shadow: none !important;
+    order: 2;
+  }
+  .membresias-list.membresias-multi .membresia-mark::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  }
+  .membresias-list.membresias-multi .membresia-option:has(input:checked) .membresia-mark {
+    background: #f92606;
+    box-shadow: none !important;
+  }
+  .membresias-list.membresias-multi .membresia-option:has(input:checked) .membresia-mark::before {
+    transform: translateX(20px);
+  }
+  @media (max-width: 480px) {
+    .membresias-list.membresias-multi .membresia-mark { width: 52px; height: 30px; }
+    .membresias-list.membresias-multi .membresia-mark::before { width: 24px; height: 24px; }
+    .membresias-list.membresias-multi .membresia-option:has(input:checked) .membresia-mark::before { transform: translateX(22px); }
+  }
+</style>
+
 <script is:inline>
   // ─── State ─────────────────────────────────────────────────────────
   let selectedSlot = null;
@@ -1189,6 +1354,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   // ─── Load sedes & servicios on page load ──────────────────────────
   async function loadSedes() {
     const sel = document.getElementById("idSede");
+    const sedeField = document.getElementById("sede-field");
     try {
       const res = await fetch("/proxy/agenda/sedes");
       const sedes = await res.json();
@@ -1200,9 +1366,19 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           opt.textContent = s.nombre + (s.direccion ? ` — ${s.direccion}` : "");
           sel.appendChild(opt);
         });
+        // Si hay una sola sede activa, seleccionarla y mantener el campo oculto.
+        // Si hay 2+, mostrar el selector para que el cliente elija.
+        if (sedes.length === 1) {
+          sel.value = String(sedes[0].idSede);
+          sel.dispatchEvent(new Event("change"));
+          if (sedeField) sedeField.style.display = "none";
+        } else if (sedes.length > 1 && sedeField) {
+          sedeField.style.display = "";
+        }
       }
     } catch {
       sel.innerHTML = '<option value="">Error al cargar sedes</option>';
+      if (sedeField) sedeField.style.display = "";
     }
   }
 
@@ -1406,6 +1582,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
 
       membresiasList.innerHTML = "";
+      // Si hay múltiples membresías, mostrar selector tipo switch
+      if (membresias.length > 1) {
+        membresiasList.classList.add("membresias-multi");
+      } else {
+        membresiasList.classList.remove("membresias-multi");
+      }
       membresias.forEach((membresia, index) => {
         const label = document.createElement("label");
         label.className = "membresia-option";

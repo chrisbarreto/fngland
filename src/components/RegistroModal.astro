@@ -72,7 +72,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           </div>
           <div class="form-group personal-field" style="display:none;">
             <label for="telefono">Teléfono / WhatsApp <span class="required">*</span></label>
-            <input type="tel" id="telefono" name="telefono" required placeholder="Ej: 0981 123 456" maxlength="20" minlength="10" />
+            <input type="tel" id="telefono" name="telefono" required placeholder="Ej: 0981123456" maxlength="20" minlength="10" />
             <span class="field-error"></span>
           </div>
           <div class="form-group personal-field" style="display:none;">
@@ -781,6 +781,101 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       width: 24px;
     }
   }
+
+</style>
+
+<style is:global>
+  /* Lista de membresías con switches (Scenario B multi).
+     Global porque el HTML se inyecta vía innerHTML dinámicamente y
+     no recibe el atributo data-astro-cid que usa la scoped CSS. */
+  .rp-mem-list {
+    margin-top: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .rp-mem-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .rp-mem-row:last-of-type { border-bottom: none; }
+  .rp-mem-row-master {
+    color: #f9a606;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(249, 166, 6, 0.2);
+    padding-bottom: 0.55rem;
+    margin-bottom: 0.15rem;
+  }
+  .rp-mem-row-master strong { color: #f9a606; }
+  .rp-mem-label { flex: 1; line-height: 1.35; }
+  .rp-mem-hint {
+    margin: 0.55rem 0 0;
+    font-size: 0.74rem;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.45;
+  }
+  /* Switch (toggle iOS-style) */
+  .rp-switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+  }
+  .rp-switch input.checkbox,
+  .rp-switch input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+  }
+  .rp-slider {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 26px;
+    transition: background 0.2s ease;
+    cursor: pointer;
+    display: block;
+  }
+  .rp-slider::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  }
+  .rp-switch input:checked + .rp-slider {
+    background: #f9a606;
+  }
+  .rp-switch input:checked + .rp-slider::before {
+    transform: translateX(20px);
+  }
+  .rp-switch input:focus-visible + .rp-slider {
+    outline: 2px solid rgba(249, 166, 6, 0.6);
+    outline-offset: 2px;
+  }
+  @media (max-width: 480px) {
+    .rp-switch { width: 52px; height: 30px; }
+    .rp-slider::before { width: 24px; height: 24px; }
+    .rp-switch input:checked + .rp-slider::before { transform: translateX(22px); }
+  }
 </style>
 
 <script>
@@ -925,6 +1020,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       sessionStorage.removeItem("formulang_idCliente");
       sessionStorage.removeItem("formulang_idRegistroPendiente");
       sessionStorage.removeItem("formulang_idMembresiaActivar");
+      sessionStorage.removeItem("formulang_idsMembresiasActivar");
       sessionStorage.removeItem("formulang_idVehiculo");
       modoNuevoVehiculo = false;
       modoActualizarVehiculo = false;
@@ -1118,8 +1214,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
       if (step === 1) {
         const nombre = (document.getElementById("nombre") as HTMLInputElement).value.trim();
-        const ruc = (document.getElementById("ruc") as HTMLInputElement).value.trim();
-        const telefono = (document.getElementById("telefono") as HTMLInputElement).value.trim();
+        const ruc = (document.getElementById("ruc") as HTMLInputElement).value.replace(/\s+/g, "");
+        const telefono = (document.getElementById("telefono") as HTMLInputElement).value.replace(/\s+/g, "");
         const email = (document.getElementById("email") as HTMLInputElement).value.trim();
 
         if (!nombre) { showFieldError("nombre", "El nombre es requerido"); valid = false; }
@@ -1476,6 +1572,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         const storedClienteId = sessionStorage.getItem("formulang_idCliente");
         const storedIdRegistroPendiente = sessionStorage.getItem("formulang_idRegistroPendiente");
         const storedIdMembresiaActivar = sessionStorage.getItem("formulang_idMembresiaActivar");
+        const storedIdsMembresiasActivarRaw = sessionStorage.getItem("formulang_idsMembresiasActivar");
+        let storedIdsMembresiasActivar: string[] = [];
+        try {
+          storedIdsMembresiasActivar = storedIdsMembresiasActivarRaw
+            ? (JSON.parse(storedIdsMembresiasActivarRaw) as string[])
+            : [];
+        } catch { storedIdsMembresiasActivar = []; }
 
         if (!storedClienteId) {
           showResult("Error", "No se encontró el cliente. Intentá de nuevo.", true);
@@ -1487,7 +1590,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
         const confirmPayload: Record<string, any> = { idCliente: storedClienteId, acceptTerminos: true };
         if (storedIdRegistroPendiente) confirmPayload.idRegistroPendiente = storedIdRegistroPendiente;
-        if (storedIdMembresiaActivar) confirmPayload.idMembresiaActivar = storedIdMembresiaActivar;
+        if (storedIdsMembresiasActivar.length > 0) confirmPayload.idsMembresiasActivar = storedIdsMembresiasActivar;
+        else if (storedIdMembresiaActivar) confirmPayload.idMembresiaActivar = storedIdMembresiaActivar;
 
         fetch("/api/confirmar", {
           method: "POST",
@@ -1551,6 +1655,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                     sessionStorage.removeItem("formulang_idCliente");
                     sessionStorage.removeItem("formulang_idRegistroPendiente");
                     sessionStorage.removeItem("formulang_idMembresiaActivar");
+      sessionStorage.removeItem("formulang_idsMembresiasActivar");
                   })
                   .catch(() => {
                     retryPayBtn.disabled = false;
@@ -1596,6 +1701,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             sessionStorage.removeItem("formulang_idCliente");
             sessionStorage.removeItem("formulang_idRegistroPendiente");
             sessionStorage.removeItem("formulang_idMembresiaActivar");
+      sessionStorage.removeItem("formulang_idsMembresiasActivar");
           })
           .catch(() => {
             unlockModal();
@@ -1632,6 +1738,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                   sessionStorage.removeItem("formulang_idCliente");
                   sessionStorage.removeItem("formulang_idRegistroPendiente");
                   sessionStorage.removeItem("formulang_idMembresiaActivar");
+      sessionStorage.removeItem("formulang_idsMembresiasActivar");
                 })
                 .catch(() => {
                   retryCatchBtn.disabled = false;
@@ -1787,6 +1894,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       sessionStorage.removeItem("formulang_idCliente");
       sessionStorage.removeItem("formulang_idRegistroPendiente");
       sessionStorage.removeItem("formulang_idMembresiaActivar");
+      sessionStorage.removeItem("formulang_idsMembresiasActivar");
       sessionStorage.removeItem("formulang_idVehiculo");
       modoNuevoVehiculo = false;
       modoActualizarVehiculo = false;
@@ -1909,7 +2017,18 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             `<p style="margin:0.4rem 0 0;padding-left:2.2rem;font-size:0.78rem;color:rgba(255,255,255,0.55);">Membresía <strong style="color:#fff;">${m.codigo}</strong> · Chapa <strong style="color:#fff;">${censurar(m.chapa ?? "", 2)}</strong></p>`;
 
           const dropdownEfectivo = memEfectivo.length > 1
-            ? `<select id="rp-select-membresia" style="width:100%;margin-top:0.5rem;padding:0.4rem 0.6rem;background:#1a1a2e;border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:#fff;font-size:0.82rem;">${memEfectivo.map((m: any) => `<option value="${m.idMembresia}">Chapa ${censurar(m.chapa ?? "", 2)} — ${m.codigo}</option>`).join("")}</select>`
+            ? `<div id="rp-select-membresia-multi" class="rp-mem-list">
+                <label class="rp-mem-row rp-mem-row-master">
+                  <span class="rp-mem-label"><strong>Seleccionar todas</strong></span>
+                  <span class="rp-switch"><input type="checkbox" id="rp-chk-all" /><span class="rp-slider"></span></span>
+                </label>
+                ${memEfectivo.map((m: any) => `
+                  <label class="rp-mem-row">
+                    <span class="rp-mem-label">Chapa <strong>${censurar(m.chapa ?? "", 2)}</strong> — ${m.codigo}</span>
+                    <span class="rp-switch"><input type="checkbox" class="rp-chk-mem" value="${m.idMembresia}" /><span class="rp-slider"></span></span>
+                  </label>`).join("")}
+                <p id="rp-multi-hint" class="rp-mem-hint">Podés activar débito automático en una o varias membresías a la vez. Todas las seleccionadas pasarán al mismo plan.</p>
+              </div>`
             : `<input type="hidden" id="rp-select-membresia" value="${memEfectivo[0]?.idMembresia ?? ""}"/>`;
 
           // Botones "Actualizar datos del vehículo" — solo para membresías NO activas (idEstado ≠ 1)
@@ -1935,15 +2054,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           // propaga al botón y dispara el checkout sin que el usuario lo pida.
           // Se usa un <div> contenedor con el select separado y un botón de confirmar.
           const btnActivarHTML = hayEfectivo ? `
-            <div style="display:flex;flex-direction:column;gap:0.1rem;padding:0.75rem 1rem;background:rgba(255,255,255,0.05);border:1px solid rgba(79,70,229,0.5);border-radius:10px;color:#fff;">
+            <div style="display:flex;flex-direction:column;gap:0.1rem;padding:0.75rem 1rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;">
               <div style="display:flex;align-items:center;gap:0.75rem;">
                 <span style="font-size:1.3rem;">🔄</span>
                 <span><strong style="display:block;font-size:0.875rem;">Activar débito automático</strong><small style="color:#aaa;font-size:0.78rem;">Registrá tu tarjeta y automatizá el pago mensual</small></span>
               </div>
               ${memEfectivo.length > 1
-                ? `<div style="padding-left:2.2rem;">${dropdownEfectivo}</div>`
+                ? `<div style="padding-left:2.2rem;padding-right:0.2rem;">${dropdownEfectivo}</div>`
                 : membershipInfoHTML(memEfectivo[0]) + dropdownEfectivo}
-              <button id="rp-btn-activar" type="button" style="margin-top:0.6rem;margin-left:auto;padding:0.35rem 1.1rem;background:#4f46e5;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:0.82rem;font-weight:600;">Activar →</button>
+              <button id="rp-btn-activar" type="button" style="margin-top:0.6rem;margin-left:auto;padding:0.35rem 1.1rem;background:#f9a606;border:none;border-radius:6px;color:#1a1a1a;cursor:pointer;font-size:0.82rem;font-weight:700;">Activar →</button>
             </div>` : "";
 
           const panel = document.createElement("div");
@@ -1971,10 +2090,48 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             await startRetryCheckout(data.idCliente);
           });
 
+          // Wire "Seleccionar todas" master checkbox + sync visual cuando cambian individuales
+          const chkAllEl = document.getElementById("rp-chk-all") as HTMLInputElement | null;
+          const chkItems = Array.from(document.querySelectorAll<HTMLInputElement>(".rp-chk-mem"));
+          if (chkAllEl) {
+            chkAllEl.addEventListener("change", () => {
+              chkItems.forEach((c) => { c.checked = chkAllEl.checked; });
+            });
+            chkItems.forEach((c) =>
+              c.addEventListener("change", () => {
+                const total = chkItems.length;
+                const checked = chkItems.filter((x) => x.checked).length;
+                chkAllEl.checked = checked === total && total > 0;
+                chkAllEl.indeterminate = checked > 0 && checked < total;
+              }),
+            );
+          }
+
           document.getElementById("rp-btn-activar")?.addEventListener("click", () => {
-            const selectEl = document.getElementById("rp-select-membresia") as HTMLSelectElement | HTMLInputElement;
-            const idMembresia = selectEl?.value;
-            if (!idMembresia) return;
+            // Modo multi (varias membresías efectivo): leer checkboxes
+            // Modo simple (una sola): leer hidden input
+            let idsSeleccionadas: string[] = [];
+            if (chkItems.length > 0) {
+              idsSeleccionadas = chkItems.filter((c) => c.checked).map((c) => c.value);
+              const hint = document.getElementById("rp-multi-hint");
+              if (idsSeleccionadas.length === 0) {
+                if (hint) {
+                  hint.textContent = "Seleccioná al menos una membresía para continuar.";
+                  (hint as HTMLElement).style.color = "#ef4444";
+                }
+                return;
+              }
+              if (hint) {
+                hint.textContent = "Podés activar débito automático en una o varias membresías a la vez. Todas las seleccionadas pasarán al mismo plan.";
+                (hint as HTMLElement).style.color = "rgba(255,255,255,0.5)";
+              }
+            } else {
+              const selectEl = document.getElementById("rp-select-membresia") as HTMLInputElement | null;
+              const v = selectEl?.value;
+              if (!v) return;
+              idsSeleccionadas = [v];
+            }
+            const idMembresia = idsSeleccionadas[0];
 
             // Ocultar el botón y mostrar aviso de migración de plan antes de continuar
             const btnActivar = document.getElementById("rp-btn-activar") as HTMLElement;
@@ -2013,7 +2170,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                 return;
               }
               if (legalError) legalError.style.display = "none";
-              sessionStorage.setItem("formulang_idMembresiaActivar", idMembresia);
+              if (idsSeleccionadas.length > 1) {
+                sessionStorage.setItem("formulang_idsMembresiasActivar", JSON.stringify(idsSeleccionadas));
+                sessionStorage.removeItem("formulang_idMembresiaActivar");
+      sessionStorage.removeItem("formulang_idsMembresiasActivar");
+              } else {
+                sessionStorage.setItem("formulang_idMembresiaActivar", idMembresia);
+                sessionStorage.removeItem("formulang_idsMembresiasActivar");
+              }
               panel.remove();
               form.style.display = "none";
               await startRetryCheckout(data.idCliente);
@@ -2105,7 +2269,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     // Lookup manual — se dispara al hacer clic en "Confirmar" o presionar Enter
     async function confirmarCI() {
       // Eliminar dígito verificador: "755014-6" → "755014", "1234567-8" → "1234567"
-      const ci = rucInput.value.trim().replace(/-\d+$/, "");
+      const ci = rucInput.value.replace(/\s+/g, "").replace(/-\d+$/, "");
       if (!ci || ci.length < 5) {
         showFieldError("ruc", "Ingresá tu RUC o CI para continuar.");
         return;
@@ -2135,6 +2299,27 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
     });
 
+    // Quitar espacios en RUC/CI mientras el usuario escribe o pega
+    rucInput?.addEventListener("input", () => {
+      if (/\s/.test(rucInput.value)) {
+        const pos = rucInput.selectionStart ?? rucInput.value.length;
+        const before = rucInput.value.slice(0, pos).replace(/\s+/g, "").length;
+        rucInput.value = rucInput.value.replace(/\s+/g, "");
+        try { rucInput.setSelectionRange(before, before); } catch {}
+      }
+    });
+
+    // Quitar espacios en Teléfono/WhatsApp mientras el usuario escribe o pega
+    const telefonoInput = document.getElementById("telefono") as HTMLInputElement | null;
+    telefonoInput?.addEventListener("input", () => {
+      if (/\s/.test(telefonoInput.value)) {
+        const pos = telefonoInput.selectionStart ?? telefonoInput.value.length;
+        const before = telefonoInput.value.slice(0, pos).replace(/\s+/g, "").length;
+        telefonoInput.value = telefonoInput.value.replace(/\s+/g, "");
+        try { telefonoInput.setSelectionRange(before, before); } catch {}
+      }
+    });
+
     // Cuando el usuario modifica el CI, resetear el estado del lookup anterior
     rucInput?.addEventListener("input", () => {
       const ci = rucInput.value.trim();
@@ -2146,6 +2331,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         sessionStorage.removeItem("formulang_idCliente");
         sessionStorage.removeItem("formulang_idRegistroPendiente");
         sessionStorage.removeItem("formulang_idMembresiaActivar");
+      sessionStorage.removeItem("formulang_idsMembresiasActivar");
         modoNuevoVehiculo = false;
       }
     });
@@ -2180,8 +2366,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       // Collect form data
       const formData: any = {
         nombre: (document.getElementById("nombre") as HTMLInputElement).value.trim().toUpperCase(),
-        ruc: (document.getElementById("ruc") as HTMLInputElement).value.trim(),
-        telefono: (document.getElementById("telefono") as HTMLInputElement).value.trim(),
+        ruc: (document.getElementById("ruc") as HTMLInputElement).value.replace(/\s+/g, ""),
+        telefono: (document.getElementById("telefono") as HTMLInputElement).value.replace(/\s+/g, ""),
       };
 
       const email = (document.getElementById("email") as HTMLInputElement).value.trim();
@@ -2472,11 +2658,19 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         const storedClienteId = sessionStorage.getItem("formulang_idCliente");
         const storedIdRegistroPendiente = sessionStorage.getItem("formulang_idRegistroPendiente");
         const storedIdMembresiaActivar = sessionStorage.getItem("formulang_idMembresiaActivar");
+        const storedIdsMembresiasActivarRaw = sessionStorage.getItem("formulang_idsMembresiasActivar");
+        let storedIdsMembresiasActivar: string[] = [];
+        try {
+          storedIdsMembresiasActivar = storedIdsMembresiasActivarRaw
+            ? (JSON.parse(storedIdsMembresiasActivarRaw) as string[])
+            : [];
+        } catch { storedIdsMembresiasActivar = []; }
         if (storedClienteId) {
           try {
             const confirmPayload: Record<string, any> = { idCliente: storedClienteId, acceptTerminos: true };
             if (storedIdRegistroPendiente) confirmPayload.idRegistroPendiente = storedIdRegistroPendiente;
-            if (storedIdMembresiaActivar) confirmPayload.idMembresiaActivar = storedIdMembresiaActivar;
+            if (storedIdsMembresiasActivar.length > 0) confirmPayload.idsMembresiasActivar = storedIdsMembresiasActivar;
+            else if (storedIdMembresiaActivar) confirmPayload.idMembresiaActivar = storedIdMembresiaActivar;
 
             const confirmRes = await fetch("/api/confirmar", {
               method: "POST",
@@ -2523,6 +2717,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             sessionStorage.removeItem("formulang_idCliente");
             sessionStorage.removeItem("formulang_idRegistroPendiente");
             sessionStorage.removeItem("formulang_idMembresiaActivar");
+      sessionStorage.removeItem("formulang_idsMembresiasActivar");
             sessionStorage.removeItem("formulang_planId");
           } catch (err) {
             console.error("Error confirming card:", err);
