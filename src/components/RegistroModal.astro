@@ -953,6 +953,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       const receiptBtn = document.getElementById("btn-download-receipt") as HTMLButtonElement | null;
       if (receiptBtn) { receiptBtn.style.display = "none"; receiptBtn.textContent = "Descargar comprobante"; receiptBtn.disabled = false; }
       _receiptListenerAttached = false;
+      if (successDiv) {
+        successDiv.querySelectorAll("button").forEach((b) => {
+          if (b.id !== "btn-download-receipt") b.remove();
+        });
+      }
     }
 
     function showProcessing() {
@@ -1671,10 +1676,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               const newCardBtn = document.createElement("button");
               newCardBtn.type = "button";
               newCardBtn.className = "btn-next";
-              newCardBtn.style.marginTop = "0.5rem";
-              newCardBtn.style.background = "transparent";
-              newCardBtn.style.border = "1px solid var(--color-primary, #2563eb)";
-              newCardBtn.style.color = "var(--color-primary, #2563eb)";
+              newCardBtn.style.marginTop = "1rem";
               newCardBtn.textContent = "Intentar con otra tarjeta";
               newCardBtn.addEventListener("click", () => startRetryCheckout(storedClienteId));
               successDiv.appendChild(newCardBtn);
