@@ -1752,19 +1752,44 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       } else {
         // Error en catastro
         bancardContainer.style.display = "none";
-        const msg = description || "No se pudo registrar la tarjeta.";
         const storedClienteId = sessionStorage.getItem("formulang_idCliente");
-        if (storedClienteId) {
-          showResult("Error al registrar tarjeta", `${msg} Podés intentar con otra tarjeta.`, true);
-          const retryBtn = document.createElement("button");
-          retryBtn.type = "button";
-          retryBtn.className = "btn-next";
-          retryBtn.style.marginTop = "1rem";
-          retryBtn.textContent = "Intentar con otra tarjeta";
-          retryBtn.addEventListener("click", () => startRetryCheckout(storedClienteId));
-          successDiv.appendChild(retryBtn);
+
+        const renderError = (msg: string) => {
+          if (storedClienteId) {
+            showResult("Error al registrar tarjeta", `${msg} Podés intentar con otra tarjeta.`, true);
+            const retryBtn = document.createElement("button");
+            retryBtn.type = "button";
+            retryBtn.style.cssText =
+              "margin-top:1rem;padding:0.6rem 1.4rem;background:#f9a606;border:none;border-radius:8px;color:#111;font-weight:700;cursor:pointer;font-size:0.95rem;";
+            retryBtn.textContent = "Intentar con otra tarjeta";
+            retryBtn.addEventListener("click", () => startRetryCheckout(storedClienteId));
+            successDiv.appendChild(retryBtn);
+          } else {
+            showResult("Error al registrar tarjeta", msg, true);
+          }
+        };
+
+        if (description) {
+          // El SDK ya entregó un motivo legible: usarlo directo.
+          renderError(description);
+        } else if (storedClienteId) {
+          // El SDK no entregó description; preguntar al backend el motivo real.
+          showProcessing();
+          fetch("/api/consultar-rechazo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idCliente: storedClienteId }),
+          })
+            .then(async (r) => {
+              const body = await r.json().catch(() => ({}));
+              const motivo = (r.ok && body?.motivo) || body?.error || "No se pudo registrar la tarjeta.";
+              renderError(motivo);
+            })
+            .catch(() => {
+              renderError("No se pudo registrar la tarjeta.");
+            });
         } else {
-          showResult("Error al registrar tarjeta", msg, true);
+          renderError("No se pudo registrar la tarjeta.");
         }
       }
     }
