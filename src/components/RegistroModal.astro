@@ -659,7 +659,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   #bancard-iframe {
     background: #fff;
     border-radius: 12px;
-    overflow: hidden;
+    overflow: visible;
   }
   #bancard-iframe iframe {
     width: 100% !important;
@@ -1857,7 +1857,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           body: JSON.stringify({
             idCliente,
             diaDebito: new Date().getDate(),
-            urlRedirect: window.location.origin + "/api/callback",
           }),
         }, 30000);
 
@@ -1873,29 +1872,53 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         const iframeDiv = document.getElementById("bancard-iframe") as HTMLElement;
         if (iframeDiv) iframeDiv.innerHTML = "";
 
-        if (!(window as any).Bancard) {
-          await new Promise<void>((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src = "/bancard-checkout-5.0.1.js";
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error("Error al cargar Bancard SDK"));
-            document.head.appendChild(script);
+        const retryProveedor: "Bancard" | "uPay" = checkoutBody.proveedor === "Bancard" ? "Bancard" : "uPay";
+
+        if (retryProveedor === "uPay") {
+          const upayIframe = document.createElement("iframe");
+          upayIframe.src = `https://www.pagopar.com/upay-iframe/?id-form=${encodeURIComponent(checkoutBody.processId)}`;
+          upayIframe.style.cssText = "width:100%;height:520px;border:0;display:block;";
+            upayIframe.allow = "payment";
+          upayIframe.addEventListener("load", () => {
+            try {
+              const href = upayIframe.contentWindow?.location.href ?? "";
+              if (!href.startsWith(window.location.origin)) return;
+              const qs = new URL(href).searchParams;
+              const status = qs.get("status") || qs.get("checkout") || "";
+              const description = qs.get("description") || qs.get("checkout_msg") || "";
+              if (!_bancardResponseHandled) {
+                handleBancardResponse({
+                  status: status.includes("success") || status === "ok" ? "add_new_card_success" : "add_new_card_fail",
+                  description,
+                });
+              }
+            } catch { /* cross-origin: ignorar */ }
+          });
+          if (iframeDiv) iframeDiv.appendChild(upayIframe);
+        } else {
+          if (!(window as any).Bancard) {
+            await new Promise<void>((resolve, reject) => {
+              const script = document.createElement("script");
+              script.src = "/bancard-checkout-5.0.1.js";
+              script.onload = () => resolve();
+              script.onerror = () => reject(new Error("Error al cargar Bancard SDK"));
+              document.head.appendChild(script);
+            });
+          }
+          waitForBancardIframe();
+          (window as any).Bancard.Cards.createForm("bancard-iframe", checkoutBody.processId, {
+            responseHandler: handleBancardResponse,
+            styles: {
+              "input-background-color": "#ffffff",
+              "input-text-color": "#333333",
+              "input-placeholder-color": "#999999",
+              "input-border-color": "#dddddd",
+              "button-background-color": "#4f46e5",
+              "button-text-color": "#ffffff",
+              "form-background-color": "#ffffff",
+            },
           });
         }
-
-        waitForBancardIframe();
-        (window as any).Bancard.Cards.createForm("bancard-iframe", checkoutBody.processId, {
-          responseHandler: handleBancardResponse,
-          styles: {
-            "input-background-color": "#ffffff",
-            "input-text-color": "#333333",
-            "input-placeholder-color": "#999999",
-            "input-border-color": "#dddddd",
-            "button-background-color": "#4f46e5",
-            "button-text-color": "#ffffff",
-            "form-background-color": "#ffffff",
-          },
-        });
       } catch (err: any) {
         showResult("Error", err.message || "Error al intentar de nuevo.", true);
       }
@@ -2576,7 +2599,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           body: JSON.stringify({
             idCliente: idCliente,
             diaDebito: new Date().getDate(),
-            urlRedirect: window.location.origin + "/api/callback",
           }),
         }, 30000);
 
@@ -2595,10 +2617,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         }
 
         const processId = checkoutBody.processId;
+        const proveedor: "Bancard" | "uPay" = checkoutBody.proveedor === "Bancard" ? "Bancard" : "uPay";
         if (processId) {
           form.style.display = "none";
           bancardContainer.style.display = "block";
-  
+
           (document.querySelector(".modal-container") as HTMLElement | null)?.scrollTo({ top: 0 });
           // Meta Pixel: AddPaymentInfo
           if (typeof (window as any).fbq === "function") {
@@ -2610,32 +2633,57 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             });
           }
 
-          // Load Bancard Checkout JS SDK if not already loaded
-          if (!(window as any).Bancard) {
-            await new Promise<void>((resolve, reject) => {
-              const script = document.createElement("script");
-              script.src = "/bancard-checkout-5.0.1.js";
-              script.onload = () => resolve();
-              script.onerror = () => reject(new Error("Error al cargar Bancard SDK"));
-              document.head.appendChild(script);
+          const iframeDiv = document.getElementById("bancard-iframe") as HTMLElement;
+          if (iframeDiv) iframeDiv.innerHTML = "";
+
+          if (proveedor === "uPay") {
+            // Render iframe nativo de uPay (sin SDK)
+            const upayIframe = document.createElement("iframe");
+            upayIframe.src = `https://www.pagopar.com/upay-iframe/?id-form=${encodeURIComponent(processId)}`;
+            upayIframe.style.cssText = "width:100%;height:520px;border:0;display:block;";
+            upayIframe.allow = "payment";
+            upayIframe.addEventListener("load", () => {
+              try {
+                const href = upayIframe.contentWindow?.location.href ?? "";
+                if (!href.startsWith(window.location.origin)) return;
+                const qs = new URL(href).searchParams;
+                const status = qs.get("status") || qs.get("checkout") || "";
+                const description = qs.get("description") || qs.get("checkout_msg") || "";
+                if (!_bancardResponseHandled) {
+                  handleBancardResponse({
+                    status: status.includes("success") || status === "ok" ? "add_new_card_success" : "add_new_card_fail",
+                    description,
+                  });
+                }
+              } catch { /* cross-origin: ignorar */ }
+            });
+            if (iframeDiv) iframeDiv.appendChild(upayIframe);
+          } else {
+            // Flujo Bancard: cargar SDK y renderizar form
+            if (!(window as any).Bancard) {
+              await new Promise<void>((resolve, reject) => {
+                const script = document.createElement("script");
+                script.src = "/bancard-checkout-5.0.1.js";
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error("Error al cargar Bancard SDK"));
+                document.head.appendChild(script);
+              });
+            }
+            _bancardResponseHandled = false;
+            waitForBancardIframe();
+            (window as any).Bancard.Cards.createForm("bancard-iframe", processId, {
+              responseHandler: handleBancardResponse,
+              styles: {
+                "input-background-color": "#ffffff",
+                "input-text-color": "#333333",
+                "input-placeholder-color": "#999999",
+                "input-border-color": "#dddddd",
+                "button-background-color": "#4f46e5",
+                "button-text-color": "#ffffff",
+                "form-background-color": "#ffffff",
+              },
             });
           }
-
-          // Render the Bancard card enrollment form
-          _bancardResponseHandled = false;
-          waitForBancardIframe();
-          (window as any).Bancard.Cards.createForm("bancard-iframe", processId, {
-            responseHandler: handleBancardResponse,
-            styles: {
-              "input-background-color": "#ffffff",
-              "input-text-color": "#333333",
-              "input-placeholder-color": "#999999",
-              "input-border-color": "#dddddd",
-              "button-background-color": "#4f46e5",
-              "button-text-color": "#ffffff",
-              "form-background-color": "#ffffff",
-            },
-          });
         } else {
           sessionStorage.removeItem("formulang_idCliente");
           showResult(
