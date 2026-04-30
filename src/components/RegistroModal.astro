@@ -1851,12 +1851,16 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       goToStep(3);
 
       try {
+        const _retryCbUrl = new URL(`${window.location.origin}/api/callback`);
+        _retryCbUrl.searchParams.set("idCliente", idCliente);
+
         const checkoutRes = await fetchWithTimeout("/api/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             idCliente,
             diaDebito: new Date().getDate(),
+            urlRedirect: _retryCbUrl.toString(),
           }),
         }, 30000);
 
@@ -2593,12 +2597,25 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
         submitLoading.textContent = "Redirigiendo a Pagopar...";
 
+        // Construir urlRedirect con contexto para el callback de uPay
+        // (para Bancard responseHandler no se usa, pero no hace daño incluirlo)
+        const _cbUrl = new URL(`${window.location.origin}/api/callback`);
+        _cbUrl.searchParams.set("idCliente", idCliente);
+        _cbUrl.searchParams.set("acceptTerminos", "true");
+        const _rpId = sessionStorage.getItem("formulang_idRegistroPendiente") || "";
+        if (_rpId) _cbUrl.searchParams.set("idRegistroPendiente", _rpId);
+        const _idMemActivar = sessionStorage.getItem("formulang_idMembresiaActivar") || "";
+        if (_idMemActivar) _cbUrl.searchParams.set("idMembresiaActivar", _idMemActivar);
+        const _idsMemRaw = sessionStorage.getItem("formulang_idsMembresiasActivar") || "";
+        if (_idsMemRaw) _cbUrl.searchParams.set("idsMembresiasActivar", _idsMemRaw);
+
         const checkoutRes = await fetchWithTimeout("/api/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             idCliente: idCliente,
             diaDebito: new Date().getDate(),
+            urlRedirect: _cbUrl.toString(),
           }),
         }, 30000);
 
