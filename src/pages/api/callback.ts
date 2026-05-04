@@ -19,6 +19,16 @@ export const GET: APIRoute = async ({ url, request }) => {
 
     const isSuccess = status === "add_new_card_success";
 
+    // Si Pagopar/uPay reportó fallo en el catastro, propagar el motivo
+    if (!isSuccess) {
+      const params = new URLSearchParams({ checkout: "error" });
+      if (description) params.set("checkout_msg", description);
+      return new Response(null, {
+        status: 302,
+        headers: { Location: `/membresia?${params.toString()}` },
+      });
+    }
+
     // Flujo uPay: confirmar tarjeta server-side si llegó idCliente y fue exitoso
     if (idCliente && isSuccess) {
       const ip =
@@ -46,14 +56,22 @@ export const GET: APIRoute = async ({ url, request }) => {
       if (ip) confirmBody.ipAddress = ip;
       if (ua) confirmBody.userAgent = ua;
 
-      await apiFetch("/pagopar/confirmar", {
+      const { error: confirmError } = await apiFetch("/pagopar/confirmar", {
         method: "POST",
         body: JSON.stringify(confirmBody),
       });
+
+      if (confirmError) {
+        const params = new URLSearchParams({ checkout: "error" });
+        params.set("checkout_msg", confirmError);
+        return new Response(null, {
+          status: 302,
+          headers: { Location: `/membresia?${params.toString()}` },
+        });
+      }
     }
 
-    const checkout = isSuccess ? "ok" : "error";
-    const params = new URLSearchParams({ checkout });
+    const params = new URLSearchParams({ checkout: "ok" });
     if (description) params.set("checkout_msg", description);
 
     return new Response(null, {
