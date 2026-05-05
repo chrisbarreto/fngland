@@ -91,7 +91,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           <div class="form-row personal-field" style="display:none;">
             <div class="form-group">
               <label for="telefono">Teléfono / WhatsApp <span class="required req">*</span></label>
-              <input type="tel" id="telefono" name="telefono" required placeholder="09XXXXXXXX" maxlength="20" minlength="10" />
+              <input type="tel" id="telefono" name="telefono" required placeholder="09XXXXXXXX" maxlength="20" minlength="10" inputmode="numeric" pattern="[0-9]*" />
               <span class="field-error"></span>
             </div>
             <div class="form-group">
@@ -2927,14 +2927,16 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
     });
 
-    // Quitar espacios en Teléfono/WhatsApp mientras el usuario escribe o pega
+    // Filtrar todo carácter no-dígito en Teléfono/WhatsApp mientras el usuario escribe o pega
     const telefonoInput = document.getElementById("telefono") as HTMLInputElement | null;
     telefonoInput?.addEventListener("input", () => {
-      if (/\s/.test(telefonoInput.value)) {
-        const pos = telefonoInput.selectionStart ?? telefonoInput.value.length;
-        const before = telefonoInput.value.slice(0, pos).replace(/\s+/g, "").length;
-        telefonoInput.value = telefonoInput.value.replace(/\s+/g, "");
-        try { telefonoInput.setSelectionRange(before, before); } catch {}
+      const original = telefonoInput.value;
+      const cleaned = original.replace(/\D+/g, "");
+      if (cleaned !== original) {
+        const pos = telefonoInput.selectionStart ?? cleaned.length;
+        const newPos = original.slice(0, pos).replace(/\D+/g, "").length;
+        telefonoInput.value = cleaned;
+        try { telefonoInput.setSelectionRange(newPos, newPos); } catch {}
       }
     });
 
