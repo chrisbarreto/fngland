@@ -115,7 +115,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           <div class="form-row">
             <div class="form-group">
               <label for="chapa">Chapa / Matrícula <span class="required req">*</span></label>
-              <input type="text" id="chapa" name="chapa" required placeholder="Ej: ABC 1234" maxlength="15" class="uppercase" />
+              <input type="text" id="chapa" name="chapa" required placeholder="Ej: ABCD123" maxlength="15" minlength="3" pattern="[A-Za-z0-9]+" class="uppercase" />
               <span class="field-error"></span>
             </div>
             <div class="form-group">
@@ -2924,6 +2924,19 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         const before = rucInput.value.slice(0, pos).replace(/\s+/g, "").length;
         rucInput.value = rucInput.value.replace(/\s+/g, "");
         try { rucInput.setSelectionRange(before, before); } catch {}
+      }
+    });
+
+    // Normalizar Chapa: sólo letras A-Z y dígitos 0-9 en mayúsculas (sin espacios ni símbolos).
+    const chapaInput = document.getElementById("chapa") as HTMLInputElement | null;
+    chapaInput?.addEventListener("input", () => {
+      const original = chapaInput.value;
+      const cleaned = original.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (cleaned !== original) {
+        const pos = chapaInput.selectionStart ?? cleaned.length;
+        const removedBefore = original.slice(0, pos).replace(/[^A-Za-z0-9]/g, "").length;
+        chapaInput.value = cleaned;
+        try { chapaInput.setSelectionRange(removedBefore, removedBefore); } catch {}
       }
     });
 
