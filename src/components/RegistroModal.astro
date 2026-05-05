@@ -1732,7 +1732,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (step === 1) {
         const nombre = (document.getElementById("nombre") as HTMLInputElement).value.trim();
         const ruc = (document.getElementById("ruc") as HTMLInputElement).value.replace(/\s+/g, "");
-        const telefono = (document.getElementById("telefono") as HTMLInputElement).value.replace(/\s+/g, "");
+        const telefono = (document.getElementById("telefono") as HTMLInputElement).value.replace(/[^0-9]/g, "");
         const email = (document.getElementById("email") as HTMLInputElement).value.trim();
 
         if (!nombre) { showFieldError("nombre", "El nombre es requerido"); valid = false; }
@@ -2940,17 +2940,24 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
     });
 
-    // Filtrar todo carácter no-dígito en Teléfono/WhatsApp mientras el usuario escribe o pega
+    // Filtrar Teléfono/WhatsApp: sólo dígitos.
     const telefonoInput = document.getElementById("telefono") as HTMLInputElement | null;
-    telefonoInput?.addEventListener("input", () => {
+    const sanitizeTelefono = () => {
+      if (!telefonoInput) return;
       const original = telefonoInput.value;
-      const cleaned = original.replace(/\D+/g, "");
+      const cleaned = original.replace(/[^0-9]/g, "");
       if (cleaned !== original) {
         const pos = telefonoInput.selectionStart ?? cleaned.length;
-        const newPos = original.slice(0, pos).replace(/\D+/g, "").length;
+        const newPos = Math.min(pos, cleaned.length);
         telefonoInput.value = cleaned;
         try { telefonoInput.setSelectionRange(newPos, newPos); } catch {}
       }
+    };
+    telefonoInput?.addEventListener("input", sanitizeTelefono);
+    telefonoInput?.addEventListener("change", sanitizeTelefono);
+    telefonoInput?.addEventListener("blur", sanitizeTelefono);
+    telefonoInput?.addEventListener("paste", () => {
+      setTimeout(sanitizeTelefono, 0);
     });
 
     // Cuando el usuario modifica el CI, resetear el estado del lookup anterior
@@ -3000,7 +3007,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       const formData: any = {
         nombre: (document.getElementById("nombre") as HTMLInputElement).value.trim().toUpperCase(),
         ruc: (document.getElementById("ruc") as HTMLInputElement).value.replace(/\s+/g, ""),
-        telefono: (document.getElementById("telefono") as HTMLInputElement).value.replace(/\s+/g, ""),
+        telefono: (document.getElementById("telefono") as HTMLInputElement).value.replace(/[^0-9]/g, ""),
       };
 
       const email = (document.getElementById("email") as HTMLInputElement).value.trim();
