@@ -2782,7 +2782,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             btnActivar.parentElement?.appendChild(aviso);
 
             // Toggle Bancard/Upay dentro del aviso (cliente activo)
-            const _rpPayBtns = Array.from(aviso.querySelectorAll("[id^='rp-pay-']")) as HTMLButtonElement[];
+            const _rpPayBtns = Array.from(aviso.querySelectorAll("button[data-method]")) as HTMLButtonElement[];
             _rpPayBtns.forEach((btn) => {
               btn.addEventListener("click", () => {
                 const method = btn.getAttribute("data-method") || "upay";
