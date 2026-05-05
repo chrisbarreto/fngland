@@ -2190,7 +2190,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               newCardBtn.className = "btn-next";
               newCardBtn.style.cssText = "margin-top:1rem;display:block;width:100%;";
               newCardBtn.textContent = "Intentar con otra tarjeta";
-              newCardBtn.addEventListener("click", () => startRetryCheckout(storedClienteId));
+              newCardBtn.addEventListener("click", () => {
+                if (newCardBtn.disabled) return;
+                newCardBtn.disabled = true;
+                startRetryCheckout(storedClienteId);
+              });
               successDiv.appendChild(newCardBtn);
 
               // Botón "Probar con método alternativo"
@@ -2284,7 +2288,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               "margin-top:1rem;padding:0.6rem 1.4rem;background:#f9a606;border:none;border-radius:8px;" +
               "color:#111;font-weight:700;cursor:pointer;font-size:0.95rem;display:block;width:100%;";
             retryBtn.textContent = "Reintentar con otra tarjeta";
-            retryBtn.addEventListener("click", () => startRetryCheckout(storedClienteId));
+            retryBtn.addEventListener("click", () => {
+              if (retryBtn.disabled) return;
+              retryBtn.disabled = true;
+              startRetryCheckout(storedClienteId);
+            });
             successDiv.appendChild(retryBtn);
             successDiv.appendChild(createAltMethodBtn(storedClienteId));
           } else {
@@ -2377,6 +2385,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         "color:#fff;font-weight:700;cursor:pointer;font-size:0.95rem;display:block;width:100%;";
       btn.textContent = `Probar con ${altLabel}`;
       btn.addEventListener("click", () => {
+        if (btn.disabled) return;
+        btn.disabled = true;
         const hidden = document.getElementById("metodoPago") as HTMLInputElement | null;
         if (hidden) hidden.value = altMethod;
         startRetryCheckout(storedClienteId);
@@ -2386,7 +2396,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
 
     // ---- Retry checkout with another card (same idCliente + idRegistroPendiente) ----
+    // Guard contra disparos múltiples: cada llamada a /api/checkout genera un nuevo
+    // process_id en Pagopar e invalida el anterior. Doble-click o re-renders crearían
+    // process_ids huérfanos que rompen el iframe ya abierto con "ID form no válido".
+    let _checkoutInFlight = false;
     async function startRetryCheckout(idCliente: string) {
+      if (_checkoutInFlight) return;
+      _checkoutInFlight = true;
       _bancardResponseHandled = false; // reset para nuevo intento
       // Remove old retry buttons and reset to iframe state
       successDiv.querySelectorAll("#btn-download-receipt").forEach(b => b.remove());
@@ -2465,6 +2481,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         }
       } catch (err: any) {
         showResult("Error", err.message || "Error al intentar de nuevo.", true);
+      } finally {
+        _checkoutInFlight = false;
       }
     }
 
