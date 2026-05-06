@@ -69,6 +69,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                 data-sitekey={siteKey}
                 data-theme="dark"
                 data-refresh-expired="auto"
+                data-callback="__tsOnSuccess"
+                data-expired-callback="__tsOnExpired"
+                data-error-callback="__tsOnError"
               ></div>
             </div>
             <span class="field-error" id="turnstile-error"></span>
@@ -276,6 +279,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             <span class="btn-submit-loading" style="display:none;">Procesando...</span>
           </button>
         </div>
+
+        <span class="field-error" id="turnstile-submit-error" style="display:none; text-align:center; margin-top:8px;"></span>
 
         <p class="secure-note" id="secure-note">
           <svg width="12" height="14" viewBox="0 0 12 14" fill="none">
@@ -1333,6 +1338,42 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     let lastLookedUpCI = "";      // evita re-disparar lookup para el mismo CI
     let lookupInProgress = false; // evita lookups simultáneos (race condition)
 
+    // ---- Turnstile token state ----
+    interface TurnstileInstance {
+      reset: (container?: HTMLElement | string) => void;
+      getResponse: (container?: HTMLElement | string) => string | undefined;
+      remove: (container?: HTMLElement | string) => void;
+      render: (container: HTMLElement | string, params: Record<string, string>) => string;
+      execute: (container?: HTMLElement | string) => void;
+    }
+    declare global {
+      interface Window {
+        turnstile?: TurnstileInstance;
+        __tsOnSuccess: (token: string) => void;
+        __tsOnExpired: () => void;
+        __tsOnError: () => void;
+      }
+    }
+
+    let _tsTokenReady = false;
+    let _tsTokenValue = "";
+    let _tsPendingResolves: Array<() => void> = [];
+
+    window.__tsOnSuccess = (token: string) => {
+      _tsTokenReady = true;
+      _tsTokenValue = token;
+      const resolvers = _tsPendingResolves.splice(0);
+      resolvers.forEach((r) => r());
+    };
+    window.__tsOnExpired = () => {
+      _tsTokenReady = false;
+      _tsTokenValue = "";
+    };
+    window.__tsOnError = () => {
+      _tsTokenReady = false;
+      _tsTokenValue = "";
+    };
+
     // Paleta oscura para el iframe de Bancard — alineada con los design tokens del modal
     // (--card-bg, --navy-700, --input-bg, --input-border, --text-primary, --text-muted, --accent-blue).
     // El SDK de Bancard solo acepta hex sólidos (no rgba).
@@ -1484,6 +1525,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       lastLookedUpCI = "";
       lookupInProgress = false;
       // Ocultar inputs de "Otro" y limpiar valores
+      const _otrosRow = document.getElementById("otros-row") as HTMLElement | null;
+      if (_otrosRow) _otrosRow.style.display = "none";
       (document.getElementById("marcaNueva-group") as HTMLElement | null)?.style && ((document.getElementById("marcaNueva-group") as HTMLElement).style.display = "none");
       (document.getElementById("modeloNuevo-group") as HTMLElement | null)?.style && ((document.getElementById("modeloNuevo-group") as HTMLElement).style.display = "none");
       (document.getElementById("marcaNueva") as HTMLInputElement | null) && ((document.getElementById("marcaNueva") as HTMLInputElement).value = "");
@@ -1551,6 +1594,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     let _pendingPlanId: string | undefined;
 
     function openModal(options?: { planId?: string }) {
+      // Sincronizar estado del token con el widget actual al abrir el modal
+      const tsField = document.querySelector("[name='cf-turnstile-response']") as HTMLInputElement | null;
+      if (tsField?.value) {
+        _tsTokenReady = true;
+        _tsTokenValue = tsField.value;
+      }
+
       // Preserve planId: if called without options (e.g. from Bancard callback),
       // restore from sessionStorage so currentPlanMeta() keeps working.
       if (options?.planId) {
@@ -1866,10 +1916,18 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     const marcaSelect = document.getElementById("idMarca") as HTMLSelectElement;
     const modeloSelect = document.getElementById("idModelo") as HTMLSelectElement;
 
+    const otrosRow = document.getElementById("otros-row") as HTMLElement;
     const marcaNuevaGroup = document.getElementById("marcaNueva-group") as HTMLElement;
     const modeloNuevoGroup = document.getElementById("modeloNuevo-group") as HTMLElement;
     const marcaNuevaInput = document.getElementById("marcaNueva") as HTMLInputElement;
     const modeloNuevoInput = document.getElementById("modeloNuevo") as HTMLInputElement;
+
+    function syncOtrosRow() {
+      const anyVisible =
+        marcaNuevaGroup.style.display !== "none" ||
+        modeloNuevoGroup.style.display !== "none";
+      otrosRow.style.display = anyVisible ? "" : "none";
+    }
 
     marcaSelect?.addEventListener("change", async () => {
       const idMarca = marcaSelect.value;
@@ -1880,6 +1938,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (!idMarca) {
         marcaNuevaGroup.style.display = "none";
         modeloSelect.innerHTML = '<option value="">Primero seleccioná la marca</option>';
+        syncOtrosRow();
         return;
       }
 
@@ -1888,11 +1947,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         modeloSelect.innerHTML = '<option value="">Seleccionar modelo...</option>';
         modeloSelect.disabled = true;
         modeloNuevoGroup.style.display = "";
+        syncOtrosRow();
         return;
       }
 
       marcaNuevaGroup.style.display = "none";
       marcaNuevaInput.value = "";
+      syncOtrosRow();
 
       try {
         const res = await fetchWithTimeout(`/api/modelos?idMarca=${idMarca}`, {}, 15000);
@@ -1903,7 +1964,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         const data = await res.json();
         modeloSelect.innerHTML = '<option value="">Seleccionar modelo...</option>';
         if (Array.isArray(data)) {
-          data.forEach((modelo: any) => {
+          data.forEach((modelo: { idModelo: string; nombre: string }) => {
             const opt = document.createElement("option");
             opt.value = modelo.idModelo;
             opt.textContent = modelo.nombre;
@@ -1915,7 +1976,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         otroModelo.textContent = "Otro";
         modeloSelect.appendChild(otroModelo);
         modeloSelect.disabled = false;
-      } catch (err: any) {
+      } catch (err: unknown) {
         modeloSelect.innerHTML = `<option value="">Error al cargar modelos</option>`;
         console.error("Error loading modelos:", err);
       }
@@ -1928,6 +1989,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         modeloNuevoGroup.style.display = "none";
         modeloNuevoInput.value = "";
       }
+      syncOtrosRow();
     });
 
     // ---- Load Planes ----
@@ -2486,6 +2548,59 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
     }
 
+    // ---- Turnstile helpers ----
+    async function ensureFreshTurnstileToken(timeoutMs = 20000): Promise<string | null> {
+      const field = form.querySelector("[name='cf-turnstile-response']") as HTMLInputElement | null;
+      const currentVal = field?.value || _tsTokenValue;
+      if (currentVal) {
+        _tsTokenReady = true;
+        _tsTokenValue = currentVal;
+        return currentVal;
+      }
+
+      const cfWidget = document.querySelector(".cf-turnstile") as HTMLElement | null;
+      if (cfWidget && window.turnstile) {
+        try {
+          window.turnstile.reset(cfWidget);
+        } catch { /* ignorar si el widget no está listo */ }
+      }
+
+      return new Promise<string | null>((resolve) => {
+        let resolved = false;
+
+        const timer = setTimeout(() => {
+          if (resolved) return;
+          resolved = true;
+          _tsPendingResolves = _tsPendingResolves.filter((r) => r !== resolver);
+          resolve(null);
+        }, timeoutMs);
+
+        const resolver = () => {
+          if (resolved) return;
+          resolved = true;
+          clearTimeout(timer);
+          resolve(_tsTokenValue || null);
+        };
+
+        _tsPendingResolves.push(resolver);
+      });
+    }
+
+    function showTurnstileSubmitError(msg: string) {
+      const el = document.getElementById("turnstile-submit-error");
+      if (!el) return;
+      el.textContent = msg;
+      el.style.display = "block";
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function clearTurnstileSubmitError() {
+      const el = document.getElementById("turnstile-submit-error");
+      if (!el) return;
+      el.textContent = "";
+      el.style.display = "none";
+    }
+
     // ---- CI lookup ----
     const rucInput = document.getElementById("ruc") as HTMLInputElement;
 
@@ -2892,16 +3007,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         showFieldError("ruc", "Ingresá tu RUC o CI para continuar.");
         return;
       }
-      // Validar Turnstile captcha antes de consultar
-      const turnstileField = form.querySelector("[name='cf-turnstile-response']") as HTMLInputElement | null;
-      const turnstileToken = turnstileField?.value || "";
-      if (!turnstileToken) {
-        const tsError = document.getElementById("turnstile-error");
+      // Esperar token fresco de Turnstile (max 15s) antes de consultar
+      const tsError = document.getElementById("turnstile-error");
+      const token = await ensureFreshTurnstileToken(15000);
+      if (!token) {
         if (tsError) tsError.textContent = "Completá la verificación de seguridad para continuar.";
         return;
       }
-      // Limpiar error de turnstile si existía
-      const tsError = document.getElementById("turnstile-error");
       if (tsError) tsError.textContent = "";
       // Resetear lastLookedUpCI para permitir re-consulta aunque sea el mismo CI
       lastLookedUpCI = "";
@@ -2998,13 +3110,29 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
 
       // Disable submit
+      clearTurnstileSubmitError();
       submitBtn.disabled = true;
       submitText.style.display = "none";
       submitLoading.style.display = "inline";
       errorBanner.style.display = "none";
 
+      // Asegurar token de Turnstile fresco antes de proceder (espera hasta 20s)
+      const freshToken = await ensureFreshTurnstileToken(20000);
+      if (!freshToken) {
+        submitBtn.disabled = false;
+        submitText.style.display = "inline";
+        submitLoading.style.display = "none";
+        showTurnstileSubmitError("La verificación de seguridad venció. Tocá 'Pagar Ahora' de nuevo para reintentar.");
+        const cfWidget = document.querySelector(".cf-turnstile") as HTMLElement | null;
+        if (cfWidget && window.turnstile) {
+          try { window.turnstile.reset(cfWidget); } catch { /* ignorar */ }
+        }
+        return;
+      }
+      clearTurnstileSubmitError();
+
       // Collect form data
-      const formData: any = {
+      const formData: Record<string, unknown> = {
         nombre: (document.getElementById("nombre") as HTMLInputElement).value.trim().toUpperCase(),
         ruc: (document.getElementById("ruc") as HTMLInputElement).value.replace(/\s+/g, ""),
         telefono: (document.getElementById("telefono") as HTMLInputElement).value.replace(/[^0-9]/g, ""),
@@ -3044,10 +3172,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       const idPlan = (document.getElementById("idPlan") as HTMLInputElement).value;
       if (idPlan) formData.idPlan = idPlan;
 
-      // Turnstile captcha token (ya validado en Step 1)
-      const turnstileField = form.querySelector("[name='cf-turnstile-response']") as HTMLInputElement | null;
-      const turnstileToken = turnstileField?.value || "";
-      formData.turnstileToken = turnstileToken;
+      // Turnstile captcha token — garantizado fresco por ensureFreshTurnstileToken()
+      formData.turnstileToken = freshToken;
       formData.acceptTerminos = true;
 
       // Adjuntar atribución UTM si está disponible
