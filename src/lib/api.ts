@@ -41,7 +41,7 @@ const API_KEY = process.env.API_KEY_LANDING || import.meta.env.API_KEY_LANDING;
 export async function apiFetch<T = any>(
   path: string,
   options: RequestInit = {},
-): Promise<{ data?: T; error?: string; status: number }> {
+): Promise<{ data?: T; error?: string; errorBody?: Record<string, unknown> | null; status: number }> {
   if (!API_KEY) {
     return {
       error:
@@ -94,6 +94,7 @@ export async function apiFetch<T = any>(
       }
       return {
         error: errorMsg,
+        errorBody: body && typeof body === "object" ? (body as Record<string, unknown>) : null,
         status: res.status,
       };
     }

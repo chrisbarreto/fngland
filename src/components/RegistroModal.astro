@@ -1744,6 +1744,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (_modalDirty) {
         if (!confirm("¿Estás seguro que querés salir? Se perderán los datos ingresados.")) return;
       }
+      logAbandonoBancardSiAplica("cerro_modal");
+      endBancardLifecycle();
       _modalDirty = false;
       _modalLocked = false;
       updateBeforeUnload();
@@ -2242,6 +2244,63 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
      * El objeto data contiene: { status, description, ... }
      */
     let _bancardResponseHandled = false;
+    // Estado del ciclo de vida del iframe Bancard/Upay para detectar abandono y timeouts.
+    let _bancardIframeOpenSince: number | null = null;
+    let _bancardTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let _bancardAbandonoLogged = false;
+
+    /**
+     * Marca que el iframe de pasarela está abierto. Arranca un timeout de 90 s
+     * que loguea si el SDK nunca llamó al responseHandler.
+     */
+    function startBancardLifecycle(proveedor: "Bancard" | "uPay") {
+      _bancardIframeOpenSince = Date.now();
+      _bancardAbandonoLogged = false;
+      if (_bancardTimeoutId) clearTimeout(_bancardTimeoutId);
+      _bancardTimeoutId = setTimeout(() => {
+        if (_bancardResponseHandled) return;
+        const segundos = Math.round((Date.now() - (_bancardIframeOpenSince ?? Date.now())) / 1000);
+        logEvent({
+          paso: "bancard_response",
+          severidad: "error",
+          codigo: "TIMEOUT_SIN_RESPUESTA",
+          mensaje: `El iframe de ${proveedor} no respondió tras ${segundos}s`,
+          contexto: { proveedor, segundos },
+        });
+      }, 90 * 1000);
+    }
+
+    /** Cancela el timeout pendiente y marca el iframe como cerrado limpio. */
+    function endBancardLifecycle() {
+      if (_bancardTimeoutId) {
+        clearTimeout(_bancardTimeoutId);
+        _bancardTimeoutId = null;
+      }
+      _bancardIframeOpenSince = null;
+    }
+
+    /**
+     * Loguea abandono si el cliente cierra/oculta la pestaña mientras el iframe
+     * estaba abierto y sin respuesta. Se idempotente.
+     */
+    function logAbandonoBancardSiAplica(motivo: "cerro_pestana" | "cerro_modal") {
+      if (_bancardAbandonoLogged) return;
+      if (_bancardIframeOpenSince == null) return;
+      if (_bancardResponseHandled) return;
+      _bancardAbandonoLogged = true;
+      const segundos = Math.round((Date.now() - _bancardIframeOpenSince) / 1000);
+      logEvent({
+        paso: "bancard_response",
+        severidad: "warn",
+        codigo: "ABANDONO_IFRAME",
+        mensaje: `El cliente ${motivo === "cerro_pestana" ? "cerró la pestaña/recargó" : "cerró el modal"} con el iframe abierto sin completar`,
+        contexto: { motivo, segundos },
+      });
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("pagehide", () => logAbandonoBancardSiAplica("cerro_pestana"));
+    }
 
     function preventUnload(e: BeforeUnloadEvent) {
       e.preventDefault();
@@ -2274,6 +2333,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         return;
       }
       _bancardResponseHandled = true;
+      endBancardLifecycle();
 
       const status = data?.message || data?.status || data?.Status || "";
       const description = data?.details || data?.description || data?.Description || "";
@@ -2327,7 +2387,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                 severidad: "error",
                 codigo: `HTTP_${res.status}`,
                 mensaje: errMsg,
-                contexto: { httpStatus: res.status, escenario: "post_bancard_catastro" },
+                contexto: {
+                  httpStatus: res.status,
+                  escenario: "post_bancard_catastro",
+                  pagoparErrorMessage: body.pagoparErrorMessage ?? null,
+                  bancardReason: body.bancardReason ?? null,
+                  idTransaccion: body.idTransaccion ?? null,
+                },
               });
               showResult(
                 "Cobro rechazado",
@@ -2415,19 +2481,37 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             // Éxito
             unlockModal();
             const successBody = await res.json().catch(() => ({}));
+            const escenarioConfirmar = successBody?.autoActivado
+              ? "auto_activado"
+              : successBody?.requiereSeleccion
+                ? "requiere_seleccion"
+                : successBody?.cobroDiferido
+                  ? "cobro_diferido"
+                  : "directo";
             logEvent({
               paso: "confirmar",
-              severidad: "info",
-              codigo: "CONFIRMAR_OK",
+              severidad: successBody?.cobroDiferido ? "warn" : "info",
+              codigo: successBody?.cobroDiferido ? "CONFIRMAR_OK_SIN_COBRO" : "CONFIRMAR_OK",
               contexto: {
                 debitoActivado: successBody?.debitoActivado === true ? "true" : "false",
-                escenario: successBody?.autoActivado ? "auto_activado" : (successBody?.requiereSeleccion ? "requiere_seleccion" : "directo"),
+                escenario: escenarioConfirmar,
+                cobroDiferidoMotivo: successBody?.cobroDiferidoMotivo ?? null,
               },
             });
-            showResult(
-              "Plan activado",
-              `Tu tarjeta fue registrada exitosamente. Tu ${currentPlanMeta().name} quedó activo y los débitos automáticos mensuales están habilitados.`,
-            );
+            if (successBody?.cobroDiferido) {
+              // Catastro OK pero sin cobro inmediato (cliente sin membresía
+              // elegible). Mensaje cortito y amigable, sin detalles técnicos.
+              showResult(
+                "Listo, tu tarjeta quedó registrada",
+                "Asociamos tu tarjeta a tu membresía. No realizamos ningún cobro en este momento — los próximos vencimientos se debitarán automáticamente.",
+                false,
+              );
+            } else {
+              showResult(
+                "Plan activado",
+                `Tu tarjeta fue registrada exitosamente. Tu ${currentPlanMeta().name} quedó activo y los débitos automáticos mensuales están habilitados.`,
+              );
+            }
             addReceiptButton(successBody.comprobante);
             if (typeof (window as any).fbq === "function") {
               const _pm = currentPlanMeta();
@@ -2623,6 +2707,27 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (_checkoutInFlight) return;
       _checkoutInFlight = true;
       _bancardResponseHandled = false; // reset para nuevo intento
+
+      const idMembresiaActivar = sessionStorage.getItem("formulang_idMembresiaActivar");
+      const idsMembresiasActivar = sessionStorage.getItem("formulang_idsMembresiasActivar");
+      const escenarioRetry = idsMembresiasActivar
+        ? "multi_membresias_activar"
+        : idMembresiaActivar
+          ? "activar_debito_membresia_existente"
+          : "retry_tarjeta";
+
+      logEvent({
+        paso: "submit_registro",
+        severidad: "info",
+        codigo: "RETRY_CHECKOUT_START",
+        contexto: {
+          escenario: escenarioRetry,
+          metodoPagoSolicitado: metodoPago,
+          idMembresiaActivar: idMembresiaActivar ?? null,
+          idsMembresiasActivar: idsMembresiasActivar ?? null,
+        },
+      });
+
       // Remove old retry buttons and reset to iframe state
       successDiv.querySelectorAll("#btn-download-receipt").forEach(b => b.remove());
       successDiv.style.display = "none";
@@ -2649,9 +2754,30 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         const checkoutBody = await checkoutRes.json().catch(() => ({}));
         if (!checkoutRes.ok || !checkoutBody.processId) {
           console.error("[startRetryCheckout] Error:", checkoutRes.status, checkoutBody);
+          logEvent({
+            paso: "checkout",
+            severidad: "error",
+            codigo: `HTTP_${checkoutRes.status}`,
+            mensaje: checkoutBody?.error || `checkout HTTP ${checkoutRes.status}`,
+            contexto: {
+              httpStatus: checkoutRes.status,
+              escenario: escenarioRetry,
+              body: checkoutBody,
+            },
+          });
           showResult("Error", `No pudimos iniciar el proceso de pago (${checkoutBody?.error || checkoutRes.status}). Intentá de nuevo más tarde.`, true);
           return;
         }
+        logEvent({
+          paso: "checkout",
+          severidad: "info",
+          codigo: "CHECKOUT_OK",
+          contexto: {
+            escenario: escenarioRetry,
+            proveedor: checkoutBody?.proveedor,
+            processId: !!checkoutBody?.processId,
+          },
+        });
 
         bancardContainer.style.display = "block";
 
@@ -2682,13 +2808,23 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             } catch { /* cross-origin: ignorar */ }
           });
           if (iframeDiv) iframeDiv.appendChild(upayIframe);
+          startBancardLifecycle("uPay");
         } else {
           if (!(window as any).Bancard) {
             await new Promise<void>((resolve, reject) => {
               const script = document.createElement("script");
               script.src = "/bancard-checkout-5.0.1.js";
               script.onload = () => resolve();
-              script.onerror = () => reject(new Error("Error al cargar Bancard SDK"));
+              script.onerror = () => {
+                logEvent({
+                  paso: "bancard_response",
+                  severidad: "error",
+                  codigo: "SDK_LOAD_FAILED",
+                  mensaje: "El SDK de Bancard no se pudo cargar (probable problema de red o CDN)",
+                  contexto: { proveedor: "Bancard", scriptSrc: "/bancard-checkout-5.0.1.js", flujo: "retry_tarjeta" },
+                });
+                reject(new Error("Error al cargar Bancard SDK"));
+              };
               document.head.appendChild(script);
             });
           }
@@ -2697,6 +2833,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             responseHandler: handleBancardResponse,
             styles: BANCARD_DARK_STYLES,
           });
+          startBancardLifecycle("Bancard");
         }
       } catch (err: unknown) {
         showResult("Error", (err instanceof Error ? err.message : null) || "Error al intentar de nuevo.", true);
@@ -2828,6 +2965,42 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         if (!data?.found) {
           // CI no registrada → cliente nuevo, revelar campos vacíos
           revelarCamposPersonales();
+          return;
+        }
+
+        // ---- Cuenta dada de baja (soft-deleted) ----
+        // Mostrar banner explicativo y NO ofrecer el formulario; si lo dejaramos
+        // proceder, el submit fallaría con "ya existe un RUC" después de tipear todo.
+        if (data.cuentaCerrada) {
+          const loadingElCerr = document.getElementById("ci-lookup-loading") as HTMLElement | null;
+          if (loadingElCerr) loadingElCerr.style.display = "none";
+
+          const step1ElCerr = rucInput.closest(".form-step");
+          // Limpiar cualquier banner previo
+          step1ElCerr?.querySelectorAll("#rp-resume-banner, #rp-info-banner, #rp-cerrada-banner")
+            .forEach((b) => b.remove());
+
+          const fechaCierre = data.fechaCierre
+            ? new Date(data.fechaCierre).toLocaleDateString("es-PY", { day: "2-digit", month: "2-digit", year: "numeric" })
+            : null;
+          const nombreCensurado = censurar(data.nombre || "", 4);
+
+          const banner = document.createElement("div");
+          banner.id = "rp-cerrada-banner";
+          banner.style.cssText = "margin-top:1rem;padding:1rem 1.1rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.35);border-radius:12px;font-size:0.9rem;color:#fca5a5;";
+          banner.innerHTML =
+            `<strong>Encontramos tu cuenta (${nombreCensurado})${fechaCierre ? `, dada de baja el ${fechaCierre}` : ""}.</strong><br/>` +
+            `Para reactivarla, comunicate con nosotros por WhatsApp o teléfono. ` +
+            `No podés registrarte como nuevo cliente con este mismo documento.`;
+          step1ElCerr?.appendChild(banner);
+
+          // Mantener los campos personales ocultos
+          logEvent({
+            paso: "validation_fail",
+            severidad: "warn",
+            codigo: "CUENTA_DADA_DE_BAJA",
+            contexto: { ci, fechaCierre: data.fechaCierre ?? null },
+          });
           return;
         }
 
@@ -3039,6 +3212,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                   hint.textContent = "Seleccioná al menos una membresía para continuar.";
                   (hint as HTMLElement).style.color = "#ef4444";
                 }
+                logEvent({
+                  paso: "validation_fail",
+                  severidad: "warn",
+                  codigo: "ACTIVAR_DEBITO_SIN_SELECCION",
+                  mensaje: "Cliente clickeó Activar sin seleccionar ninguna membresía",
+                });
                 return;
               }
               if (hint) {
@@ -3052,6 +3231,17 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               idsSeleccionadas = [v];
             }
             const idMembresia = idsSeleccionadas[0];
+
+            logEvent({
+              paso: "submit_registro",
+              severidad: "info",
+              codigo: "ACTIVAR_DEBITO_CLICK",
+              contexto: {
+                escenario: "activar_debito_membresia_existente",
+                cantidadMembresias: idsSeleccionadas.length,
+                idsMembresias: idsSeleccionadas,
+              },
+            });
 
             // Ocultar el botón y mostrar aviso de migración de plan antes de continuar
             const btnActivar = document.getElementById("rp-btn-activar") as HTMLElement;
@@ -3078,6 +3268,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             btnActivar.parentElement?.appendChild(aviso);
 
             document.getElementById("rp-aviso-cancelar")?.addEventListener("click", () => {
+              logEvent({
+                paso: "submit_registro",
+                severidad: "warn",
+                codigo: "ACTIVAR_DEBITO_CANCELADO",
+                mensaje: "Cliente vio el aviso de upgrade y canceló",
+                contexto: { idsMembresias: idsSeleccionadas },
+              });
               aviso.remove();
               btnActivar.style.display = "";
             });
@@ -3087,9 +3284,26 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               const legalError = document.getElementById("rp-legal-b-error") as HTMLElement;
               if (legalCheckbox && !legalCheckbox.checked) {
                 if (legalError) legalError.style.display = "block";
+                logEvent({
+                  paso: "validation_fail",
+                  severidad: "warn",
+                  codigo: "ACTIVAR_DEBITO_TYC_NO_ACEPTADO",
+                  mensaje: "Cliente intentó confirmar sin aceptar T&C",
+                });
                 return;
               }
               if (legalError) legalError.style.display = "none";
+              logEvent({
+                paso: "submit_registro",
+                severidad: "info",
+                codigo: "ACTIVAR_DEBITO_CONFIRMADO",
+                mensaje: "Cliente aceptó T&C y confirmó registrar tarjeta",
+                contexto: {
+                  escenario: "activar_debito_membresia_existente",
+                  cantidadMembresias: idsSeleccionadas.length,
+                  idsMembresias: idsSeleccionadas,
+                },
+              });
               if (idsSeleccionadas.length > 1) {
                 sessionStorage.setItem("formulang_idsMembresiasActivar", JSON.stringify(idsSeleccionadas));
                 sessionStorage.removeItem("formulang_idMembresiaActivar");
@@ -3603,6 +3817,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               } catch { /* cross-origin: ignorar */ }
             });
             if (iframeDiv) iframeDiv.appendChild(upayIframe);
+            startBancardLifecycle("uPay");
           } else {
             // Flujo Bancard: cargar SDK y renderizar form
             if (!(window as any).Bancard) {
@@ -3610,7 +3825,16 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                 const script = document.createElement("script");
                 script.src = "/bancard-checkout-5.0.1.js";
                 script.onload = () => resolve();
-                script.onerror = () => reject(new Error("Error al cargar Bancard SDK"));
+                script.onerror = () => {
+                  logEvent({
+                    paso: "bancard_response",
+                    severidad: "error",
+                    codigo: "SDK_LOAD_FAILED",
+                    mensaje: "El SDK de Bancard no se pudo cargar (probable problema de red o CDN)",
+                    contexto: { proveedor: "Bancard", scriptSrc: "/bancard-checkout-5.0.1.js" },
+                  });
+                  reject(new Error("Error al cargar Bancard SDK"));
+                };
                 document.head.appendChild(script);
               });
             }
@@ -3620,6 +3844,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               responseHandler: handleBancardResponse,
               styles: BANCARD_DARK_STYLES,
             });
+            startBancardLifecycle("Bancard");
           }
         } else {
           sessionStorage.removeItem("formulang_idCliente");

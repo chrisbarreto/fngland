@@ -28,16 +28,27 @@ export const POST: APIRoute = async ({ request }) => {
   if (ip) body.ipAddress = ip;
   if (ua) body.userAgent = ua;
 
-  const { data, error, status } = await apiFetch("/pagopar/confirmar", {
+  const { data, error, errorBody, status } = await apiFetch("/pagopar/confirmar", {
     method: "POST",
     body: JSON.stringify(body),
   });
 
   if (error) {
-    return new Response(JSON.stringify({ error }), {
-      status,
-      headers: { "Content-Type": "application/json" },
-    });
+    // Pasar al frontend el detalle estructurado (pagoparErrorMessage,
+    // bancardReason, idTransaccion) para que la telemetría capture el motivo
+    // real del rechazo en vez de "Cobro rechazado" genérico.
+    return new Response(
+      JSON.stringify({
+        error,
+        pagoparErrorMessage: errorBody?.pagoparErrorMessage ?? null,
+        bancardReason: errorBody?.bancardReason ?? null,
+        idTransaccion: errorBody?.idTransaccion ?? null,
+      }),
+      {
+        status,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 
   return new Response(JSON.stringify(data), {
