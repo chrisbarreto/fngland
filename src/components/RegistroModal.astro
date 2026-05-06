@@ -1376,6 +1376,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
 
 <script>
+  import { logEvent } from "@/lib/telemetry";
   {
     // ---- DOM Elements ----
     const modal = document.getElementById("registro-modal") as HTMLElement;
@@ -1721,6 +1722,18 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       const headerPrice = document.getElementById("modal-plan-price");
       if (headerName) headerName.textContent = planName;
       if (headerPrice && planPrice) headerPrice.textContent = `Gs. ${planPrice}`;
+
+      logEvent({
+        paso: "select_plan",
+        severidad: "info",
+        codigo: "PRESELECT",
+        contexto: {
+          idPlan: planId,
+          precioMostrado: planPrice,
+          planName,
+          source: "preselect",
+        },
+      });
     }
 
     let _modalLocked = false;   // true = bloqueo total (iframe/cobro en curso)
@@ -1849,7 +1862,21 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       btn.addEventListener("click", () => {
         const nextStep = Number((btn as HTMLElement).getAttribute("data-next"));
         if (validateStep(currentStep)) {
+          logEvent({
+            paso: "wizard_step",
+            severidad: "info",
+            contexto: { from: currentStep, to: nextStep, direction: "next" },
+          });
           goToStep(nextStep);
+        } else {
+          const camposInvalidos = Array.from(document.querySelectorAll(".invalid"))
+            .map((el) => (el as HTMLElement).id || (el as HTMLElement).getAttribute("name") || "?");
+          logEvent({
+            paso: "validation_fail",
+            severidad: "warn",
+            codigo: `STEP_${currentStep}_INVALID`,
+            contexto: { step: currentStep, campos: camposInvalidos },
+          });
         }
       });
     });
@@ -1858,6 +1885,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     document.querySelectorAll(".btn-prev[data-prev]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const prevStep = Number((btn as HTMLElement).getAttribute("data-prev"));
+        logEvent({
+          paso: "wizard_step",
+          severidad: "info",
+          contexto: { from: currentStep, to: prevStep, direction: "prev" },
+        });
         goToStep(prevStep);
       });
     });
@@ -2134,11 +2166,18 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             card.addEventListener("click", () => {
               container.querySelectorAll(".plan-card").forEach(c => c.classList.remove("selected"));
               card.classList.add("selected");
-              (document.getElementById("idPlan") as HTMLInputElement).value =
-                (card as HTMLElement).getAttribute("data-plan-id") || "";
+              const idPlanClickeado = (card as HTMLElement).getAttribute("data-plan-id") || "";
+              (document.getElementById("idPlan") as HTMLInputElement).value = idPlanClickeado;
 
               const planPrice = (card as HTMLElement).getAttribute("data-plan-price") || "";
               const planName = (card.querySelector(".plan-name") as HTMLElement)?.textContent?.trim() || "plan";
+
+              logEvent({
+                paso: "select_plan",
+                severidad: "info",
+                codigo: "CLICK",
+                contexto: { idPlan: idPlanClickeado, precioMostrado: planPrice, planName, source: "click" },
+              });
 
               // Update auto-debit price display
               const priceSpan = document.getElementById("auto-debit-price");
@@ -2173,6 +2212,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         const container = document.getElementById("planes-container") as HTMLElement;
         container.innerHTML = '<div class="planes-loading">Error al cargar planes. Intente más tarde.</div>';
         console.error("Error loading planes:", err);
+        logEvent({
+          paso: "load_planes",
+          severidad: "error",
+          mensaje: err instanceof Error ? err.message : String(err),
+          contexto: { stack: err instanceof Error ? err.stack : undefined },
+        });
       }
     }
 
@@ -2233,6 +2278,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       const status = data?.message || data?.status || data?.Status || "";
       const description = data?.details || data?.description || data?.Description || "";
 
+      logEvent({
+        paso: "bancard_response",
+        severidad: status === "add_new_card_success" ? "info" : "warn",
+        codigo: status || "BANCARD_UNKNOWN",
+        mensaje: description || undefined,
+        contexto: { status, description, raw: data },
+      });
+
       if (status === "add_new_card_success") {
         // Tarjeta catastrada exitosamente — confirmar y cobrar
         lockModal();
@@ -2269,6 +2322,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             if (!res.ok) {
               const body = await res.json().catch(() => ({}));
               const errMsg = body.error || body.message || "El cobro fue rechazado.";
+              logEvent({
+                paso: "confirmar",
+                severidad: "error",
+                codigo: `HTTP_${res.status}`,
+                mensaje: errMsg,
+                contexto: { httpStatus: res.status, escenario: "post_bancard_catastro" },
+              });
               showResult(
                 "Cobro rechazado",
                 `Tu tarjeta fue registrada correctamente, pero el cobro de Gs. 200.000 fue rechazado (${errMsg}). ` +
@@ -2355,6 +2415,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             // Éxito
             unlockModal();
             const successBody = await res.json().catch(() => ({}));
+            logEvent({
+              paso: "confirmar",
+              severidad: "info",
+              codigo: "CONFIRMAR_OK",
+              contexto: {
+                debitoActivado: successBody?.debitoActivado === true ? "true" : "false",
+                escenario: successBody?.autoActivado ? "auto_activado" : (successBody?.requiereSeleccion ? "requiere_seleccion" : "directo"),
+              },
+            });
             showResult(
               "Plan activado",
               `Tu tarjeta fue registrada exitosamente. Tu ${currentPlanMeta().name} quedó activo y los débitos automáticos mensuales están habilitados.`,
@@ -3209,7 +3278,22 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     // ---- Form Submission ----
     form?.addEventListener("submit", async (e) => {
       e.preventDefault();
-      if (!validateStep(currentStep)) return;
+      if (!validateStep(currentStep)) {
+        logEvent({
+          paso: "validation_fail",
+          severidad: "warn",
+          codigo: `SUBMIT_STEP_${currentStep}_INVALID`,
+          contexto: { step: currentStep },
+        });
+        return;
+      }
+      const idPlanFinal = (document.getElementById("idPlan") as HTMLInputElement | null)?.value;
+      logEvent({
+        paso: "submit_registro",
+        severidad: "info",
+        codigo: "SUBMIT_START",
+        contexto: { idPlanFinal, modoNuevoVehiculo, modoActualizarVehiculo },
+      });
 
       const emailVal = (document.getElementById("email") as HTMLInputElement).value.trim();
       if (!emailVal) {
@@ -3455,6 +3539,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
         if (!checkoutRes.ok) {
           console.error("[checkout] Error response:", checkoutRes.status, checkoutBody);
+          logEvent({
+            paso: "checkout",
+            severidad: "error",
+            codigo: `HTTP_${checkoutRes.status}`,
+            mensaje: checkoutBody?.error || `checkout HTTP ${checkoutRes.status}`,
+            contexto: { httpStatus: checkoutRes.status, body: checkoutBody },
+          });
           sessionStorage.removeItem("formulang_idCliente");
           showResult(
             "Alta pendiente",
@@ -3463,6 +3554,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           );
           return;
         }
+        logEvent({
+          paso: "checkout",
+          severidad: "info",
+          codigo: "CHECKOUT_OK",
+          contexto: { proveedor: checkoutBody?.proveedor, processId: !!checkoutBody?.processId },
+        });
 
         const processId = checkoutBody.processId;
         const proveedor: "Bancard" | "uPay" = checkoutBody.proveedor === "Bancard" ? "Bancard" : "uPay";
@@ -3543,6 +3640,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           ? "Error inesperado. Intente más tarde."
           : (err.message || "Error inesperado. Intente más tarde.");
         errorBanner.style.display = "block";
+        logEvent({
+          paso: "submit_registro",
+          severidad: "error",
+          codigo: isTechnical ? "TECHNICAL_ERROR" : "SUBMIT_ERROR",
+          mensaje: err?.message || String(err),
+          contexto: { stack: err?.stack, isTechnical },
+        });
       } finally {
         submitBtn.disabled = false;
         submitText.style.display = "inline";
