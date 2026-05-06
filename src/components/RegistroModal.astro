@@ -1223,11 +1223,54 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   @media (max-width: 548px) {
     .modal-overlay { padding: 8px; }
     .modal-container { border-radius: 16px; max-height: calc(100vh - 16px); }
-    .modal-header { padding: 24px 20px 18px; }
-    .modal-body { padding: 22px 20px; }
-    .form-row { grid-template-columns: 1fr; gap: 14px; }
+
+    /* Header */
+    .modal-header { padding: 20px 18px 16px; }
+    .modal-title { font-size: 20px; }
+    .modal-subtitle { font-size: 12.5px; line-height: 1.4; }
+    .gold-badge { margin-bottom: 8px; padding: 3px 12px; }
+
+    /* Stepper */
+    .stepper { margin-top: 16px; }
+    .step-dot { width: 30px; height: 30px; font-size: 13px; }
+    .step-item:not(:last-child)::after { top: 14px; }
     .step-label { font-size: 10px; }
-    .modal-title { font-size: 22px; }
+
+    /* Body */
+    .modal-body { padding: 18px 18px 20px; }
+    .step-body-title { font-size: 16px; }
+    .step-body-sub { font-size: 12px; margin: 0 0 16px; }
+
+    /* Form */
+    .form-group { margin-bottom: 12px; gap: 5px; }
+    .form-row { grid-template-columns: 1fr; gap: 10px; margin-bottom: 12px; }
+    .form-group label { font-size: 12px; }
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="tel"],
+    .form-group input[type="number"],
+    .form-group select { padding: 10px 12px; font-size: 13.5px; }
+
+    /* Step 3 — auto-debit */
+    .auto-debit-section { padding: 12px 14px; margin-top: 10px; }
+    .auto-debit-title { font-size: 14px; }
+    .auto-debit-copy { font-size: 12px; }
+    .auto-debit-list { font-size: 11.5px; gap: 4px; }
+
+    /* Step 3 — pay toggle */
+    .pay-toggle { margin: 14px 0; padding: 5px; gap: 6px; }
+    .pay-btn { padding: 10px 12px; font-size: 13px; }
+    .pay-btn .method-sub { font-size: 10px; }
+
+    /* Step 3 — security badges */
+    .security-row { gap: 8px; margin: 4px 0 12px; }
+    .sec-badge { font-size: 10.5px; padding: 5px 8px; }
+
+    /* Step 3 — legal */
+    .legal-accept-label { font-size: 12px; }
+
+    /* Plan cards (rendered via innerHTML) */
+    :global(.plan-card) { padding: 12px 14px; }
   }
 
 </style>
