@@ -1682,7 +1682,19 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       currentStep = step;
       if (step >= 2) _modalDirty = true;
       document.querySelectorAll(".form-step").forEach((el) => {
-        (el as HTMLElement).classList.toggle("active", el.getAttribute("data-step") === String(step));
+        const isActive = el.getAttribute("data-step") === String(step);
+        (el as HTMLElement).classList.toggle("active", isActive);
+        // Step 1 contiene el widget de Turnstile — nunca debe ser display:none
+        // porque el SDK de Cloudflare necesita el iframe en el render tree para
+        // poder auto-refrescar el token mientras el usuario está en Steps 2/3.
+        if (el.getAttribute("data-step") === "1") {
+          if (isActive) {
+            (el as HTMLElement).style.cssText = "";
+          } else {
+            (el as HTMLElement).style.cssText =
+              "display:block;position:absolute;left:-9999px;top:0;pointer-events:none;";
+          }
+        }
       });
       document.querySelectorAll(".step-dot").forEach((el) => {
         const s = Number(el.getAttribute("data-step"));
