@@ -1687,6 +1687,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       resetModalState();
       modal.style.display = "flex";
       document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
       if (!marcasLoaded) loadMarcas();
       // Meta Pixel: InitiateCheckout
       if (typeof (window as any).fbq === "function") {
@@ -1735,6 +1736,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       updateBeforeUnload();
       modal.style.display = "none";
       document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
       resetModalState();
     }
 
