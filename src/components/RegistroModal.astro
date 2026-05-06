@@ -1358,7 +1358,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       reset: (container?: HTMLElement | string) => void;
       getResponse: (container?: HTMLElement | string) => string | undefined;
       remove: (container?: HTMLElement | string) => void;
-      render: (container: HTMLElement | string, params: Record<string, string>) => string;
+      render: (container: HTMLElement | string, params: Record<string, unknown>) => string;
       execute: (container?: HTMLElement | string) => void;
     }
     declare global {
@@ -1370,6 +1370,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
     }
 
+    const _tsSiteKey = (document.querySelector(".cf-turnstile") as HTMLElement | null)?.getAttribute("data-sitekey") ?? "";
     let _tsTokenReady = false;
     let _tsTokenValue = "";
     let _tsPendingResolves: Array<() => void> = [];
@@ -2578,8 +2579,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             styles: BANCARD_DARK_STYLES,
           });
         }
-      } catch (err: any) {
-        showResult("Error", err.message || "Error al intentar de nuevo.", true);
+      } catch (err: unknown) {
+        showResult("Error", (err instanceof Error ? err.message : null) || "Error al intentar de nuevo.", true);
       } finally {
         _checkoutInFlight = false;
       }
@@ -2625,16 +2626,24 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (box.style.display !== "none" && widgetEl.hasChildNodes()) return;
       widgetEl.innerHTML = "";
       box.style.display = "block";
-      box.scrollIntoView({ behavior: "smooth", block: "center" });
-      const sk = document.querySelector(".cf-turnstile")?.getAttribute("data-sitekey") ?? "";
-      if (window.turnstile && sk) {
+      // Scrollear dentro del modal (no el viewport)
+      const modalContainer = document.querySelector(".modal-container");
+      if (modalContainer) {
+        const boxTop = box.getBoundingClientRect().top - modalContainer.getBoundingClientRect().top;
+        modalContainer.scrollTo({ top: modalContainer.scrollTop + boxTop - 20, behavior: "smooth" });
+      } else {
+        box.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      if (window.turnstile && _tsSiteKey) {
         window.turnstile.render(widgetEl, {
-          sitekey: sk,
+          sitekey: _tsSiteKey,
           theme: "dark",
-          callback: "__tsOnSuccess",
-          "expired-callback": "__tsOnExpired",
-          "error-callback": "__tsOnError",
+          callback: (token: string) => { window.__tsOnSuccess(token); },
+          "expired-callback": () => { window.__tsOnExpired(); },
+          "error-callback": () => { window.__tsOnError(); },
         });
+      } else if (!_tsSiteKey) {
+        widgetEl.innerHTML = '<p style="color:var(--text-secondary,#94a3b8);font-size:13px;text-align:center;">No se pudo cargar la verificación. Recargá la página e intentá nuevamente.</p>';
       }
     }
 
