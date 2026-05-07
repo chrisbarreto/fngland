@@ -88,11 +88,11 @@ import Footer from "@/components/Footer.astro";
       eyebrow.textContent = "Pago confirmado";
       title.textContent = "Tu membresía quedó activa";
       description.textContent =
-        "Tu tarjeta fue registrada correctamente y el débito automático mensual quedó habilitado. Podés agendar tu primer servicio escribiéndonos por WhatsApp.";
+        "Tu tarjeta fue registrada correctamente y el débito automático mensual quedó habilitado. Ya podés agendar tu primer servicio.";
       if (actionPrimary) {
-        actionPrimary.href = "https://wa.me/595992789328";
-        actionPrimary.target = "_blank";
-        actionPrimary.rel = "noopener noreferrer";
+        actionPrimary.href = "/agenda";
+        actionPrimary.removeAttribute("target");
+        actionPrimary.removeAttribute("rel");
         actionPrimary.textContent = "Agendar mi primer servicio";
       }
 

@@ -2336,6 +2336,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       _bancardResponseHandled = true;
       endBancardLifecycle();
 
+      // La tarjeta ya fue procesada dentro del iframe (catastro success o fail).
+      // A partir de acá liberamos el bloqueo de unload/cierre: si Bancard/uPay
+      // dispara una redirección top-level no queremos que el navegador muestre
+      // el aviso de "¿salir de la página?".
+      unlockModal();
+
       const status = data?.message || data?.status || data?.Status || "";
       const description = data?.details || data?.description || data?.Description || "";
 
@@ -2348,8 +2354,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       });
 
       if (status === "add_new_card_success") {
-        // Tarjeta catastrada exitosamente — confirmar y cobrar
-        lockModal();
+        // Tarjeta catastrada exitosamente — confirmar y cobrar.
+        // Ocultamos el botón cerrar mientras corre /api/confirmar, pero NO
+        // re-bloqueamos el unload: la tarjeta ya está confirmada en el iframe
+        // y queremos permitir que un eventual redirect top-level fluya sin el
+        // aviso del navegador.
+        closeBtn.style.display = "none";
         const storedClienteId = sessionStorage.getItem("formulang_idCliente");
         const storedIdRegistroPendiente = sessionStorage.getItem("formulang_idRegistroPendiente");
         const storedIdMembresiaActivar = sessionStorage.getItem("formulang_idMembresiaActivar");
