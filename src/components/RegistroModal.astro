@@ -1589,6 +1589,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       document.getElementById("rp-info-banner")?.remove();
       sessionStorage.removeItem("formulang_idCliente");
       sessionStorage.removeItem("formulang_idRegistroPendiente");
+      sessionStorage.removeItem("formulang_idPlanPendiente");
       sessionStorage.removeItem("formulang_idMembresiaActivar");
       sessionStorage.removeItem("formulang_idsMembresiasActivar");
       sessionStorage.removeItem("formulang_idVehiculo");
@@ -2447,6 +2448,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                     }
                     sessionStorage.removeItem("formulang_idCliente");
                     sessionStorage.removeItem("formulang_idRegistroPendiente");
+      sessionStorage.removeItem("formulang_idPlanPendiente");
                     sessionStorage.removeItem("formulang_idMembresiaActivar");
       sessionStorage.removeItem("formulang_idsMembresiasActivar");
                   })
@@ -2524,6 +2526,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             }
             sessionStorage.removeItem("formulang_idCliente");
             sessionStorage.removeItem("formulang_idRegistroPendiente");
+      sessionStorage.removeItem("formulang_idPlanPendiente");
             sessionStorage.removeItem("formulang_idMembresiaActivar");
       sessionStorage.removeItem("formulang_idsMembresiasActivar");
           })
@@ -2561,6 +2564,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                   addReceiptButton(catchRetryBody.comprobante);
                   sessionStorage.removeItem("formulang_idCliente");
                   sessionStorage.removeItem("formulang_idRegistroPendiente");
+      sessionStorage.removeItem("formulang_idPlanPendiente");
                   sessionStorage.removeItem("formulang_idMembresiaActivar");
       sessionStorage.removeItem("formulang_idsMembresiasActivar");
                 })
@@ -2944,6 +2948,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       document.getElementById("rp-info-banner")?.remove();
       sessionStorage.removeItem("formulang_idCliente");
       sessionStorage.removeItem("formulang_idRegistroPendiente");
+      sessionStorage.removeItem("formulang_idPlanPendiente");
       sessionStorage.removeItem("formulang_idMembresiaActivar");
       sessionStorage.removeItem("formulang_idsMembresiasActivar");
       sessionStorage.removeItem("formulang_idVehiculo");
@@ -3054,6 +3059,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
           sessionStorage.setItem("formulang_idCliente", data.idCliente);
           sessionStorage.setItem("formulang_idRegistroPendiente", rp.idRegistroPendiente);
+          if (rp.idPlan) sessionStorage.setItem("formulang_idPlanPendiente", rp.idPlan);
 
           const nombreCensurado = censurar(data.nombre, 4);
           const emailCensurado = censurarEmail(data.email);
@@ -3483,6 +3489,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         document.getElementById("rp-opciones-panel")?.remove();
         sessionStorage.removeItem("formulang_idCliente");
         sessionStorage.removeItem("formulang_idRegistroPendiente");
+      sessionStorage.removeItem("formulang_idPlanPendiente");
         sessionStorage.removeItem("formulang_idMembresiaActivar");
       sessionStorage.removeItem("formulang_idsMembresiasActivar");
         modoNuevoVehiculo = false;
@@ -3644,8 +3651,59 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           return;
 
         } else if (idClienteExistente && idRegPendienteExistente) {
-          // Resume existing registration — skip POST /api/registro
-          idCliente = idClienteExistente;
+          // Resume existing registration — skip POST /api/registro.
+          // CRÍTICO: si el plan elegido en el formulario es DISTINTO al del
+          // RegistroPendiente cacheado, descartar el cache y forzar nuevo
+          // registro — de lo contrario el cobro se haría con el plan viejo.
+          const idPlanForm = (document.getElementById("idPlan") as HTMLInputElement)?.value;
+          const idPlanPendienteCache = sessionStorage.getItem("formulang_idPlanPendiente");
+          const planCambio =
+            !!idPlanForm && !!idPlanPendienteCache && idPlanForm !== idPlanPendienteCache;
+          if (planCambio) {
+            logEvent({
+              paso: "submit_registro",
+              severidad: "warn",
+              codigo: "PLAN_CAMBIO_INVALIDA_REGISTRO_PENDIENTE",
+              mensaje:
+                "Plan elegido distinto al del registro pendiente cacheado — se descarta el cache y se crea un nuevo registro",
+              contexto: {
+                idPlanForm,
+                idPlanPendienteCache,
+                idClienteCache: idClienteExistente,
+                idRegPendienteCache: idRegPendienteExistente,
+              },
+            });
+            sessionStorage.removeItem("formulang_idCliente");
+            sessionStorage.removeItem("formulang_idRegistroPendiente");
+      sessionStorage.removeItem("formulang_idPlanPendiente");
+            sessionStorage.removeItem("formulang_idPlanPendiente");
+            // Caer a la rama de "nuevo cliente" — POST /api/registro
+            const res = await fetchWithTimeout("/api/registro", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(formData),
+            }, 30000);
+
+            const body = await res.json().catch(() => {
+              throw new Error("Error al procesar la respuesta del servidor. Intentá de nuevo.");
+            });
+            if (!res.ok) {
+              const serverMsg = body.error || body.message || "";
+              if (res.status === 409) throw new Error(serverMsg || "Ya existe un registro con esos datos. Comunicate con nosotros.");
+              if (res.status === 400) throw new Error(serverMsg || "Datos inválidos. Revisá los campos.");
+              throw new Error(serverMsg || "Error inesperado al registrar. Intentá de nuevo más tarde.");
+            }
+            idCliente = body.data?.idCliente || body.idCliente;
+            if (!idCliente) throw new Error("No pudimos iniciar la activación de tu plan. Intentá nuevamente.");
+            sessionStorage.setItem("formulang_idCliente", idCliente);
+            const idRegistroPendienteNuevo = body.data?.idRegistroPendiente;
+            if (idRegistroPendienteNuevo) {
+              sessionStorage.setItem("formulang_idRegistroPendiente", idRegistroPendienteNuevo);
+            }
+            if (idPlanForm) sessionStorage.setItem("formulang_idPlanPendiente", idPlanForm);
+          } else {
+            idCliente = idClienteExistente;
+          }
         } else if (modoNuevoVehiculo && idClienteExistente) {
           // Existing client adding a new vehicle — use /api/registro-vehiculo
           const vehiculoPayload: Record<string, unknown> = {
@@ -3719,6 +3777,10 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           sessionStorage.setItem("formulang_idCliente", idCliente);
           const idRegistroPendiente = body.data?.idRegistroPendiente;
           if (idRegistroPendiente) sessionStorage.setItem("formulang_idRegistroPendiente", idRegistroPendiente);
+          // Guardar también el plan asociado al registro para detectar cambios
+          // de plan en intentos posteriores y forzar un nuevo registro si difieren.
+          const idPlanForm = (document.getElementById("idPlan") as HTMLInputElement)?.value;
+          if (idPlanForm) sessionStorage.setItem("formulang_idPlanPendiente", idPlanForm);
         }
 
         submitLoading.textContent = "Redirigiendo a Pagopar...";
@@ -3858,6 +3920,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       } catch (err: any) {
         sessionStorage.removeItem("formulang_idCliente");
         sessionStorage.removeItem("formulang_idRegistroPendiente");
+      sessionStorage.removeItem("formulang_idPlanPendiente");
         // Filter out raw technical errors (SyntaxError, TypeError, etc.)
         const isTechnical = err instanceof SyntaxError || err instanceof TypeError ||
           (err.message && (err.message.includes("Unexpected token") || err.message.includes("undefined")));
@@ -3960,6 +4023,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             }
             sessionStorage.removeItem("formulang_idCliente");
             sessionStorage.removeItem("formulang_idRegistroPendiente");
+      sessionStorage.removeItem("formulang_idPlanPendiente");
             sessionStorage.removeItem("formulang_idMembresiaActivar");
       sessionStorage.removeItem("formulang_idsMembresiasActivar");
             sessionStorage.removeItem("formulang_planId");
@@ -3972,6 +4036,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             );
             sessionStorage.removeItem("formulang_idCliente");
             sessionStorage.removeItem("formulang_idRegistroPendiente");
+      sessionStorage.removeItem("formulang_idPlanPendiente");
           }
         }
       } else {

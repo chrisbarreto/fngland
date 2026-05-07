@@ -56,7 +56,11 @@ export const GET: APIRoute = async ({ url, request }) => {
       if (ip) confirmBody.ipAddress = ip;
       if (ua) confirmBody.userAgent = ua;
 
-      const { error: confirmError } = await apiFetch("/pagopar/confirmar", {
+      const { data: confirmData, error: confirmError } = await apiFetch<{
+        idMembresia?: string;
+        comprobante?: { numeroComprobante?: number };
+        cobroDiferido?: boolean;
+      }>("/pagopar/confirmar", {
         method: "POST",
         body: JSON.stringify(confirmBody),
       });
@@ -66,9 +70,22 @@ export const GET: APIRoute = async ({ url, request }) => {
         params.set("checkout_msg", confirmError);
         return new Response(null, {
           status: 302,
-          headers: { Location: `/membresia?${params.toString()}` },
+          headers: { Location: `/gracias?${params.toString()}` },
         });
       }
+
+      // Éxito en uPay: redirigir a /gracias con idMembresia para descarga PDF
+      const params = new URLSearchParams({ checkout: "ok" });
+      if (description) params.set("checkout_msg", description);
+      if (confirmData?.idMembresia) params.set("idMembresia", confirmData.idMembresia);
+      if (confirmData?.comprobante?.numeroComprobante) {
+        params.set("numeroComprobante", String(confirmData.comprobante.numeroComprobante));
+      }
+      if (confirmData?.cobroDiferido) params.set("cobroDiferido", "true");
+      return new Response(null, {
+        status: 302,
+        headers: { Location: `/gracias?${params.toString()}` },
+      });
     }
 
     const params = new URLSearchParams({ checkout: "ok" });
@@ -76,7 +93,7 @@ export const GET: APIRoute = async ({ url, request }) => {
 
     return new Response(null, {
       status: 302,
-      headers: { Location: `/membresia?${params.toString()}` },
+      headers: { Location: `/gracias?${params.toString()}` },
     });
   } catch {
     return new Response(null, {

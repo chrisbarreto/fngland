@@ -26,6 +26,14 @@ import Footer from "@/components/Footer.astro";
 
         <div class="status-actions">
           <a href="/membresia" class="btn-primary" id="action-primary">Volver al registro</a>
+          <button
+            type="button"
+            id="btn-descargar-comprobante"
+            class="btn-primary"
+            style="display:none;"
+          >
+            Descargar comprobante
+          </button>
           <a
             href="https://wa.me/595992789328"
             target="_blank"
@@ -50,6 +58,8 @@ import Footer from "@/components/Footer.astro";
   const params = new URLSearchParams(window.location.search);
   const checkoutStatus = params.get("checkout");
   const checkoutMessage = params.get("checkout_msg");
+  const cobroDiferido = params.get("cobroDiferido") === "true";
+  const numeroComprobante = params.get("numeroComprobante");
 
   const card = document.getElementById("status-card");
   const icon = document.getElementById("status-icon");
@@ -57,9 +67,22 @@ import Footer from "@/components/Footer.astro";
   const title = document.getElementById("status-title");
   const description = document.getElementById("status-description");
   const actionPrimary = document.getElementById("action-primary") as HTMLAnchorElement | null;
+  const btnComprobante = document.getElementById("btn-descargar-comprobante") as HTMLButtonElement | null;
 
   if (card && icon && eyebrow && title && description) {
-    if (checkoutStatus === "ok") {
+    if (checkoutStatus === "ok" && cobroDiferido) {
+      // Catastro OK pero sin cobro inmediato (caso "limbo silencioso")
+      card.dataset.status = "success";
+      icon.textContent = "✓";
+      eyebrow.textContent = "Tarjeta registrada";
+      title.textContent = "Listo, tu tarjeta quedó registrada";
+      description.textContent =
+        "Asociamos tu tarjeta a tu membresía. No realizamos ningún cobro en este momento — los próximos vencimientos se debitarán automáticamente.";
+      if (actionPrimary) {
+        actionPrimary.textContent = "Volver al inicio";
+        actionPrimary.href = "/membresia";
+      }
+    } else if (checkoutStatus === "ok") {
       card.dataset.status = "success";
       icon.textContent = "✓";
       eyebrow.textContent = "Pago confirmado";
@@ -71,6 +94,38 @@ import Footer from "@/components/Footer.astro";
         actionPrimary.target = "_blank";
         actionPrimary.rel = "noopener noreferrer";
         actionPrimary.textContent = "Agendar mi primer servicio";
+      }
+
+      // Si tenemos número de comprobante, habilitar el botón de descarga
+      if (numeroComprobante && /^\d+$/.test(numeroComprobante) && btnComprobante) {
+        btnComprobante.style.display = "";
+        btnComprobante.addEventListener("click", async () => {
+          if (btnComprobante.disabled) return;
+          btnComprobante.disabled = true;
+          const original = btnComprobante.textContent;
+          btnComprobante.textContent = "Generando PDF...";
+          try {
+            const res = await fetch(`/api/comprobante?numero=${encodeURIComponent(numeroComprobante)}`);
+            if (!res.ok) {
+              const body = await res.json().catch(() => ({}));
+              throw new Error(body.error || `Error ${res.status}`);
+            }
+            const data = await res.json();
+            const { generateReceipt } = await import("../lib/receipt");
+            await generateReceipt(data);
+            btnComprobante.textContent = "Descargar de nuevo";
+          } catch (err) {
+            console.error("Error descargando comprobante:", err);
+            btnComprobante.textContent = original ?? "Descargar comprobante";
+            alert(
+              err instanceof Error
+                ? `No pudimos generar el comprobante: ${err.message}`
+                : "No pudimos generar el comprobante. Contactanos por WhatsApp.",
+            );
+          } finally {
+            btnComprobante.disabled = false;
+          }
+        });
       }
 
       // Meta Pixel Purchase event
