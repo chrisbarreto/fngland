@@ -2259,6 +2259,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       _bancardIframeOpenSince = Date.now();
       _bancardAbandonoLogged = false;
       _bancardProveedorActual = proveedor;
+      // El cliente ya fue creado en backend y el iframe de pasarela está abierto.
+      // Para uPay especialmente, la pasarela hace un redirect top-level a /api/callback
+      // al confirmar/rechazar el pago: si dejamos activo el guard de beforeunload
+      // (vía _modalDirty), el navegador muestra "Es posible que los cambios no se
+      // guarden" justo en ese redirect y obliga al usuario a confirmar manualmente.
+      // Liberamos el guard acá; el botón de cerrar sigue oculto por bancardContainer.
+      _modalDirty = false;
+      _modalLocked = false;
+      updateBeforeUnload();
       if (_bancardTimeoutId) clearTimeout(_bancardTimeoutId);
       _bancardTimeoutId = setTimeout(() => {
         if (_bancardResponseHandled) return;
