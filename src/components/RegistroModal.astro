@@ -2249,6 +2249,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     let _bancardIframeOpenSince: number | null = null;
     let _bancardTimeoutId: ReturnType<typeof setTimeout> | null = null;
     let _bancardAbandonoLogged = false;
+    let _bancardProveedorActual: "Bancard" | "uPay" | null = null;
 
     /**
      * Marca que el iframe de pasarela está abierto. Arranca un timeout de 90 s
@@ -2257,6 +2258,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     function startBancardLifecycle(proveedor: "Bancard" | "uPay") {
       _bancardIframeOpenSince = Date.now();
       _bancardAbandonoLogged = false;
+      _bancardProveedorActual = proveedor;
       if (_bancardTimeoutId) clearTimeout(_bancardTimeoutId);
       _bancardTimeoutId = setTimeout(() => {
         if (_bancardResponseHandled) return;
@@ -2278,6 +2280,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         _bancardTimeoutId = null;
       }
       _bancardIframeOpenSince = null;
+      _bancardProveedorActual = null;
     }
 
     /**
@@ -2288,6 +2291,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (_bancardAbandonoLogged) return;
       if (_bancardIframeOpenSince == null) return;
       if (_bancardResponseHandled) return;
+      // uPay redirige window.top a /api/callback al finalizar el catastro: el
+      // pagehide resultante NO es abandono. Si el cobro se concretó, /gracias
+      // emitirá los eventos finales; si realmente se abandonó, la ausencia de
+      // `confirmar` en la sesión ya lo refleja sin generar falso positivo.
+      if (motivo === "cerro_pestana" && _bancardProveedorActual === "uPay") return;
       _bancardAbandonoLogged = true;
       const segundos = Math.round((Date.now() - _bancardIframeOpenSince) / 1000);
       logEvent({

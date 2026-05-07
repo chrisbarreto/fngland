@@ -55,11 +55,46 @@ import Footer from "@/components/Footer.astro";
 </BaseLayout>
 
 <script>
+  import { logEvent } from "@/lib/telemetry";
+
   const params = new URLSearchParams(window.location.search);
   const checkoutStatus = params.get("checkout");
   const checkoutMessage = params.get("checkout_msg");
   const cobroDiferido = params.get("cobroDiferido") === "true";
   const numeroComprobante = params.get("numeroComprobante");
+  const idMembresiaQs = params.get("idMembresia") || undefined;
+
+  // Telemetría: cuando uPay redirige top-level a /gracias, el modal nunca pudo
+  // emitir los eventos finales. Reemitirlos acá para que la sesión cierre con
+  // `bancard_response: add_new_card_success` + `confirmar: CONFIRMAR_OK`.
+  if (checkoutStatus === "ok") {
+    logEvent({
+      paso: "bancard_response",
+      severidad: "info",
+      codigo: "add_new_card_success",
+      contexto: { origen: "gracias_redirect" },
+      idMembresia: idMembresiaQs,
+    });
+    logEvent({
+      paso: "confirmar",
+      severidad: cobroDiferido ? "warn" : "info",
+      codigo: cobroDiferido ? "CONFIRMAR_OK_SIN_COBRO" : "CONFIRMAR_OK",
+      contexto: {
+        origen: "gracias_redirect",
+        cobroDiferido,
+        numeroComprobante: numeroComprobante ?? null,
+      },
+      idMembresia: idMembresiaQs,
+    });
+  } else if (checkoutStatus === "error") {
+    logEvent({
+      paso: "confirmar",
+      severidad: "error",
+      codigo: "CONFIRMAR_FAIL",
+      mensaje: checkoutMessage ?? undefined,
+      contexto: { origen: "gracias_redirect" },
+    });
+  }
 
   const card = document.getElementById("status-card");
   const icon = document.getElementById("status-icon");
