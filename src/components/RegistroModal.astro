@@ -3347,6 +3347,42 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               }
               panel.remove();
               form.style.display = "none";
+
+              // Crear RegistroPendiente con el plan elegido antes del checkout.
+              // Necesario para que el backend (resolverPlanDebito) pueda leer el
+              // plan que el cliente eligió en la landing al activar débito.
+              const idPlanElegido = (document.getElementById("idPlan") as HTMLInputElement)?.value;
+              const memObj = data.membresias?.find(
+                (m: any) => m.idMembresia === idMembresia,
+              );
+              if (idPlanElegido && memObj && idPlanElegido !== memObj.idPlan) {
+                try {
+                  const regRes = await fetch("/api/registro-pendiente", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      idCliente: data.idCliente,
+                      idVehiculo: memObj.idVehiculo,
+                      idPlan: idPlanElegido,
+                    }),
+                  });
+                  if (regRes.ok) {
+                    const regBody = await regRes.json();
+                    if (regBody.idRegistroPendiente) {
+                      sessionStorage.setItem(
+                        "formulang_idRegistroPendiente",
+                        regBody.idRegistroPendiente,
+                      );
+                    }
+                  }
+                } catch (e) {
+                  console.warn(
+                    "[activar-debito] No se pudo crear RegistroPendiente:",
+                    e,
+                  );
+                }
+              }
+
               await startRetryCheckout(data.idCliente, "upay");
             });
           });
