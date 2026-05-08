@@ -2362,12 +2362,41 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       const status = data?.message || data?.status || data?.Status || "";
       const description = data?.details || data?.description || data?.Description || "";
 
+      // Si el catastro falló, consultar a Pagopar el motivo real del rechazo
+      // (dato mal cargado, tarjeta bloqueada, etc.) para enriquecer la telemetría
+      let motivoPagopar: string | null = null;
+      if (status !== "add_new_card_success") {
+        const storedId = sessionStorage.getItem("formulang_idCliente");
+        if (storedId) {
+          try {
+            const consultaRes = await fetch("/api/consultar-rechazo", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ idCliente: storedId }),
+            });
+            if (consultaRes.ok) {
+              const consultaBody = await consultaRes.json();
+              if (consultaBody.status === "rechazado" && consultaBody.motivo) {
+                motivoPagopar = consultaBody.motivo;
+              }
+            }
+          } catch {
+            // non-blocking — la telemetría del rechazo de Bancard ya se registró
+          }
+        }
+      }
+
       logEvent({
         paso: "bancard_response",
         severidad: status === "add_new_card_success" ? "info" : "warn",
         codigo: status || "BANCARD_UNKNOWN",
         mensaje: description || undefined,
-        contexto: { status, description, raw: data },
+        contexto: {
+          status,
+          description,
+          raw: data,
+          ...(motivoPagopar ? { motivoPagopar } : {}),
+        },
       });
 
       if (status === "add_new_card_success") {
@@ -2635,8 +2664,18 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         };
 
         if (description) {
-          // El SDK ya entregó un motivo legible: usarlo directo.
-          renderError(description);
+          // Mostrar el motivo real de Pagopar si lo tenemos; si no, el de Bancard
+          const msjPrincipal = motivoPagopar || description;
+          const msjSecundario = motivoPagopar
+            ? `Bancard: ${description}`
+            : null;
+          renderError(msjPrincipal);
+          if (msjSecundario) {
+            const extra = document.createElement("p");
+            extra.style.cssText = "margin-top:0.5rem;font-size:0.75rem;color:rgba(255,255,255,0.45);";
+            extra.textContent = msjSecundario;
+            successDiv.appendChild(extra);
+          }
         } else if (storedClienteId) {
           // El SDK no entregó description; preguntar al backend el motivo real.
           showProcessing();
