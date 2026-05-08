@@ -2344,7 +2344,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       updateBeforeUnload();
     }
 
-    function handleBancardResponse(data: any) {
+    async function handleBancardResponse(data: any) {
       console.log("[Bancard responseHandler] data:", JSON.stringify(data));
       if (_bancardResponseHandled) {
         console.warn("[Bancard responseHandler] duplicate call ignored");
