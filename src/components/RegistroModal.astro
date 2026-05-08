@@ -2430,14 +2430,18 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         if (storedIdsMembresiasActivar.length > 0) confirmPayload.idsMembresiasActivar = storedIdsMembresiasActivar;
         else if (storedIdMembresiaActivar) confirmPayload.idMembresiaActivar = storedIdMembresiaActivar;
 
+        // Llamar a /api/confirmar — ahora el backend responde al instante
+        // con los datos del catastro. El cobro se procesa en segundo plano
+        // con 40s de delay (antifraude bancario).
         fetch("/api/confirmar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(confirmPayload),
         })
           .then(async (res) => {
+            const body = await res.json().catch(() => ({}));
+
             if (!res.ok) {
-              const body = await res.json().catch(() => ({}));
               const errMsg = body.error || body.message || "El cobro fue rechazado.";
               logEvent({
                 paso: "confirmar",
@@ -2452,16 +2456,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                   idTransaccion: body.idTransaccion ?? null,
                 },
               });
+              unlockModal();
               showResult(
                 "Cobro rechazado",
-                `Tu tarjeta fue registrada correctamente, pero el cobro de Gs. 200.000 fue rechazado (${errMsg}). ` +
-                `El sistema reintentará automáticamente en las próximas horas.`,
+                `Tu tarjeta fue registrada, pero el cobro fue rechazado (${errMsg}). El sistema reintentará automáticamente.`,
                 true,
               );
-
-              unlockModal();
-
-              // Botón "Reintentar cobro"
               const retryPayBtn = document.createElement("button");
               retryPayBtn.type = "button";
               retryPayBtn.className = "btn-next";
@@ -2474,162 +2474,50 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify(confirmPayload),
-                })
-                  .then(async (r) => {
-                    if (!r.ok) {
-                      const b = await r.json().catch(() => ({}));
-                      const msg = b.error || b.message || "Cobro rechazado nuevamente.";
-                      showResult("Cobro rechazado", `${msg} El sistema reintentará automáticamente.`, true);
-                      // Re-agregar botones
-                      successDiv.appendChild(retryPayBtn);
-                      successDiv.appendChild(newCardBtn);
-                      retryPayBtn.disabled = false;
-                      retryPayBtn.textContent = "Reintentar cobro";
-                      return;
-                    }
-                    const retryBody = await r.json().catch(() => ({}));
-                    showResult(
-                      "Plan activado",
-                      `El cobro se realizó exitosamente. Tu ${currentPlanMeta().name} quedó activo.`,
-                    );
-                    addReceiptButton(retryBody.comprobante);
-                    if (typeof (window as any).fbq === "function") {
-                      const _pm = currentPlanMeta();
-                      (window as any).fbq("track", "Purchase", {
-                        value: Number(_pm.price.replace(/\./g, "")),
-                        currency: "PYG",
-                        content_name: `${_pm.name} - Débito Automático`,
-                        content_type: "product",
-                      });
-                    }
-                    sessionStorage.removeItem("formulang_idCliente");
-                    sessionStorage.removeItem("formulang_idRegistroPendiente");
-      sessionStorage.removeItem("formulang_idPlanPendiente");
-                    sessionStorage.removeItem("formulang_idMembresiaActivar");
-      sessionStorage.removeItem("formulang_idsMembresiasActivar");
-                  })
-                  .catch(() => {
-                    retryPayBtn.disabled = false;
-                    retryPayBtn.textContent = "Reintentar cobro";
-                    showResult("Error de conexión", "No se pudo procesar. Intentá de nuevo.", true);
-                    successDiv.appendChild(retryPayBtn);
-                    successDiv.appendChild(newCardBtn);
-                  });
+                }).then(() => { window.location.reload(); });
               });
               successDiv.appendChild(retryPayBtn);
-
-              // Botón "Intentar con otra tarjeta"
-              const newCardBtn = document.createElement("button");
-              newCardBtn.type = "button";
-              newCardBtn.className = "btn-next";
-              newCardBtn.style.cssText = "margin-top:1rem;display:block;width:100%;";
-              newCardBtn.textContent = "Intentar con otra tarjeta";
-              newCardBtn.addEventListener("click", () => {
-                if (newCardBtn.disabled) return;
-                newCardBtn.disabled = true;
-                startRetryCheckout(storedClienteId);
-              });
-              successDiv.appendChild(newCardBtn);
-
-              // Botón "Probar con método alternativo"
-              successDiv.appendChild(createAltMethodBtn(storedClienteId));
-
               return;
             }
-            // Éxito
-            unlockModal();
-            const successBody = await res.json().catch(() => ({}));
-            const escenarioConfirmar = successBody?.autoActivado
-              ? "auto_activado"
-              : successBody?.requiereSeleccion
-                ? "requiere_seleccion"
-                : successBody?.cobroDiferido
-                  ? "cobro_diferido"
-                  : "directo";
+
+            // Éxito — redirigir a /gracias con los datos del catastro
+            const params = new URLSearchParams({ checkout: "ok" });
+            if (body.cobroDiferido) params.set("cobroDiferido", "true");
+            if (body.idMembresia) params.set("idMembresia", body.idMembresia);
+            if (body.comprobante?.numeroComprobante) {
+              params.set("numeroComprobante", String(body.comprobante.numeroComprobante));
+            }
+
+            // Datos del catastro para mostrar en /gracias
+            const cat = body.catastro;
+            if (cat) {
+              if (cat.cliente?.nombre) params.set("nombre", cat.cliente.nombre);
+              if (cat.cliente?.ci) params.set("ci", cat.cliente.ci);
+              if (cat.membresia?.codigo) params.set("codigo", cat.membresia.codigo);
+              if (cat.membresia?.plan) params.set("plan", cat.membresia.plan);
+              if (cat.vehiculo?.chapa) params.set("chapa", cat.vehiculo.chapa);
+              if (cat.vehiculo?.descripcion) params.set("vehiculo", cat.vehiculo.descripcion);
+              if (cat.tarjeta?.numero) params.set("tarjeta", cat.tarjeta.numero);
+              if (cat.tarjeta?.marca) params.set("tarjetaMarca", cat.tarjeta.marca);
+              if (cat.fechaProximoDebito) params.set("fechaProximoDebito", cat.fechaProximoDebito);
+            }
+
             logEvent({
               paso: "confirmar",
-              severidad: successBody?.cobroDiferido ? "warn" : "info",
-              codigo: successBody?.cobroDiferido ? "CONFIRMAR_OK_SIN_COBRO" : "CONFIRMAR_OK",
-              contexto: {
-                debitoActivado: successBody?.debitoActivado === true ? "true" : "false",
-                escenario: escenarioConfirmar,
-                cobroDiferidoMotivo: successBody?.cobroDiferidoMotivo ?? null,
-              },
+              severidad: body.cobroDiferido ? "warn" : "info",
+              codigo: body.cobroDiferido ? "CONFIRMAR_OK_CATASTRO" : "CONFIRMAR_OK",
+              contexto: { escenario: "bancard_catastro_ok" },
             });
-            if (successBody?.cobroDiferido) {
-              // Catastro OK pero sin cobro inmediato (cliente sin membresía
-              // elegible). Mensaje cortito y amigable, sin detalles técnicos.
-              showResult(
-                "Listo, tu tarjeta quedó registrada",
-                "Asociamos tu tarjeta a tu membresía. No realizamos ningún cobro en este momento — los próximos vencimientos se debitarán automáticamente.",
-                false,
-              );
-            } else {
-              showResult(
-                "Plan activado",
-                `Tu tarjeta fue registrada exitosamente. Tu ${currentPlanMeta().name} quedó activo y los débitos automáticos mensuales están habilitados.`,
-              );
-            }
-            addReceiptButton(successBody.comprobante);
-            if (typeof (window as any).fbq === "function") {
-              const _pm = currentPlanMeta();
-              (window as any).fbq("track", "Purchase", {
-                value: Number(_pm.price.replace(/\./g, "")),
-                currency: "PYG",
-                content_name: `${_pm.name} - Débito Automático`,
-                content_type: "product",
-              });
-            }
-            sessionStorage.removeItem("formulang_idCliente");
-            sessionStorage.removeItem("formulang_idRegistroPendiente");
-      sessionStorage.removeItem("formulang_idPlanPendiente");
-            sessionStorage.removeItem("formulang_idMembresiaActivar");
-      sessionStorage.removeItem("formulang_idsMembresiasActivar");
+
+            window.location.href = `/gracias?${params.toString()}`;
           })
           .catch(() => {
             unlockModal();
             showResult(
               "Error de conexión",
-              "Tu tarjeta fue registrada pero no pudimos confirmar el cobro. El sistema reintentará automáticamente en las próximas horas.",
+              "No se pudo confirmar. Intentá de nuevo o contactanos por WhatsApp.",
               true,
             );
-            const retryCatchBtn = document.createElement("button");
-            retryCatchBtn.type = "button";
-            retryCatchBtn.className = "btn-next";
-            retryCatchBtn.style.marginTop = "1rem";
-            retryCatchBtn.textContent = "Reintentar cobro";
-            retryCatchBtn.addEventListener("click", () => {
-              retryCatchBtn.disabled = true;
-              retryCatchBtn.textContent = "Procesando...";
-              fetch("/api/confirmar", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(confirmPayload),
-              })
-                .then(async (r) => {
-                  if (!r.ok) {
-                    const b = await r.json().catch(() => ({}));
-                    showResult("Cobro rechazado", b.error || b.message || "No se pudo cobrar.", true);
-                    successDiv.appendChild(retryCatchBtn);
-                    retryCatchBtn.disabled = false;
-                    retryCatchBtn.textContent = "Reintentar cobro";
-                    return;
-                  }
-                  const catchRetryBody = await r.json().catch(() => ({}));
-                  showResult("Plan activado", `El cobro se realizó exitosamente. Tu ${currentPlanMeta().name} quedó activo.`);
-                  addReceiptButton(catchRetryBody.comprobante);
-                  sessionStorage.removeItem("formulang_idCliente");
-                  sessionStorage.removeItem("formulang_idRegistroPendiente");
-      sessionStorage.removeItem("formulang_idPlanPendiente");
-                  sessionStorage.removeItem("formulang_idMembresiaActivar");
-      sessionStorage.removeItem("formulang_idsMembresiasActivar");
-                })
-                .catch(() => {
-                  retryCatchBtn.disabled = false;
-                  retryCatchBtn.textContent = "Reintentar cobro";
-                });
-            });
-            successDiv.appendChild(retryCatchBtn);
           });
       } else {
         // Error en catastro

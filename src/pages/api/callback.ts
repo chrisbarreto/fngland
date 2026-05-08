@@ -74,14 +74,29 @@ export const GET: APIRoute = async ({ url, request }) => {
         });
       }
 
-      // Éxito en uPay: redirigir a /gracias con idMembresia para descarga PDF
+      // Éxito en uPay: redirigir a /gracias con datos del catastro
       const params = new URLSearchParams({ checkout: "ok" });
       if (description) params.set("checkout_msg", description);
       if (confirmData?.idMembresia) params.set("idMembresia", confirmData.idMembresia);
       if (confirmData?.comprobante?.numeroComprobante) {
         params.set("numeroComprobante", String(confirmData.comprobante.numeroComprobante));
       }
-      if (confirmData?.cobroDiferido) params.set("cobroDiferido", "true");
+      if ((confirmData as any)?.cobroDiferido) params.set("cobroDiferido", "true");
+
+      // Datos del catastro para mostrar en /gracias
+      const cat = (confirmData as any)?.catastro;
+      if (cat) {
+        if (cat.cliente?.nombre) params.set("nombre", cat.cliente.nombre);
+        if (cat.cliente?.ci) params.set("ci", cat.cliente.ci);
+        if (cat.membresia?.codigo) params.set("codigo", cat.membresia.codigo);
+        if (cat.membresia?.plan) params.set("plan", cat.membresia.plan);
+        if (cat.vehiculo?.chapa) params.set("chapa", cat.vehiculo.chapa);
+        if (cat.vehiculo?.descripcion) params.set("vehiculo", cat.vehiculo.descripcion);
+        if (cat.tarjeta?.numero) params.set("tarjeta", cat.tarjeta.numero);
+        if (cat.tarjeta?.marca) params.set("tarjetaMarca", cat.tarjeta.marca);
+        if (cat.fechaProximoDebito) params.set("fechaProximoDebito", cat.fechaProximoDebito);
+      }
+
       return new Response(null, {
         status: 302,
         headers: { Location: `/gracias?${params.toString()}` },

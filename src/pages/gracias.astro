@@ -106,13 +106,42 @@ import Footer from "@/components/Footer.astro";
 
   if (card && icon && eyebrow && title && description) {
     if (checkoutStatus === "ok" && cobroDiferido) {
-      // Catastro OK pero sin cobro inmediato (caso "limbo silencioso")
+      // Catastro OK con cobro pendiente (diferido 40s para evitar antifraude)
+      const nombre = params.get("nombre") || "";
+      const codigo = params.get("codigo") || "";
+      const plan = params.get("plan") || "";
+      const chapa = params.get("chapa") || "";
+      const vehiculo = params.get("vehiculo") || "";
+      const tarjeta = params.get("tarjeta") || "";
+      const tarjetaMarca = params.get("tarjetaMarca") || "";
+      const fechaProximoDebito = params.get("fechaProximoDebito") || "";
+
       card.dataset.status = "success";
       icon.textContent = "✓";
-      eyebrow.textContent = "Tarjeta registrada";
-      title.textContent = "Listo, tu tarjeta quedó registrada";
-      description.textContent =
-        "Asociamos tu tarjeta a tu membresía. No realizamos ningún cobro en este momento — los próximos vencimientos se debitarán automáticamente.";
+      eyebrow.textContent = "Tarjeta registrada exitosamente";
+
+      if (codigo && plan) {
+        title.innerHTML = `Membresía <strong>${codigo}</strong> — ${plan}`;
+        if (nombre) {
+          const detalleParts = [`<strong>Titular:</strong> ${nombre}`];
+          if (chapa) detalleParts.push(`<strong>Vehículo:</strong> ${chapa}${vehiculo ? ` — ${vehiculo}` : ""}`);
+          if (tarjeta) detalleParts.push(`<strong>Tarjeta:</strong> ${tarjeta}${tarjetaMarca ? ` (${tarjetaMarca})` : ""}`);
+          if (fechaProximoDebito) {
+            const [y, m, d] = fechaProximoDebito.split("-");
+            detalleParts.push(`<strong>Próximo débito:</strong> ${d} de ${new Date(Number(y), Number(m)-1, Number(d)).toLocaleDateString("es-PY", { month: "long" })}`);
+          }
+          description.innerHTML = `Débito automático aprobado.<br><br>${detalleParts.join("<br>")}`;
+        } else {
+          title.textContent = "Listo, tu tarjeta quedó registrada";
+          description.innerHTML =
+            `Asociamos tu tarjeta a tu membresía ${codigo}. El cobro se procesará en breve y los próximos vencimientos se debitarán automáticamente.`;
+        }
+      } else {
+        title.textContent = "Listo, tu tarjeta quedó registrada";
+        description.textContent =
+          "Asociamos tu tarjeta a tu membresía. No realizamos ningún cobro en este momento — los próximos vencimientos se debitarán automáticamente.";
+      }
+
       if (actionPrimary) {
         actionPrimary.textContent = "Volver al inicio";
         actionPrimary.href = "/membresia";
