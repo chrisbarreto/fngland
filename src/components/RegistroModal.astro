@@ -2396,6 +2396,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           description,
           raw: data,
           ...(motivoPagopar ? { motivoPagopar } : {}),
+          processId: sessionStorage.getItem("formulang_processId") || null,
         },
       });
 
@@ -3828,6 +3829,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         });
 
         const processId = checkoutBody.processId;
+        // Guardar para incluir en telemetría de rechazos (el banco lo pide)
+        if (processId) sessionStorage.setItem("formulang_processId", processId);
         const proveedor: "Bancard" | "uPay" = checkoutBody.proveedor === "Bancard" ? "Bancard" : "uPay";
         if (processId) {
           form.style.display = "none";
