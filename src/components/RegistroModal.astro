@@ -2507,7 +2507,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               paso: "confirmar",
               severidad: body.cobroDiferido ? "warn" : "info",
               codigo: body.cobroDiferido ? "CONFIRMAR_OK_CATASTRO" : "CONFIRMAR_OK",
-              contexto: { escenario: "bancard_catastro_ok" },
+              contexto: { escenario: "bancard_catastro_ok", debitoActivado: !!body.debitoActivado },
             });
 
             window.location.href = `/gracias?${params.toString()}`;
