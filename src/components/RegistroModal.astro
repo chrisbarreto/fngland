@@ -2697,6 +2697,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       try {
         const _retryCbUrl = new URL(`${window.location.origin}/api/callback`);
         _retryCbUrl.searchParams.set("idCliente", idCliente);
+        _retryCbUrl.searchParams.set("acceptTerminos", "true");
+        const _rpId = sessionStorage.getItem("formulang_idRegistroPendiente") || "";
+        if (_rpId) _retryCbUrl.searchParams.set("idRegistroPendiente", _rpId);
+        const _idMemActivar = sessionStorage.getItem("formulang_idMembresiaActivar") || "";
+        if (_idMemActivar) _retryCbUrl.searchParams.set("idMembresiaActivar", _idMemActivar);
+        const _idsMemRaw = sessionStorage.getItem("formulang_idsMembresiasActivar") || "";
+        if (_idsMemRaw) _retryCbUrl.searchParams.set("idsMembresiasActivar", _idsMemRaw);
 
         const _retryMetodoPago = metodoPago;
         const checkoutRes = await fetchWithTimeout("/api/checkout", {
@@ -3268,7 +3275,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               if (idsSeleccionadas.length > 1) {
                 sessionStorage.setItem("formulang_idsMembresiasActivar", JSON.stringify(idsSeleccionadas));
                 sessionStorage.removeItem("formulang_idMembresiaActivar");
-      sessionStorage.removeItem("formulang_idsMembresiasActivar");
               } else {
                 sessionStorage.setItem("formulang_idMembresiaActivar", idMembresia);
                 sessionStorage.removeItem("formulang_idsMembresiasActivar");
