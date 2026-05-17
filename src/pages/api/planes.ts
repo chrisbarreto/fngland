@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { apiFetch } from "@/lib/api";
+import { PUBLIC_PLAN_IDS } from "@/lib/public-plans";
 
 export const prerender = false;
 
@@ -13,7 +14,9 @@ export const GET: APIRoute = async () => {
     });
   }
 
-  const plans = Array.isArray(data) ? data : [];
+  const plans = Array.isArray(data)
+    ? (data as any[]).filter((p) => PUBLIC_PLAN_IDS.has(p.idPlan))
+    : [];
 
   return new Response(JSON.stringify(plans), {
     status: 200,

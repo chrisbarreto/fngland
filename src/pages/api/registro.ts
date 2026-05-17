@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { apiFetch } from "@/lib/api";
+import { PUBLIC_PLAN_IDS } from "@/lib/public-plans";
 
 export const prerender = false;
 
@@ -11,6 +12,13 @@ export const POST: APIRoute = async ({ request }) => {
   } catch {
     return new Response(
       JSON.stringify({ error: "Cuerpo de la solicitud inválido" }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  if (!body?.idPlan || !PUBLIC_PLAN_IDS.has(body.idPlan)) {
+    return new Response(
+      JSON.stringify({ error: "Plan no disponible. Seleccioná un plan válido." }),
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }

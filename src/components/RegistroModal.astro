@@ -2124,9 +2124,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           const errBody = await res.json().catch(() => ({}));
           throw new Error(errBody.error || `Error ${res.status} al cargar planes`);
         }
-        const data = await res.json();
+        const rawPlans = await res.json();
+        const allowedPlanIds = Object.keys(PLAN_META);
+        const data = Array.isArray(rawPlans) ? rawPlans.filter((p: any) => allowedPlanIds.includes(p.idPlan)) : [];
 
-        if (Array.isArray(data) && data.length > 0) {
+        if (data.length > 0) {
           // Determinar cuál card mostrar primero (el plan pre-seleccionado o el primero)
           const selectedId = planId || data[0]?.idPlan || "";
 
@@ -3286,6 +3288,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               // Necesario para que el backend (resolverPlanDebito) pueda leer el
               // plan que el cliente eligió en la landing al activar débito.
               const idPlanElegido = (document.getElementById("idPlan") as HTMLInputElement)?.value;
+              if (idPlanElegido && !PLAN_META[idPlanElegido]) {
+                errorMsg.textContent = "Plan no disponible. Seleccioná un plan válido para continuar.";
+                errorBanner.style.display = "block";
+                return;
+              }
               const memObj = data.membresias?.find(
                 (m: any) => m.idMembresia === idMembresia,
               );
@@ -3588,7 +3595,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (tipoVehiculo) formData.idTipoVehiculo = Number(tipoVehiculo);
 
       const idPlan = (document.getElementById("idPlan") as HTMLInputElement).value;
-      if (idPlan) formData.idPlan = idPlan;
+      if (!idPlan || !PLAN_META[idPlan]) {
+        errorMsg.textContent = "Plan no disponible. Seleccioná un plan válido para continuar.";
+        errorBanner.style.display = "block";
+        submitBtn.disabled = false;
+        submitText.style.display = "inline";
+        submitLoading.style.display = "none";
+        return;
+      }
+      formData.idPlan = idPlan;
 
       // Turnstile captcha token — garantizado fresco por ensureFreshTurnstileToken()
       formData.turnstileToken = freshToken;
@@ -3712,6 +3727,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           if (!chapaMV || chapaMV.length < 3) throw new Error("Ingresá la chapa del vehículo.");
           const idPlanMV = (document.getElementById("idPlan") as HTMLInputElement)?.value;
           if (!idPlanMV) throw new Error("Seleccioná un plan para continuar.");
+          if (!PLAN_META[idPlanMV]) throw new Error("Plan no disponible. Seleccioná un plan válido.");
           const anioMV = (document.getElementById("anio") as HTMLInputElement)?.value;
           if (anioMV) vehiculoPayload.anio = Number(anioMV);
           const colorMV = (document.getElementById("color") as HTMLInputElement)?.value.trim();
