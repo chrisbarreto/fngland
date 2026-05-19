@@ -1434,7 +1434,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           input.name = "idServicios";
           input.value = s.idServicio;
           input.dataset.requierePagoExtra = s.requierePagoExtra ? "1" : "0";
-          input.dataset.idTipoServicio = String(s.idTipoServicio ?? "");
+          input.dataset.idTipoServicio = String(s.idTipoServicio ?? s.id_tipo_servicio ?? "");
           input.dataset.servicioNombre = s.nombre || "Servicio";
           input.dataset.precioExtraTexto = s.precioAplicadoTexto || formatGs(s.precioAplicado);
           input.addEventListener("change", showServiciosExtraAlert);
