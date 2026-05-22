@@ -1,0 +1,255 @@
+---
+export const prerender = false;
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { apiFetch } from "@/lib/api";
+
+const hash = Astro.params.hash ?? "";
+
+let resultado: {
+  pagado: boolean;
+  cancelado: boolean;
+  monto: number | null;
+  formaPago: string | null;
+  error?: string;
+} | null = null;
+
+if (hash) {
+  const { data, error } = await apiFetch<{
+    hashPedido: string;
+    pagado: boolean;
+    cancelado: boolean;
+    monto: number | null;
+    formaPago: string | null;
+    respuesta: boolean;
+  }>(`/pagopar/resultado/${encodeURIComponent(hash)}`);
+
+  if (data) {
+    resultado = {
+      pagado: data.pagado,
+      cancelado: data.cancelado,
+      monto: data.monto,
+      formaPago: data.formaPago,
+    };
+  } else {
+    resultado = {
+      pagado: false,
+      cancelado: false,
+      monto: null,
+      formaPago: null,
+      error: error || "No se pudo consultar el estado del pedido.",
+    };
+  }
+}
+
+const isPaid = resultado?.pagado === true;
+const isCancelled = resultado?.cancelado === true;
+const isPending = resultado && !isPaid && !isCancelled;
+const isUnknown = !resultado;
+---
+
+<BaseLayout
+  title="Resultado del pago | Fórmula NG"
+  description="Estado de tu pago en Fórmula NG."
+  canonicalPath={`/pagopar/resultado/${hash}`}
+  noindex={true}
+>
+  <div class="resultado-page">
+    <main class="resultado-main">
+      <section class="status-card" data-status={isPaid ? "success" : isCancelled ? "error" : "pending"}>
+        <div class="status-icon">
+          {isPaid && "✓"}
+          {isCancelled && "✕"}
+          {isPending && "⏳"}
+          {isUnknown && "!"}
+        </div>
+
+        {isPaid && (
+          <>
+            <p class="status-eyebrow">Pago confirmado</p>
+            <h1>Tu pago fue procesado exitosamente</h1>
+            {resultado!.monto && (
+              <p class="status-detail">
+                Monto: <strong>{Number(resultado!.monto).toLocaleString("es-PY")} GS</strong>
+                {resultado!.formaPago && ` — ${resultado!.formaPago}`}
+              </p>
+            )}
+            <p class="status-hint">Tu membresía será actualizada en los próximos minutos.</p>
+          </>
+        )}
+
+        {isCancelled && (
+          <>
+            <p class="status-eyebrow">Pago cancelado</p>
+            <h1>El pago fue cancelado o reversado</h1>
+            <p class="status-detail">Si creés que es un error, contactáctanos por WhatsApp.</p>
+          </>
+        )}
+
+        {isPending && (
+          <>
+            <p class="status-eyebrow">Procesando pago</p>
+            <h1>Tu pago está siendo procesado</h1>
+            <p class="status-detail">
+              Pagopar está confirmando la transacción. Esto puede tomar unos minutos.
+              Actualizá esta página para verificar el estado.
+            </p>
+          </>
+        )}
+
+        {isUnknown && (
+          <>
+            <p class="status-eyebrow">No pudimos verificar el pago</p>
+            <h1>Hubo un problema al consultar el estado</h1>
+            {resultado?.error && <p class="status-error">{resultado.error}</p>}
+          </>
+        )}
+
+        <div class="status-actions">
+          <a href="/membresia" class="btn-primary">
+            {isPaid ? "Ir a mi membresía" : "Volver al registro"}
+          </a>
+          <a
+            href="https://wa.me/595992789328"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-outline"
+          >
+            Hablar con soporte
+          </a>
+        </div>
+
+        <p class="support-note">
+          Soporte Fórmula NG: 0992 789 328 · info@formulang.com.py
+        </p>
+      </section>
+    </main>
+  </div>
+</BaseLayout>
+
+<style>
+  .resultado-page {
+    min-height: 100vh;
+    background: radial-gradient(circle at top, rgba(249, 38, 6, 0.2), transparent 45%), #060606;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .resultado-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 1.25rem 3rem;
+  }
+
+  .status-card {
+    width: 100%;
+    max-width: 700px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 2.1rem;
+    text-align: center;
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .status-icon {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: white;
+    background: #4b5563;
+  }
+
+  .status-card[data-status="success"] .status-icon { background: #22c55e; }
+  .status-card[data-status="error"] .status-icon { background: #ef4444; }
+
+  .status-eyebrow {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.72rem;
+    color: #ff6b3d;
+    font-weight: 700;
+  }
+
+  h1 {
+    margin: 0;
+    color: var(--sl-color-white, #fff);
+    font-size: clamp(1.45rem, 3.9vw, 2.2rem);
+    line-height: 1.15;
+  }
+
+  .status-detail {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1.6;
+  }
+
+  .status-hint {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.9rem;
+  }
+
+  .status-error {
+    margin: 0;
+    color: #f87171;
+    font-size: 0.9375rem;
+  }
+
+  .status-actions {
+    margin-top: 0.5rem;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .btn-primary,
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    padding: 0.8rem 1.3rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .btn-primary {
+    color: white;
+    background: linear-gradient(135deg, #f92606, #ff6b3d);
+    box-shadow: 0 6px 20px rgba(249, 38, 6, 0.3);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 26px rgba(249, 38, 6, 0.45); }
+
+  .btn-outline {
+    color: white;
+    border: 1px solid rgba(255, 107, 61, 0.55);
+    background: transparent;
+  }
+  .btn-outline:hover { border-color: #ff6b3d; }
+
+  .support-note {
+    margin: 0.25rem 0 0;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  @media (max-width: 720px) {
+    .resultado-main { padding-top: 5.8rem; }
+    .status-card { padding: 1.45rem; border-radius: 14px; }
+    .status-actions { flex-direction: column; }
+    .btn-primary, .btn-outline { width: 100%; }
+  }
+</style>
