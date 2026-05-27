@@ -302,7 +302,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       <div id="bancard-checkout-container" style="display:none;">
         <div class="checkout-header">
           <h3>Registrá tu tarjeta de pago</h3>
-          <p id="checkout-plan-info">Ingresá los datos de tu tarjeta para habilitar el débito automático obligatorio y activar tu membresía.</p>
+          <p id="checkout-plan-info">Ingresá los datos de tu tarjeta para habilitar el débito automático y activar tu membresía.</p>
         </div>
         <div id="bancard-loading" style="display:none;text-align:center;padding:3rem 0;">
           <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#2d5be3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ci-spin" style="display:inline-block;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
@@ -1725,7 +1725,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       const checkoutInfo = document.getElementById("checkout-plan-info");
       if (checkoutInfo && meta.name !== "tu plan") {
         checkoutInfo.textContent =
-          `Ingresá los datos de tu tarjeta para habilitar el débito automático obligatorio y activar tu ${meta.name}.`;
+          `Ingresá los datos de tu tarjeta para habilitar el débito automático y activar tu ${meta.name}.`;
       }
     }
 
