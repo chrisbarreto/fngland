@@ -189,20 +189,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           </div>
           <input type="hidden" id="idPlan" name="idPlan" />
 
-          <!-- Auto-debit section -->
-          <div class="auto-debit-section">
-            <p class="auto-debit-eyebrow">Débito automático obligatorio</p>
-            <h3 class="auto-debit-title">Tu membresía se activa con pago inmediato</h3>
-            <p class="auto-debit-copy">
-              El plan seleccionado tiene permanencia mínima de 12 meses y se cobra automáticamente por <span id="auto-debit-price">Gs. 200.000</span> en cada ciclo mensual activo.
-            </p>
-            <ul class="auto-debit-list">
-              <li>Tu primer débito se realizará un mes después de la activación, siempre en el mismo día del mes.</li>
-              <li>Si un pago es rechazado, la membresía queda desactivada hasta regularizar.</li>
-              <li>Para cambiar la fecha de débito contactá a soporte por WhatsApp.</li>
-            </ul>
-          </div>
-
           <!-- Payment method toggle (Bancard / Upay) -->
           <div class="pay-toggle" id="pay-toggle" role="tablist" aria-label="Método de pago">
             <button type="button" class="pay-btn" data-method="bancard" id="pay-bancard" role="tab" aria-selected="false">
@@ -963,43 +949,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   }
 
   /* ── AUTO-DEBIT SECTION ── */
-  .auto-debit-section {
-    margin-top: 14px;
-    padding: 14px 16px;
-    border: 1px solid rgba(45, 91, 227, 0.15);
-    border-radius: 12px;
-    background: rgba(45, 91, 227, 0.04);
-  }
-  .auto-debit-eyebrow {
-    margin: 0 0 4px;
-    font-size: 10.5px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--accent-blue);
-    font-weight: 700;
-  }
-  .auto-debit-title {
-    margin: 0;
-    color: var(--text-primary);
-    font-size: 15px;
-    font-weight: 700;
-  }
-  .auto-debit-copy {
-    margin: 6px 0 0;
-    font-size: 12.5px;
-    line-height: 1.5;
-    color: var(--text-secondary);
-  }
-  .auto-debit-list {
-    margin: 10px 0 0;
-    padding-left: 1.1rem;
-    color: rgba(255,255,255,0.75);
-    display: grid;
-    gap: 6px;
-    font-size: 12px;
-    line-height: 1.45;
-  }
-
   /* ── LEGAL ACCEPT ── */
   .legal-accept-wrapper {
     margin-top: 16px;
@@ -1261,13 +1210,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     .form-group select { padding: 9px 12px; font-size: 13px; border-radius: 9px; }
     .input-btn-row { gap: 6px; }
     .btn-confirm { padding: 0 14px; font-size: 12.5px; }
-
-    /* Step 3 — auto-debit más compacto */
-    .auto-debit-section { padding: 10px 12px; margin-top: 8px; }
-    .auto-debit-eyebrow { font-size: 10px; }
-    .auto-debit-title { font-size: 13px; }
-    .auto-debit-copy { font-size: 11.5px; margin: 4px 0 0; }
-    .auto-debit-list { font-size: 11px; gap: 3px; margin-top: 6px; }
 
     /* Step 3 — pay toggle */
     .pay-toggle { margin: 10px 0; padding: 4px; gap: 4px; }
