@@ -3021,6 +3021,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (!box || !widgetEl) return;
       // No renderizar si ya está visible con un widget activo
       if (box.style.display !== "none" && widgetEl.hasChildNodes()) return;
+      // Limpiar widget anterior CORRECTAMENTE con turnstile.remove() antes de
+      // hacer innerHTML="" — Cloudflare mantiene state interno de cada widget
+      // y solo innerHTML deja widgets huérfanos (warning "Cannot find Widget").
+      const tsApi = (window as unknown as { turnstile?: TurnstileInstance }).turnstile;
+      if (tsApi && typeof tsApi.remove === "function") {
+        try { tsApi.remove(widgetEl); } catch { /* widget no existía aún */ }
+      }
       widgetEl.innerHTML = "";
       box.style.display = "block";
       // Scrollear dentro del modal (no el viewport)
@@ -3031,13 +3038,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       } else {
         box.scrollIntoView({ behavior: "smooth", block: "center" });
       }
-      if (window.turnstile && _tsSiteKey) {
-        window.turnstile.render(widgetEl, {
+      if (tsApi && _tsSiteKey) {
+        tsApi.render(widgetEl, {
           sitekey: _tsSiteKey,
           theme: "dark",
-          callback: (token: string) => { window.__tsOnSuccess(token); },
-          "expired-callback": () => { window.__tsOnExpired(); },
-          "error-callback": () => { window.__tsOnError(); },
+          callback: (token: string) => { _winAny.__tsOnSuccess(token); },
+          "expired-callback": () => { _winAny.__tsOnExpired(); },
+          "error-callback": () => { _winAny.__tsOnError(); },
         });
       } else if (!_tsSiteKey) {
         widgetEl.innerHTML = '<p style="color:var(--text-secondary,#94a3b8);font-size:13px;text-align:center;">No se pudo cargar la verificación. Recargá la página e intentá nuevamente.</p>';
@@ -3048,7 +3055,17 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       const box = document.getElementById("ts-refresh-box");
       const widgetEl = document.getElementById("ts-step3-widget");
       if (box) box.style.display = "none";
-      if (widgetEl) widgetEl.innerHTML = "";
+      // Llamar turnstile.remove() antes de borrar el contenedor para que
+      // Cloudflare libere el widget de su tracking interno. Sin esto, queda
+      // un widget huérfano y aparece "Cannot find Widget cf-chl-widget-XXX"
+      // al siguiente intento.
+      if (widgetEl) {
+        const tsApi = (window as unknown as { turnstile?: TurnstileInstance }).turnstile;
+        if (tsApi && typeof tsApi.remove === "function") {
+          try { tsApi.remove(widgetEl); } catch { /* widget ya fue removido */ }
+        }
+        widgetEl.innerHTML = "";
+      }
     }
 
     function showTurnstileSubmitError(msg: string) {
@@ -4531,6 +4548,26 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         submitText.style.display = "inline";
         submitLoading.style.display = "none";
         submitLoading.textContent = "Procesando...";
+
+        // CRÍTICO: invalidar el token Turnstile tras cada submit (éxito o
+        // fallo). El token es de UN SOLO USO — al validar contra Cloudflare,
+        // el backend lo consume. Reintentos consecutivos con el mismo token
+        // disparan "No se pudo validar el captcha" (400). El reset fuerza
+        // un nuevo token para el próximo intento sin intervención del usuario.
+        try {
+          _tsTokenValue = "";
+          _tsTokenReady = false;
+          const ts = (window as unknown as { turnstile?: TurnstileInstance }).turnstile;
+          if (ts && typeof ts.reset === "function") {
+            ts.reset();
+            logEvent({
+              paso: "turnstile",
+              severidad: "info",
+              codigo: "TS_POST_SUBMIT_RESET",
+              contexto: { currentStep },
+            });
+          }
+        } catch { /* swallow — no romper UX si Turnstile no está disponible */ }
       }
     });
     // ---- Handle Pagopar Checkout Callback ----
