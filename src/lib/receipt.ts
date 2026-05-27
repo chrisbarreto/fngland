@@ -165,7 +165,10 @@ export async function generateReceipt(data: ComprobanteData): Promise<void> {
       [data.vehiculo.marca, data.vehiculo.modelo].filter(Boolean).join(" ") ||
       "\u2014";
     row("Veh\u00EDculo", marcaModelo);
-    row("Chapa", data.vehiculo.chapa);
+    // Strip del sufijo "DP" (Duplicada Pendiente, Fix 4) antes de mostrar al
+    // cliente. Es seguro porque no hay chapas legítimas en Paraguay que
+    // terminen en "DP" — el marcador es inequívoco.
+    row("Chapa", String(data.vehiculo.chapa || "").replace(/DP$/, ""));
   }
 
   hLine();

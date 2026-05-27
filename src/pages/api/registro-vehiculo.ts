@@ -19,14 +19,23 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  const { data, error, status } = await apiFetch("/registro-vehiculo", {
+  const { data, error, errorBody, status } = await apiFetch("/registro-vehiculo", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
   if (error) {
-    return new Response(JSON.stringify({ error }), {
+    // Propagar campos útiles del backend (code, chapa, field) para que el
+    // frontend pueda detectar chapa duplicada y ofrecer reintento con sufijo "*".
+    const errorPayload: Record<string, unknown> = { error };
+    if (errorBody && typeof errorBody === "object") {
+      const safe = errorBody as Record<string, unknown>;
+      if (safe.code) errorPayload.code = safe.code;
+      if (safe.chapa) errorPayload.chapa = safe.chapa;
+      if (safe.field) errorPayload.field = safe.field;
+    }
+    return new Response(JSON.stringify(errorPayload), {
       status,
       headers: { "Content-Type": "application/json" },
     });

@@ -257,7 +257,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
           <!-- Turnstile refresh — aparece solo cuando el token venció al intentar pagar -->
           <div id="ts-refresh-box" style="display:none; margin:16px 0 8px;">
-            <p class="ts-refresh-msg">Completá la verificación de seguridad para continuar</p>
+            <p class="ts-refresh-msg">Por seguridad, completá esta verificación final antes de continuar.</p>
             <div class="turnstile-wrapper" style="justify-content:center;">
               <div id="ts-step3-widget"></div>
             </div>
@@ -1422,6 +1422,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     let modoActualizarVehiculo = false;
     let lastLookedUpCI = "";      // evita re-disparar lookup para el mismo CI
     let lookupInProgress = false; // evita lookups simultáneos (race condition)
+    // Cuando el backend rechaza la chapa por duplicada (409) y el usuario
+    // confirma que sí es suya, esta bandera hace que el próximo submit envíe
+    // `chapa + "DP"` para evitar el constraint y dejar la operación marcada
+    // para revisión manual desde el panel admin. Se usa "DP" (Duplicada
+    // Pendiente) en lugar de "*" porque el validador del backend exige
+    // /^[A-Z0-9]+$/ y rechaza símbolos. "DP" no aparece como sufijo de
+    // chapas legítimas en Paraguay, por lo que es un marcador inequívoco.
+    let _chapaMarcadaParaRevisionManual = false;
 
     // ---- Turnstile token state ----
     interface TurnstileInstance {
@@ -1445,8 +1453,49 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     let _tsTokenValue = "";
     let _tsPendingResolves: Array<() => void> = [];
     let _submitPendingAfterTs = false;
+    // Timer de refresh proactivo: re-emite token cada 240s (TTL real ~300s)
+    // para evitar que expire mientras el usuario llena los 3 pasos del wizard.
+    let _tsRefreshTimer: number | null = null;
 
-    window.__tsOnSuccess = (token: string) => {
+    function startProactiveTurnstileRefresh() {
+      if (_tsRefreshTimer != null) return;
+      _tsRefreshTimer = window.setInterval(() => {
+        try {
+          // Cast explícito: las propiedades turnstile/__tsOn* viven en window
+          // pero el `declare global` está dentro del IIFE y no se propaga
+          // (ts(1234)). Es el mismo patrón que usan otras secciones del file.
+          const ts = (window as unknown as { turnstile?: TurnstileInstance }).turnstile;
+          if (ts && typeof ts.reset === "function") {
+            ts.reset();
+            logEvent({
+              paso: "turnstile",
+              severidad: "info",
+              codigo: "TS_PROACTIVE_REFRESH",
+              contexto: { currentStep },
+            });
+          }
+        } catch { /* swallow — Turnstile no debe romper el modal */ }
+      }, 240_000);
+    }
+
+    function stopProactiveTurnstileRefresh() {
+      if (_tsRefreshTimer != null) {
+        clearInterval(_tsRefreshTimer);
+        _tsRefreshTimer = null;
+      }
+    }
+
+    // Cast helper: el `declare global { ... }` está dentro de la IIFE y no
+    // se propaga a `Window` (ts(1234)). Usamos un alias local tipado para
+    // asignar los callbacks Turnstile sin disparar ts(2339).
+    const _winAny = window as unknown as {
+      __tsOnSuccess: (token: string) => void;
+      __tsOnExpired: () => void;
+      __tsOnError: () => void;
+      turnstile?: TurnstileInstance;
+    };
+
+    _winAny.__tsOnSuccess = (token: string) => {
       _tsTokenReady = true;
       _tsTokenValue = token;
       const resolvers = _tsPendingResolves.splice(0);
@@ -1458,13 +1507,31 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         form.requestSubmit();
       }
     };
-    window.__tsOnExpired = () => {
+    _winAny.__tsOnExpired = () => {
       _tsTokenReady = false;
       _tsTokenValue = "";
+      logEvent({
+        paso: "turnstile",
+        severidad: "warn",
+        codigo: "TS_EXPIRED",
+        contexto: { currentStep },
+      });
+      // Si el usuario ya está en el paso final (aceptando términos), mostrar
+      // proactivamente el widget de refresh para que no se sorprenda al hacer
+      // click en "Pagar ahora".
+      if (currentStep === 3) {
+        try { showTurnstileStep3(); } catch { /* widget might not be available yet */ }
+      }
     };
-    window.__tsOnError = () => {
+    _winAny.__tsOnError = () => {
       _tsTokenReady = false;
       _tsTokenValue = "";
+      logEvent({
+        paso: "turnstile",
+        severidad: "warn",
+        codigo: "TS_ERROR",
+        contexto: { currentStep },
+      });
     };
 
     // Paleta oscura para el iframe de Bancard — alineada con los design tokens del modal
@@ -1628,6 +1695,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       form.style.display = "";
       bancardContainer.style.display = "none";
       _submitPendingAfterTs = false;
+      _chapaMarcadaParaRevisionManual = false;
+      document.getElementById("chapa-duplicada-dialogo")?.remove();
       hideTurnstileStep3();
       clearTurnstileSubmitError();
 
@@ -1721,6 +1790,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
       if (!planesLoaded) loadPlanes(_pendingPlanId);
       else if (_pendingPlanId) preselectPlanById(_pendingPlanId);
+      // Iniciar refresh proactivo de Turnstile (cada 240s) mientras el modal
+      // esté abierto, para evitar que el token expire antes del submit.
+      startProactiveTurnstileRefresh();
     }
 
     function preselectPlanById(planId: string) {
@@ -1763,7 +1835,32 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
     function closeModal() {
       if (_modalLocked) return;
-      if (_modalDirty) {
+
+      // Opción C (Fix bloqueo cierre iframe): si el iframe de pasarela está
+      // abierto, pedir confirmación específica antes de cerrar. NO se usa
+      // `beforeunload` para no romper el redirect top-level de uPay al
+      // finalizar el catastro — esto solo intercepta cierres explícitos
+      // (X, ESC, click en overlay).
+      const iframeAbierto = bancardContainer?.style.display === "block";
+      if (iframeAbierto && !_bancardResponseHandled) {
+        const ok = confirm(
+          "¿Cancelar el pago? El proceso de cobro se interrumpirá y vas a tener que empezar de nuevo.",
+        );
+        if (!ok) return;
+        logEvent({
+          paso: "bancard_response",
+          severidad: "warn",
+          codigo: "CIERRE_MANUAL_IFRAME",
+          mensaje: "Cliente cerró el modal manualmente con el iframe de pasarela abierto",
+          contexto: {
+            proveedor: _bancardProveedorActual,
+            segundosAbierto:
+              _bancardIframeOpenSince != null
+                ? Math.round((Date.now() - _bancardIframeOpenSince) / 1000)
+                : null,
+          },
+        });
+      } else if (_modalDirty) {
         if (!confirm("¿Estás seguro que querés salir? Se perderán los datos ingresados.")) return;
       }
       logAbandonoBancardSiAplica("cerro_modal");
@@ -1774,6 +1871,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       modal.style.display = "none";
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
+      // Detener refresh proactivo de Turnstile — se reinicia en el próximo openModal()
+      stopProactiveTurnstileRefresh();
       resetModalState();
     }
 
@@ -1886,6 +1985,23 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       btn.addEventListener("click", () => {
         const nextStep = Number((btn as HTMLElement).getAttribute("data-next"));
         if (validateStep(currentStep)) {
+          // Refresh on-demand del Turnstile al entrar al paso final.
+          // Garantiza que el usuario llegue al "Aceptar términos" con un token
+          // recién emitido (~5 min de margen) y no se encuentre con el captcha
+          // de fallback al hacer click en "Pagar ahora".
+          if (currentStep === 2 && nextStep === 3) {
+            try {
+              const ts = (window as unknown as { turnstile?: TurnstileInstance }).turnstile;
+              if (ts && typeof ts.reset === "function") {
+                ts.reset();
+                logEvent({
+                  paso: "turnstile",
+                  severidad: "info",
+                  codigo: "TS_ONDEMAND_REFRESH_STEP3",
+                });
+              }
+            } catch { /* swallow */ }
+          }
           logEvent({
             paso: "wizard_step",
             severidad: "info",
@@ -2519,7 +2635,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               if (cat.cliente?.ci) params.set("ci", cat.cliente.ci);
               if (cat.membresia?.codigo) params.set("codigo", cat.membresia.codigo);
               if (cat.membresia?.plan) params.set("plan", cat.membresia.plan);
-              if (cat.vehiculo?.chapa) params.set("chapa", cat.vehiculo.chapa);
+              if (cat.vehiculo?.chapa) {
+                // Strip del sufijo "DP" (revisión manual, Fix 4) antes de mostrar
+                // al cliente. Seguro: no hay chapas legítimas terminando en DP.
+                params.set("chapa", String(cat.vehiculo.chapa).replace(/DP$/, ""));
+              }
               if (cat.vehiculo?.descripcion) params.set("vehiculo", cat.vehiculo.descripcion);
               if (cat.tarjeta?.numero) params.set("tarjeta", cat.tarjeta.numero);
               if (cat.tarjeta?.marca) params.set("tarjetaMarca", cat.tarjeta.marca);
@@ -2533,6 +2653,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
               contexto: { escenario: "bancard_catastro_ok", debitoActivado: !!body.debitoActivado },
             });
 
+            // Fix 3: éxito completo → limpiar contexto de intento fallido
+            limpiarContextoFallo();
             window.location.href = `/gracias?${params.toString()}`;
           })
           .catch(() => {
@@ -2547,6 +2669,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         // Error en catastro
         bancardContainer.style.display = "none";
         const storedClienteId = sessionStorage.getItem("formulang_idCliente");
+
+        // Fix 3: persistir contexto del fallo en localStorage con TTL 24h.
+        // Si el cliente cierra el navegador y vuelve más tarde con la misma CI,
+        // el lookup podrá restaurar idCliente y evitar el 409 por CI duplicada.
+        if (storedClienteId) {
+          const ciActual = (document.getElementById("ruc") as HTMLInputElement | null)?.value || "";
+          persistRecuperacionPostFallo(ciActual, storedClienteId);
+        }
 
         const renderError = (msg: string) => {
           const currentMethod = (document.getElementById("metodoPago") as HTMLInputElement | null)?.value || "upay";
@@ -2743,18 +2873,40 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         const checkoutBody = await checkoutRes.json().catch(() => ({}));
         if (!checkoutRes.ok || !checkoutBody.processId) {
           console.error("[startRetryCheckout] Error:", checkoutRes.status, checkoutBody);
+          const errMsg: string = checkoutBody?.error || checkoutBody?.message || "";
+          // Fix 3: mapear motivos específicos de fallo a UX accionable.
+          const motivoPlan =
+            /plan.*(no.*resolub|no.*encontr|inv[aá]l)/i.test(errMsg) ||
+            checkoutBody?.code === "PLAN_NO_RESOLUBLE";
+          const motivoRegPend =
+            /registro.*pendiente.*(no.*encontr|no.*exist)/i.test(errMsg) ||
+            checkoutBody?.code === "REGISTRO_PENDIENTE_NOT_FOUND";
+
           logEvent({
             paso: "checkout",
             severidad: "error",
-            codigo: `HTTP_${checkoutRes.status}`,
-            mensaje: checkoutBody?.error || `checkout HTTP ${checkoutRes.status}`,
+            codigo: motivoPlan
+              ? "CHECKOUT_FAIL_PLAN_NO_RESOLUBLE"
+              : motivoRegPend
+                ? "CHECKOUT_FAIL_REG_PENDIENTE_NOT_FOUND"
+                : `HTTP_${checkoutRes.status}`,
+            mensaje: errMsg || `checkout HTTP ${checkoutRes.status}`,
             contexto: {
               httpStatus: checkoutRes.status,
               escenario: escenarioRetry,
+              idCliente,
               body: checkoutBody,
             },
           });
-          showResult("Error", `No pudimos iniciar el proceso de pago (${checkoutBody?.error || checkoutRes.status}). Intentá de nuevo más tarde.`, true);
+
+          if (motivoPlan) {
+            showFallback409WhatsApp(
+              "No pudimos resolver tu plan para iniciar el cobro. Contactanos por WhatsApp y lo solucionamos en minutos.",
+            );
+            showResult("Plan no disponible", "Necesitamos asistencia para activar tu plan. Te derivamos a WhatsApp.", true);
+            return;
+          }
+          showResult("Error", `No pudimos iniciar el proceso de pago (${errMsg || checkoutRes.status}). Intentá de nuevo más tarde.`, true);
           return;
         }
         logEvent({
@@ -2940,6 +3092,25 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       modoNuevoVehiculo = false;
       modoActualizarVehiculo = false;
 
+      // Fix 3: restaurar contexto de intento fallido reciente desde localStorage.
+      // Si la CI coincide con un fallo de catastro en las últimas 24h, prepoblar
+      // sessionStorage para que el flujo retome desde donde quedó (modoNuevoVehiculo
+      // o flujo de retry de tarjeta).
+      const ctxFallo = recuperarContextoFallo(ci);
+      if (ctxFallo) {
+        sessionStorage.setItem("formulang_idCliente", ctxFallo.idCliente);
+        if (ctxFallo.idRegistroPendiente) {
+          sessionStorage.setItem("formulang_idRegistroPendiente", ctxFallo.idRegistroPendiente);
+        }
+        logEvent({
+          paso: "submit_registro",
+          severidad: "info",
+          codigo: "FAILED_ATTEMPT_RESTORED",
+          mensaje: "Contexto de intento fallido restaurado desde localStorage",
+          contexto: { hasIdRegPendiente: !!ctxFallo.idRegistroPendiente, ageMs: Date.now() - ctxFallo.ts },
+        });
+      }
+
       try {
         const res = await fetchWithTimeout(
           `/api/registro-pendiente?ci=${encodeURIComponent(ci)}`,
@@ -2954,6 +3125,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         const data = await res.json().catch(() => null);
         if (!data?.found) {
           // CI no registrada → cliente nuevo, revelar campos vacíos
+          // Fix 5: log para correlacionar con 409s posteriores (Bug 3: cliente
+          // existente que el lookup no detectó porque no tiene membresía activa).
+          logEvent({
+            paso: "submit_registro",
+            severidad: "info",
+            codigo: "LOOKUP_NO_ENCONTRADO",
+            contexto: { ci },
+          });
           revelarCamposPersonales();
           return;
         }
@@ -3336,12 +3515,38 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                         regBody.idRegistroPendiente,
                       );
                     }
+                  } else {
+                    // Fix 5: tracking explícito — el catch previo enmascaraba
+                    // este caso porque `regRes.ok === false` no lanza.
+                    const errBody = await regRes.json().catch(() => ({}));
+                    logEvent({
+                      paso: "submit_registro",
+                      severidad: "error",
+                      codigo: "RP_CREATION_FAILED",
+                      mensaje: errBody?.error || `HTTP ${regRes.status}`,
+                      contexto: {
+                        httpStatus: regRes.status,
+                        idCliente: data.idCliente,
+                        idVehiculo: memObj.idVehiculo,
+                        idPlanElegido,
+                        idPlanActual: memObj.idPlan,
+                      },
+                    });
                   }
                 } catch (e) {
-                  console.warn(
-                    "[activar-debito] No se pudo crear RegistroPendiente:",
-                    e,
-                  );
+                  // Fix 5: log error en lugar de solo console.warn — esto
+                  // explicaba "cobro fallido por plan no resoluble" sin trazabilidad.
+                  logEvent({
+                    paso: "submit_registro",
+                    severidad: "error",
+                    codigo: "RP_CREATION_EXCEPTION",
+                    mensaje: e instanceof Error ? e.message : String(e),
+                    contexto: {
+                      idCliente: data.idCliente,
+                      idVehiculo: memObj.idVehiculo,
+                      idPlanElegido,
+                    },
+                  });
                 }
               }
 
@@ -3521,6 +3726,300 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
     });
 
+    // ---- Persistencia de intentos fallidos (defensa en profundidad) ----
+    // sessionStorage se pierde al cerrar la pestaña. Si el cliente cierra el
+    // navegador después de un catastro fallido y vuelve más tarde, perdemos
+    // `formulang_idCliente` y el lookup CI puede fallar (Bug 3). localStorage
+    // con TTL de 24h actúa como red de seguridad.
+
+    interface FailedAttemptCtx {
+      ci: string;
+      idCliente: string;
+      idRegistroPendiente?: string;
+      ts: number;
+    }
+    const FAILED_ATTEMPT_KEY = "formulang_failed_attempt";
+    const FAILED_ATTEMPT_TTL_MS = 24 * 60 * 60 * 1000;
+
+    function persistRecuperacionPostFallo(ci: string, idCliente: string): void {
+      if (!ci || !idCliente) return;
+      try {
+        const payload: FailedAttemptCtx = {
+          ci: ci.replace(/\s+/g, "").replace(/-\d+$/, ""),
+          idCliente,
+          idRegistroPendiente:
+            sessionStorage.getItem("formulang_idRegistroPendiente") || undefined,
+          ts: Date.now(),
+        };
+        localStorage.setItem(FAILED_ATTEMPT_KEY, JSON.stringify(payload));
+        logEvent({
+          paso: "submit_registro",
+          severidad: "info",
+          codigo: "FAILED_ATTEMPT_PERSISTED",
+          contexto: { hasIdRegPendiente: !!payload.idRegistroPendiente },
+        });
+      } catch { /* localStorage puede estar bloqueado */ }
+    }
+
+    function recuperarContextoFallo(ci: string): FailedAttemptCtx | null {
+      if (!ci) return null;
+      try {
+        const raw = localStorage.getItem(FAILED_ATTEMPT_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as FailedAttemptCtx;
+        const now = Date.now();
+        if (!parsed.ts || now - parsed.ts > FAILED_ATTEMPT_TTL_MS) {
+          localStorage.removeItem(FAILED_ATTEMPT_KEY);
+          return null;
+        }
+        const ciLimpia = ci.replace(/\s+/g, "").replace(/-\d+$/, "");
+        if (parsed.ci !== ciLimpia) return null;
+        return parsed;
+      } catch {
+        return null;
+      }
+    }
+
+    function limpiarContextoFallo(): void {
+      try { localStorage.removeItem(FAILED_ATTEMPT_KEY); } catch { /* ignore */ }
+    }
+
+    // ---- Helpers de recuperación post-error ----
+
+    /**
+     * Construye el payload para POST /api/registro-vehiculo a partir de los
+     * campos actuales del wizard. Reutilizable tanto para el flujo normal
+     * (modoNuevoVehiculo) como para la recuperación del 409 por CI duplicada.
+     */
+    function buildVehiculoPayload(idCliente: string): Record<string, unknown> {
+      const chapaInputVal = (document.getElementById("chapa") as HTMLInputElement)?.value.trim().toUpperCase() || "";
+      // Si el usuario confirmó continuar tras detectar chapa duplicada,
+      // marcamos con sufijo "DP" también en el endpoint /api/registro-vehiculo
+      // (Fix 4 — sufijo letras para pasar regex /^[A-Z0-9]+$/ del backend).
+      const chapaFinal = _chapaMarcadaParaRevisionManual ? `${chapaInputVal}DP` : chapaInputVal;
+      const payload: Record<string, unknown> = {
+        idCliente,
+        chapa: chapaFinal,
+        idPlan: (document.getElementById("idPlan") as HTMLInputElement)?.value,
+      };
+      const anioV = (document.getElementById("anio") as HTMLInputElement)?.value;
+      if (anioV) payload.anio = Number(anioV);
+      const colorV = (document.getElementById("color") as HTMLInputElement)?.value.trim();
+      if (colorV) payload.color = colorV;
+      const idMarcaV = (document.getElementById("idMarca") as HTMLSelectElement)?.value;
+      if (idMarcaV && idMarcaV !== "otro") payload.idMarca = Number(idMarcaV);
+      const idModeloV = (document.getElementById("idModelo") as HTMLSelectElement)?.value;
+      if (idModeloV && idModeloV !== "otro") payload.idModelo = Number(idModeloV);
+      const marcaNuevaV = (document.getElementById("marcaNueva") as HTMLInputElement)?.value.trim();
+      if (idMarcaV === "otro" && marcaNuevaV) payload.marcaNueva = marcaNuevaV;
+      const modeloNuevoV = (document.getElementById("modeloNuevo") as HTMLInputElement)?.value.trim();
+      if ((idModeloV === "otro" || idMarcaV === "otro") && modeloNuevoV) payload.modeloNuevo = modeloNuevoV;
+      const tipoV = (document.getElementById("tipoVehiculo") as HTMLSelectElement)?.value;
+      if (tipoV) payload.idTipoVehiculo = Number(tipoV);
+      return payload;
+    }
+
+    /**
+     * Llama POST /api/registro-vehiculo para un cliente ya existente y retorna
+     * el idRegistroPendiente que el caller necesita para iniciar el checkout.
+     * Lanza Error con mensaje user-friendly si el backend rechaza la solicitud.
+     */
+    async function submitNuevoVehiculo(idCliente: string): Promise<string> {
+      const vehiculoPayload = buildVehiculoPayload(idCliente);
+      const chapaPayload = String(vehiculoPayload.chapa || "").trim();
+      if (!chapaPayload || chapaPayload.length < 3) {
+        throw new Error("Ingresá la chapa del vehículo.");
+      }
+      const idPlanPayload = String(vehiculoPayload.idPlan || "");
+      if (!idPlanPayload) throw new Error("Seleccioná un plan para continuar.");
+      if (!PLAN_META[idPlanPayload]) throw new Error("Plan no disponible. Seleccioná un plan válido.");
+
+      const regVehRes = await fetchWithTimeout("/api/registro-vehiculo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(vehiculoPayload),
+      }, 20000);
+
+      const regVehBody = await regVehRes.json().catch(() => {
+        throw new Error("Error al registrar el vehículo. Intentá de nuevo.");
+      });
+
+      if (!regVehRes.ok) {
+        const msg = regVehBody.error || regVehBody.message || "";
+        if (regVehRes.status === 409) {
+          // Se propaga al caller para que pueda ofrecer el flujo de chapa
+          // duplicada con sufijo "*" (Fix 4). Adjuntamos los campos extra
+          // que el proxy expone (code, chapa, field).
+          const err = new Error(msg || "Esta chapa ya está registrada.") as Error & {
+            status?: number;
+            code?: string;
+            chapa?: string;
+            field?: string;
+          };
+          err.status = 409;
+          if (regVehBody.code) err.code = String(regVehBody.code);
+          if (regVehBody.chapa) err.chapa = String(regVehBody.chapa);
+          if (regVehBody.field) err.field = String(regVehBody.field);
+          throw err;
+        }
+        throw new Error(msg || "No se pudo registrar el vehículo. Intentá de nuevo.");
+      }
+
+      const idRegPendiente = regVehBody.idRegistroPendiente;
+      if (!idRegPendiente) throw new Error("No pudimos iniciar el pago. Intentá de nuevo.");
+      sessionStorage.setItem("formulang_idRegistroPendiente", idRegPendiente);
+      return idRegPendiente;
+    }
+
+    /**
+     * Recupera el flujo cuando POST /api/registro retorna 409 (CI duplicada).
+     * Estrategia:
+     *   1) Si el body del 409 ya trae idCliente → usar directo.
+     *   2) Si no, re-consultar GET /api/registro-pendiente?ci=X&forceClient=true
+     *      para que el backend retorne idCliente aunque no haya membresía.
+     *   3) Si tampoco se obtiene, retornar null → el caller muestra CTA WhatsApp.
+     *
+     * Cuando obtiene idCliente: lo cachea, setea modoNuevoVehiculo y llama
+     * submitNuevoVehiculo() para crear vehículo + RegistroPendiente.
+     */
+    async function recoverFrom409CiDuplicada(
+      errorBody: { idCliente?: string },
+      ci: string,
+    ): Promise<{ idCliente: string; idRegistroPendiente: string } | null> {
+      let idCliente = errorBody?.idCliente ? String(errorBody.idCliente) : "";
+
+      if (!idCliente && ci) {
+        try {
+          const lookupRes = await fetchWithTimeout(
+            `/api/registro-pendiente?ci=${encodeURIComponent(ci)}&forceClient=true`,
+            {},
+            12000,
+          );
+          if (lookupRes.ok) {
+            const lookupBody = await lookupRes.json().catch(() => null);
+            if (lookupBody?.idCliente) idCliente = String(lookupBody.idCliente);
+          }
+        } catch { /* swallow — caemos al return null */ }
+      }
+
+      if (!idCliente) {
+        logEvent({
+          paso: "submit_registro",
+          severidad: "error",
+          codigo: "RECUPERACION_409_FALLIDA",
+          mensaje: "409 sin idCliente y forceClient lookup no devolvió cliente",
+          contexto: { ci },
+        });
+        return null;
+      }
+
+      sessionStorage.setItem("formulang_idCliente", idCliente);
+      modoNuevoVehiculo = true;
+      modoActualizarVehiculo = false;
+      logEvent({
+        paso: "submit_registro",
+        severidad: "warn",
+        codigo: "RECUPERACION_409",
+        mensaje: "409 CI duplicada recuperado — reintentando como cliente existente",
+        contexto: { idCliente },
+      });
+
+      const idRegistroPendiente = await submitNuevoVehiculo(idCliente);
+      return { idCliente, idRegistroPendiente };
+    }
+
+    /**
+     * Diálogo inline (no `confirm()` nativo) que se muestra cuando el backend
+     * rechaza el registro porque la chapa ingresada ya existe en BD. Permite
+     * al cliente confirmar que la chapa es suya y continuar — el frontend
+     * marca la chapa con sufijo "DP" (revisión manual desde el panel admin).
+     */
+    function mostrarDialogoChapaDuplicada(
+      chapaOriginal: string,
+      onConfirm: () => void,
+      onCancel: () => void,
+    ) {
+      // Quitar diálogo previo si quedó huérfano
+      document.getElementById("chapa-duplicada-dialogo")?.remove();
+      const dialogo = document.createElement("div");
+      dialogo.id = "chapa-duplicada-dialogo";
+      dialogo.style.cssText =
+        "margin-top:1rem;padding:1rem 1.1rem;background:rgba(249,166,6,0.1);" +
+        "border:1px solid rgba(249,166,6,0.4);border-radius:12px;font-size:0.85rem;";
+      dialogo.innerHTML =
+        `<p style="margin:0 0 0.6rem;font-weight:700;color:#f9a606;">` +
+        `⚠️ La chapa "${chapaOriginal}" ya figura registrada en nuestro sistema.</p>` +
+        `<p style="margin:0 0 0.75rem;color:rgba(255,255,255,0.7);line-height:1.5;font-size:0.8rem;">` +
+        `Si confirmás que esta chapa es tuya, podés continuar y un agente verificará ` +
+        `los datos manualmente en las próximas 24 h. Si fue un error, revisá y corregí la chapa.</p>` +
+        `<div style="display:flex;gap:0.5rem;justify-content:flex-end;flex-wrap:wrap;">` +
+        `<button id="chapa-dup-revisar" type="button" ` +
+        `style="padding:0.4rem 0.9rem;background:transparent;border:1px solid rgba(255,255,255,0.25);` +
+        `border-radius:6px;color:#fff;cursor:pointer;font-size:0.82rem;">Revisar chapa</button>` +
+        `<button id="chapa-dup-confirmar" type="button" ` +
+        `style="padding:0.4rem 1rem;background:#f9a606;border:none;border-radius:6px;` +
+        `color:#1a1a1a;cursor:pointer;font-size:0.82rem;font-weight:700;">Confirmar y continuar →</button>` +
+        `</div>`;
+      errorBanner.parentElement?.insertBefore(dialogo, errorBanner.nextSibling);
+      dialogo.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      document.getElementById("chapa-dup-revisar")?.addEventListener("click", () => {
+        dialogo.remove();
+        logEvent({
+          paso: "submit_registro",
+          severidad: "info",
+          codigo: "CHAPA_DUPLICADA_REVISADA",
+          contexto: { chapaOriginal },
+        });
+        onCancel();
+      });
+      document.getElementById("chapa-dup-confirmar")?.addEventListener("click", () => {
+        dialogo.remove();
+        logEvent({
+          paso: "submit_registro",
+          severidad: "warn",
+          codigo: "CHAPA_DUPLICADA_CONFIRMADA_MANUAL",
+          contexto: { chapaOriginal },
+        });
+        onConfirm();
+      });
+    }
+
+    /**
+     * Activa la bandera de revisión manual y dispara un nuevo submit del form.
+     * El submit handler detecta `_chapaMarcadaParaRevisionManual === true` y
+     * reescribe el payload con `chapa + "DP"` (sufijo letras, no símbolo, para
+     * pasar el validador regex del backend).
+     */
+    function reintentarConChapaMarcada() {
+      _chapaMarcadaParaRevisionManual = true;
+      errorBanner.style.display = "none";
+      errorMsg.textContent = "";
+      submitBtn.disabled = false;
+      submitText.style.display = "inline";
+      submitLoading.style.display = "none";
+      form.requestSubmit();
+    }
+
+    /**
+     * Muestra mensaje accionable cuando la recuperación automática del 409
+     * falla. Incluye CTA a WhatsApp de soporte.
+     */
+    function showFallback409WhatsApp(errorMsgPrefix: string) {
+      const waNumero = "595992789328";
+      const waText = encodeURIComponent(
+        "Hola, intenté registrarme en la landing y el sistema detectó mi cédula como duplicada. ¿Pueden ayudarme a continuar?",
+      );
+      const waUrl = `https://wa.me/${waNumero}?text=${waText}`;
+      errorMsg.innerHTML =
+        `${errorMsgPrefix} ` +
+        `<a href="${waUrl}" target="_blank" rel="noopener noreferrer" ` +
+        `style="display:inline-block;margin-top:0.5rem;padding:0.4rem 0.9rem;` +
+        `background:#25D366;color:#fff;border-radius:6px;text-decoration:none;` +
+        `font-weight:600;font-size:0.85rem;">Contactar por WhatsApp</a>`;
+      errorBanner.style.display = "block";
+    }
+
     // ---- Form Submission ----
     form?.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -3562,6 +4061,13 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       if (!freshToken) {
         // Token expirado — mostrar widget visible en Step 3 y esperar que el usuario lo complete.
         // __tsOnSuccess se encargará de reanudar el submit automáticamente.
+        logEvent({
+          paso: "turnstile",
+          severidad: "warn",
+          codigo: "TS_ON_SUBMIT_MISSING",
+          mensaje: "Submit invocado sin token Turnstile fresco — mostrando widget de refresh",
+          contexto: { currentStep },
+        });
         _submitPendingAfterTs = true;
         clearTurnstileSubmitError();
         showTurnstileStep3();
@@ -3588,7 +4094,18 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       formData.email = email;
 
       const chapa = (document.getElementById("chapa") as HTMLInputElement).value.trim();
-      formData.chapa = chapa;
+      // Fix 4: si el usuario confirmó continuar después de detectar chapa
+      // duplicada, marcamos con sufijo "DP" (Duplicada Pendiente). Notas:
+      //  - Se usa "DP" en lugar de "*" porque el validador del backend exige
+      //    /^[A-Z0-9]+$/ (rechaza símbolos).
+      //  - NO se manda `requiereRevisionManual` porque el DTO usa
+      //    `forbidNonWhitelisted: true` y lo rechaza con 400.
+      //  - El panel admin detecta candidatos con `LIKE '%DP'`.
+      if (_chapaMarcadaParaRevisionManual) {
+        formData.chapa = `${chapa.toUpperCase()}DP`;
+      } else {
+        formData.chapa = chapa;
+      }
 
       const idMarcaVal = (document.getElementById("idMarca") as HTMLSelectElement).value;
       const marcaNuevaVal = (document.getElementById("marcaNueva") as HTMLInputElement).value.trim();
@@ -3685,9 +4202,16 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
         } else if (idClienteExistente && idRegPendienteExistente) {
           // Resume existing registration — skip POST /api/registro.
-          // CRÍTICO: si el plan elegido en el formulario es DISTINTO al del
-          // RegistroPendiente cacheado, descartar el cache y forzar nuevo
-          // registro — de lo contrario el cobro se haría con el plan viejo.
+          // El cliente ya existe en BD; el RegistroPendiente del intento anterior
+          // está cacheado en sessionStorage. Dos casos:
+          //   1) Mismo plan que antes → reusar todo, ir directo a checkout.
+          //   2) Plan distinto → crear NUEVO RegistroPendiente con el plan actual
+          //      vía /api/registro-vehiculo (reusa idCliente, NO recrea cliente).
+          //
+          // CRÍTICO (Fix bug "Ya existe un registro con el RUC"): NO llamar a
+          // POST /api/registro acá — el cliente YA existe en BD y el backend
+          // responde 409. submitNuevoVehiculo() es la API correcta para
+          // adjuntar un nuevo plan/vehículo a un cliente preexistente.
           const idPlanForm = (document.getElementById("idPlan") as HTMLInputElement)?.value;
           const idPlanPendienteCache = sessionStorage.getItem("formulang_idPlanPendiente");
           const planCambio =
@@ -3696,9 +4220,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             logEvent({
               paso: "submit_registro",
               severidad: "warn",
-              codigo: "PLAN_CAMBIO_INVALIDA_REGISTRO_PENDIENTE",
+              codigo: "PLAN_CAMBIO_REUSA_CLIENTE",
               mensaje:
-                "Plan elegido distinto al del registro pendiente cacheado — se descarta el cache y se crea un nuevo registro",
+                "Plan elegido distinto al del registro pendiente — se crea nuevo RegistroPendiente reusando el cliente existente",
               contexto: {
                 idPlanForm,
                 idPlanPendienteCache,
@@ -3706,79 +4230,23 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
                 idRegPendienteCache: idRegPendienteExistente,
               },
             });
-            sessionStorage.removeItem("formulang_idCliente");
+            // Descartar SOLO el RegistroPendiente y el plan cacheado — NO el cliente.
             sessionStorage.removeItem("formulang_idRegistroPendiente");
-      sessionStorage.removeItem("formulang_idPlanPendiente");
             sessionStorage.removeItem("formulang_idPlanPendiente");
-            // Caer a la rama de "nuevo cliente" — POST /api/registro
-            const res = await fetchWithTimeout("/api/registro", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(formData),
-            }, 30000);
-
-            const body = await res.json().catch(() => {
-              throw new Error("Error al procesar la respuesta del servidor. Intentá de nuevo.");
-            });
-            if (!res.ok) {
-              const serverMsg = body.error || body.message || "";
-              if (res.status === 409) throw new Error(serverMsg || "Ya existe un registro con esos datos. Comunicate con nosotros.");
-              if (res.status === 400) throw new Error(serverMsg || "Datos inválidos. Revisá los campos.");
-              throw new Error(serverMsg || "Error inesperado al registrar. Intentá de nuevo más tarde.");
-            }
-            idCliente = body.data?.idCliente || body.idCliente;
-            if (!idCliente) throw new Error("No pudimos iniciar la activación de tu plan. Intentá nuevamente.");
-            sessionStorage.setItem("formulang_idCliente", idCliente);
-            const idRegistroPendienteNuevo = body.data?.idRegistroPendiente;
-            if (idRegistroPendienteNuevo) {
-              sessionStorage.setItem("formulang_idRegistroPendiente", idRegistroPendienteNuevo);
-            }
+            // Crear nuevo RegistroPendiente con el plan/chapa actuales,
+            // reusando idClienteExistente. Esta función ya maneja el 409
+            // por chapa duplicada propagando un error con code=CHAPA_DUPLICADA.
+            await submitNuevoVehiculo(idClienteExistente);
+            idCliente = idClienteExistente;
             if (idPlanForm) sessionStorage.setItem("formulang_idPlanPendiente", idPlanForm);
           } else {
             idCliente = idClienteExistente;
           }
         } else if (modoNuevoVehiculo && idClienteExistente) {
           // Existing client adding a new vehicle — use /api/registro-vehiculo
-          const vehiculoPayload: Record<string, unknown> = {
-            idCliente: idClienteExistente,
-            chapa: (document.getElementById("chapa") as HTMLInputElement)?.value.trim().toUpperCase(),
-            idPlan: (document.getElementById("idPlan") as HTMLInputElement)?.value,
-          };
-          const chapaMV = (document.getElementById("chapa") as HTMLInputElement)?.value.trim();
-          if (!chapaMV || chapaMV.length < 3) throw new Error("Ingresá la chapa del vehículo.");
-          const idPlanMV = (document.getElementById("idPlan") as HTMLInputElement)?.value;
-          if (!idPlanMV) throw new Error("Seleccioná un plan para continuar.");
-          if (!PLAN_META[idPlanMV]) throw new Error("Plan no disponible. Seleccioná un plan válido.");
-          const anioMV = (document.getElementById("anio") as HTMLInputElement)?.value;
-          if (anioMV) vehiculoPayload.anio = Number(anioMV);
-          const colorMV = (document.getElementById("color") as HTMLInputElement)?.value.trim();
-          if (colorMV) vehiculoPayload.color = colorMV;
-          const marcaMV = (document.getElementById("idMarca") as HTMLSelectElement)?.value;
-          if (marcaMV) vehiculoPayload.idMarca = Number(marcaMV);
-          const modeloMV = (document.getElementById("idModelo") as HTMLSelectElement)?.value;
-          if (modeloMV) vehiculoPayload.idModelo = Number(modeloMV);
-          const tipoMV = (document.getElementById("tipoVehiculo") as HTMLSelectElement)?.value;
-          if (tipoMV) vehiculoPayload.idTipoVehiculo = Number(tipoMV);
-
-          const regVehRes = await fetchWithTimeout("/api/registro-vehiculo", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(vehiculoPayload),
-          }, 20000);
-
-          const regVehBody = await regVehRes.json().catch(() => {
-            throw new Error("Error al registrar el vehículo. Intentá de nuevo.");
-          });
-
-          if (!regVehRes.ok) {
-            const msg = regVehBody.error || regVehBody.message || "";
-            if (regVehRes.status === 409) throw new Error(msg || "Esta chapa ya está registrada.");
-            throw new Error(msg || "No se pudo registrar el vehículo. Intentá de nuevo.");
-          }
-
-          const idRegPendiente = regVehBody.idRegistroPendiente;
-          if (!idRegPendiente) throw new Error("No pudimos iniciar el pago. Intentá de nuevo.");
-          sessionStorage.setItem("formulang_idRegistroPendiente", idRegPendiente);
+          // (Lógica encapsulada en submitNuevoVehiculo para reutilizar también
+          // en el flujo de recuperación del 409 por CI duplicada.)
+          await submitNuevoVehiculo(idClienteExistente);
           idCliente = idClienteExistente;
         } else {
           // New client — full registration
@@ -3795,26 +4263,75 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           if (!res.ok) {
             const serverMsg = body.error || body.message || "";
             if (res.status === 409) {
-              throw new Error(serverMsg || "Este RUC o chapa ya está registrado. Si ya sos cliente, comunicate con nosotros.");
+              // Distinguir entre CI duplicada (cliente ya existe) y chapa
+              // duplicada (vehículo ya existe). Para CI → recuperar el flujo
+              // como cliente existente. Para chapa → propagar al caller para
+              // que ofrezca el diálogo de confirmación con sufijo "*" (Fix 4).
+              const errorCode = String(body.code || "").toUpperCase();
+              const looksLikeChapaError =
+                errorCode === "CHAPA_DUPLICADA" ||
+                /chapa/i.test(serverMsg) ||
+                body.field === "chapa";
+
+              if (looksLikeChapaError) {
+                const err = new Error(serverMsg || "Esta chapa ya está registrada.") as Error & {
+                  status?: number;
+                  code?: string;
+                  chapa?: string;
+                  field?: string;
+                };
+                err.status = 409;
+                err.code = "CHAPA_DUPLICADA";
+                if (body.chapa) err.chapa = String(body.chapa);
+                if (body.field) err.field = String(body.field);
+                throw err;
+              }
+
+              // Asumimos CI duplicada — intentar recuperación automática.
+              logEvent({
+                paso: "submit_registro",
+                severidad: "warn",
+                codigo: "CI_DUPLICADA_DETECTADA",
+                contexto: { hasIdCliente: !!body.idCliente },
+              });
+              const ciActual = String(formData.ruc || "")
+                .replace(/\s+/g, "")
+                .replace(/-\d+$/, "");
+              const recovered = await recoverFrom409CiDuplicada(body, ciActual);
+              if (recovered) {
+                idCliente = recovered.idCliente;
+                const idPlanFormVal = (document.getElementById("idPlan") as HTMLInputElement)?.value;
+                if (idPlanFormVal) sessionStorage.setItem("formulang_idPlanPendiente", idPlanFormVal);
+                // continuar el flujo: el código de abajo armará el checkout
+              } else {
+                showFallback409WhatsApp(
+                  "Detectamos que tu CI ya está registrada pero no pudimos recuperar tu cuenta automáticamente.",
+                );
+                submitBtn.disabled = false;
+                submitText.style.display = "inline";
+                submitLoading.style.display = "none";
+                return;
+              }
             } else if (res.status === 400) {
               throw new Error(serverMsg || "Datos inválidos. Revisá los campos e intentá de nuevo.");
             } else {
               throw new Error(serverMsg || "Error inesperado al registrar. Intentá de nuevo más tarde.");
             }
-          }
+          } else {
+            // Respuesta exitosa de /api/registro — cliente nuevo creado.
+            idCliente = body.data?.idCliente || body.idCliente;
+            if (!idCliente) {
+              throw new Error("No pudimos iniciar la activacion de tu plan. Intenta nuevamente.");
+            }
 
-          idCliente = body.data?.idCliente || body.idCliente;
-          if (!idCliente) {
-            throw new Error("No pudimos iniciar la activacion de tu plan. Intenta nuevamente.");
+            sessionStorage.setItem("formulang_idCliente", idCliente);
+            const idRegistroPendiente = body.data?.idRegistroPendiente;
+            if (idRegistroPendiente) sessionStorage.setItem("formulang_idRegistroPendiente", idRegistroPendiente);
+            // Guardar también el plan asociado al registro para detectar cambios
+            // de plan en intentos posteriores y forzar un nuevo registro si difieren.
+            const idPlanForm = (document.getElementById("idPlan") as HTMLInputElement)?.value;
+            if (idPlanForm) sessionStorage.setItem("formulang_idPlanPendiente", idPlanForm);
           }
-
-          sessionStorage.setItem("formulang_idCliente", idCliente);
-          const idRegistroPendiente = body.data?.idRegistroPendiente;
-          if (idRegistroPendiente) sessionStorage.setItem("formulang_idRegistroPendiente", idRegistroPendiente);
-          // Guardar también el plan asociado al registro para detectar cambios
-          // de plan en intentos posteriores y forzar un nuevo registro si difieren.
-          const idPlanForm = (document.getElementById("idPlan") as HTMLInputElement)?.value;
-          if (idPlanForm) sessionStorage.setItem("formulang_idPlanPendiente", idPlanForm);
         }
 
         submitLoading.textContent = "Redirigiendo a Pagopar...";
@@ -3954,6 +4471,44 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         }
         return;
       } catch (err: any) {
+        // Fix 4: detectar 409 por chapa duplicada y ofrecer al usuario el
+        // diálogo de confirmación (no bloquear el flujo).
+        const isChapaDup =
+          err?.code === "CHAPA_DUPLICADA" ||
+          (err?.status === 409 && typeof err?.message === "string" && /chapa/i.test(err.message));
+        if (isChapaDup && !_chapaMarcadaParaRevisionManual) {
+          // Liberar el submit y mostrar el diálogo. NO limpiar sessionStorage
+          // — si la recuperación del 409 ya creó idCliente, queremos preservarlo.
+          submitBtn.disabled = false;
+          submitText.style.display = "inline";
+          submitLoading.style.display = "none";
+          const chapaShown =
+            err.chapa ||
+            (document.getElementById("chapa") as HTMLInputElement)?.value.trim().toUpperCase() ||
+            "tu chapa";
+          logEvent({
+            paso: "submit_registro",
+            severidad: "warn",
+            codigo: "CHAPA_DUPLICADA_DETECTADA",
+            mensaje: err?.message || "Chapa duplicada detectada en el backend",
+            contexto: { chapa: chapaShown, endpoint: err?.endpoint || null },
+          });
+          mostrarDialogoChapaDuplicada(
+            chapaShown,
+            () => reintentarConChapaMarcada(),
+            () => {
+              // Cancelar → volver al paso 2 y enfocar el campo chapa
+              goToStep(2);
+              const chapaEl = document.getElementById("chapa") as HTMLInputElement | null;
+              if (chapaEl) {
+                chapaEl.focus();
+                chapaEl.select();
+              }
+            },
+          );
+          return;
+        }
+
         sessionStorage.removeItem("formulang_idCliente");
         sessionStorage.removeItem("formulang_idRegistroPendiente");
       sessionStorage.removeItem("formulang_idPlanPendiente");

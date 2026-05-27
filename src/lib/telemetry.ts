@@ -16,6 +16,7 @@ export type PasoLanding =
   | "checkout"
   | "confirmar"
   | "bancard_response"
+  | "turnstile"
   | "fetch_error"
   | "js_error"
   | "unhandled_rejection";

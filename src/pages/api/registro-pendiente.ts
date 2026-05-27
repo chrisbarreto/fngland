@@ -12,9 +12,17 @@ export const prerender = false;
  */
 export const GET: APIRoute = async ({ url }) => {
   const ci = url.searchParams.get("ci") ?? "";
+  // forceClient=true → pedir al backend que retorne idCliente aunque NO haya
+  // membresía activa ni registro pendiente. Se usa como fallback después de un
+  // 409 por CI duplicada para recuperar el flujo sin pedirle al usuario que
+  // vuelva a empezar. Si el backend ignora el flag, el endpoint responde igual.
+  const forceClient = url.searchParams.get("forceClient") === "true";
+  const qs = new URLSearchParams();
+  if (ci) qs.set("ci", ci);
+  if (forceClient) qs.set("forceClient", "true");
 
   const { data, error, status } = await apiFetch(
-    `/registro-pendiente?ci=${encodeURIComponent(ci)}`,
+    `/registro-pendiente?${qs.toString()}`,
   );
 
   if (error) {

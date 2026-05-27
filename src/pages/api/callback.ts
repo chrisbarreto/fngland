@@ -90,7 +90,9 @@ export const GET: APIRoute = async ({ url, request }) => {
         if (cat.cliente?.ci) params.set("ci", cat.cliente.ci);
         if (cat.membresia?.codigo) params.set("codigo", cat.membresia.codigo);
         if (cat.membresia?.plan) params.set("plan", cat.membresia.plan);
-        if (cat.vehiculo?.chapa) params.set("chapa", cat.vehiculo.chapa);
+        // Strip del sufijo "DP" (Duplicada Pendiente, Fix 4) antes de mostrar
+        // al cliente. Es seguro: no hay chapas legítimas que terminen en DP.
+        if (cat.vehiculo?.chapa) params.set("chapa", String(cat.vehiculo.chapa).replace(/DP$/, ""));
         if (cat.vehiculo?.descripcion) params.set("vehiculo", cat.vehiculo.descripcion);
         if (cat.tarjeta?.numero) params.set("tarjeta", cat.tarjeta.numero);
         if (cat.tarjeta?.marca) params.set("tarjetaMarca", cat.tarjeta.marca);
