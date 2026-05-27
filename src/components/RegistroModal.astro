@@ -278,16 +278,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           </div>
         </div>
 
-        <!-- FOOTER ACTIONS — fuera de los pasos, dinámico según step -->
-        <div class="form-actions form-actions-footer" id="form-actions-footer" style="display:none;">
-          <button type="button" class="btn-back btn-prev" id="btn-prev-footer" data-prev="1">← Atrás</button>
-          <button type="button" class="btn-primary btn-next" id="btn-next-footer" data-next="2">Siguiente</button>
-          <button type="submit" class="btn-primary btn-submit" id="btn-submit" style="display:none;">
-            <span class="btn-submit-text">Pagar Ahora</span>
-            <span class="btn-submit-loading" style="display:none;">Procesando...</span>
-          </button>
-        </div>
-
+        <!-- Mensajes informativos (van ANTES del footer sticky en mobile
+             para que no queden tapados por el botón "Pagar Ahora"). -->
         <span class="field-error" id="turnstile-submit-error" style="display:none; text-align:center; margin-top:8px;"></span>
 
         <p class="secure-note" id="secure-note">
@@ -298,6 +290,18 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           </svg>
           Conexión segura · Datos procesados por Bancard / Pagopar
         </p>
+
+        <!-- FOOTER ACTIONS — fuera de los pasos, dinámico según step.
+             En mobile se vuelve sticky bottom para que el botón "Pagar Ahora"
+             siempre esté visible sin que el cliente tenga que hacer scroll. -->
+        <div class="form-actions form-actions-footer" id="form-actions-footer" style="display:none;">
+          <button type="button" class="btn-back btn-prev" id="btn-prev-footer" data-prev="1">← Atrás</button>
+          <button type="button" class="btn-primary btn-next" id="btn-next-footer" data-next="2">Siguiente</button>
+          <button type="submit" class="btn-primary btn-submit" id="btn-submit" style="display:none;">
+            <span class="btn-submit-text">Pagar Ahora</span>
+            <span class="btn-submit-loading" style="display:none;">Procesando...</span>
+          </button>
+        </div>
       </form>
 
       <!-- Success state -->
@@ -1277,6 +1281,33 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     /* Step 3 — legal */
     .legal-accept-wrapper { margin-top: 10px; }
     .legal-accept-label { font-size: 11.5px; }
+
+    /* Footer sticky bottom — el botón "Pagar Ahora" siempre visible en mobile.
+       En pantallas chicas (Android viejos, iPhone SE) el contenido del paso 3
+       requiere scroll y el cliente perdía el botón al fondo. Ahora queda
+       pegado al borde inferior del modal-body. */
+    .form-actions-footer {
+      position: sticky;
+      bottom: -16px; /* compensar el padding-bottom del modal-body */
+      /* Background sólido idéntico al modal-container para tapar el contenido
+         que pasa por detrás al scrollear. */
+      background: var(--card-bg);
+      /* Extender el footer hacia los costados para ocupar todo el ancho del
+         modal-body (que tiene padding 14px 16px). El padding del propio footer
+         compensa ese margen negativo. */
+      margin: 16px -16px -16px;
+      padding: 12px 16px 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 -8px 16px -6px rgba(0, 0, 0, 0.45);
+      z-index: 6;
+    }
+    /* Botón submit ligeramente más compacto en mobile para que entre cómodo */
+    .form-actions-footer .btn-submit,
+    .form-actions-footer .btn-next { padding: 12px 18px; font-size: 14px; }
+    .form-actions-footer .btn-prev,
+    .form-actions-footer .btn-back { padding: 12px 14px; font-size: 13px; }
+    /* secure-note: pequeño margen para que no quede pegado al footer sticky */
+    .secure-note { margin-bottom: 6px !important; }
 
     /* Success message */
     .success-message {
