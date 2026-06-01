@@ -6,6 +6,7 @@ export const prerender = false;
 export const GET: APIRoute = async ({ url }) => {
   const fecha = url.searchParams.get("fecha");
   const idSede = url.searchParams.get("idSede");
+  const domicilio = url.searchParams.get("domicilio");
 
   if (!fecha) {
     return new Response(
@@ -21,8 +22,11 @@ export const GET: APIRoute = async ({ url }) => {
     );
   }
 
+  const domicilioParam =
+    domicilio === "true" ? "&domicilio=true" : "";
+
   const { data, error, status } = await apiFetch(
-    `/agenda/slots?fecha=${encodeURIComponent(fecha)}&idSede=${encodeURIComponent(idSede)}`,
+    `/agenda/slots?fecha=${encodeURIComponent(fecha)}&idSede=${encodeURIComponent(idSede)}${domicilioParam}`,
   );
 
   if (error) {

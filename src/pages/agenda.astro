@@ -1260,6 +1260,16 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     "20": { horas: 16, nombre: "traslado" },
   };
 
+  const TIPO_SERVICIO_DETAILING_DOMICILIO = "21";
+
+  function esDomicilioSeleccionado() {
+    return Array.from(
+      document.querySelectorAll('input[name="idServicios"]:checked'),
+    ).some(
+      (cb) => cb.dataset.idTipoServicio === TIPO_SERVICIO_DETAILING_DOMICILIO,
+    );
+  }
+
   function getMaxAnticipacionRequerida() {
     const checked = Array.from(
       document.querySelectorAll('input[name="idServicios"]:checked'),
@@ -1691,8 +1701,9 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   const SLOTS_MAX_RETRIES = 2;
   const SLOTS_RETRY_DELAYS = [1500, 3000]; // ms before each retry
 
-  async function fetchSlotsWithRetry(fecha, idSede) {
+  async function fetchSlotsWithRetry(fecha, idSede, domicilio = false) {
     let lastError = null;
+    const domicilioParam = domicilio ? "&domicilio=true" : "";
 
     for (let attempt = 0; attempt <= SLOTS_MAX_RETRIES; attempt++) {
       if (attempt > 0) {
@@ -1701,7 +1712,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
 
       try {
-        const res = await fetch(`/proxy/agenda/slots?fecha=${fecha}&idSede=${encodeURIComponent(idSede)}`);
+        const res = await fetch(`/proxy/agenda/slots?fecha=${fecha}&idSede=${encodeURIComponent(idSede)}${domicilioParam}`);
 
         // Non-JSON response (e.g. Cloudflare HTML page, 502, etc.)
         const ct = res.headers.get("content-type") || "";
@@ -1768,7 +1779,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     slotsContainer.style.display = "block";
     slotsHint.textContent = "Cargando horarios...";
 
-    const result = await fetchSlotsWithRetry(fecha, idSede);
+    const esDomicilio = esDomicilioSeleccionado();
+    const result = await fetchSlotsWithRetry(fecha, idSede, esDomicilio);
 
     if (result.error) {
       slotsHint.textContent = result.error;
