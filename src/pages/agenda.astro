@@ -1261,6 +1261,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   };
 
   const TIPO_SERVICIO_DETAILING_DOMICILIO = "21";
+  const TIPO_SERVICIO_TRASLADO = "20";
 
   function esDomicilioSeleccionado() {
     return Array.from(
@@ -1268,6 +1269,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     ).some(
       (cb) => cb.dataset.idTipoServicio === TIPO_SERVICIO_DETAILING_DOMICILIO,
     );
+  }
+
+  function esTrasladoSeleccionado() {
+    return Array.from(
+      document.querySelectorAll('input[name="idServicios"]:checked'),
+    ).some((cb) => cb.dataset.idTipoServicio === TIPO_SERVICIO_TRASLADO);
   }
 
   function getMaxAnticipacionRequerida() {
@@ -1701,9 +1708,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   const SLOTS_MAX_RETRIES = 2;
   const SLOTS_RETRY_DELAYS = [1500, 3000]; // ms before each retry
 
-  async function fetchSlotsWithRetry(fecha, idSede, domicilio = false) {
+  async function fetchSlotsWithRetry(
+    fecha,
+    idSede,
+    domicilio = false,
+    soloTraslado = false,
+  ) {
     let lastError = null;
     const domicilioParam = domicilio ? "&domicilio=true" : "";
+    const soloTrasladoParam = soloTraslado ? "&soloTraslado=true" : "";
 
     for (let attempt = 0; attempt <= SLOTS_MAX_RETRIES; attempt++) {
       if (attempt > 0) {
@@ -1712,7 +1725,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
 
       try {
-        const res = await fetch(`/proxy/agenda/slots?fecha=${fecha}&idSede=${encodeURIComponent(idSede)}${domicilioParam}`);
+        const res = await fetch(`/proxy/agenda/slots?fecha=${fecha}&idSede=${encodeURIComponent(idSede)}${domicilioParam}${soloTrasladoParam}`);
 
         // Non-JSON response (e.g. Cloudflare HTML page, 502, etc.)
         const ct = res.headers.get("content-type") || "";
@@ -1780,7 +1793,16 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     slotsHint.textContent = "Cargando horarios...";
 
     const esDomicilio = esDomicilioSeleccionado();
-    const result = await fetchSlotsWithRetry(fecha, idSede, esDomicilio);
+    // El traslado (tipo 20) limita los horarios a 08:00–17:00 y a 2 cupos por
+    // hora (cupo global). Domicilio tiene su propia agenda, así que tiene
+    // prioridad si por algún motivo ambos estuvieran marcados.
+    const esTraslado = !esDomicilio && esTrasladoSeleccionado();
+    const result = await fetchSlotsWithRetry(
+      fecha,
+      idSede,
+      esDomicilio,
+      esTraslado,
+    );
 
     if (result.error) {
       slotsHint.textContent = result.error;

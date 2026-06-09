@@ -7,6 +7,7 @@ export const GET: APIRoute = async ({ url }) => {
   const fecha = url.searchParams.get("fecha");
   const idSede = url.searchParams.get("idSede");
   const domicilio = url.searchParams.get("domicilio");
+  const soloTraslado = url.searchParams.get("soloTraslado");
 
   if (!fecha) {
     return new Response(
@@ -24,9 +25,11 @@ export const GET: APIRoute = async ({ url }) => {
 
   const domicilioParam =
     domicilio === "true" ? "&domicilio=true" : "";
+  const soloTrasladoParam =
+    soloTraslado === "true" ? "&soloTraslado=true" : "";
 
   const { data, error, status } = await apiFetch(
-    `/agenda/slots?fecha=${encodeURIComponent(fecha)}&idSede=${encodeURIComponent(idSede)}${domicilioParam}`,
+    `/agenda/slots?fecha=${encodeURIComponent(fecha)}&idSede=${encodeURIComponent(idSede)}${domicilioParam}${soloTrasladoParam}`,
   );
 
   if (error) {
