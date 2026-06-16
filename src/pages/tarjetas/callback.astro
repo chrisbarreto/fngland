@@ -20,8 +20,17 @@ import { apiFetch } from "@/lib/api";
 
 const idCliente = Astro.url.searchParams.get("idCliente") ?? "";
 const token = Astro.url.searchParams.get("token") ?? "";
+const idMembresia = Astro.url.searchParams.get("idMembresia") ?? "";
 const bancardStatus = Astro.url.searchParams.get("status") ?? "";
 const bancardDescription = Astro.url.searchParams.get("description") ?? "";
+
+type Comprobante = {
+  cliente: { nombre: string; ci: string };
+  membresia: { codigo: string; plan: string; precioMensual: number };
+  vehiculo: { chapa: string; descripcion: string } | null;
+  tarjeta: { numero: string; marca: string | null } | null;
+  fechaProximoDebito: string | null;
+};
 
 const bancardFailed =
   bancardStatus !== "" && !bancardStatus.toLowerCase().includes("success");
@@ -40,10 +49,12 @@ let confirmResult: {
   status: "success" | "error";
   tarjetasCount: number;
   errorMsg: string;
+  comprobante: Comprobante | null;
 } = {
   status: "error",
   tarjetasCount: 0,
   errorMsg: "",
+  comprobante: null,
 };
 
 if (isTerminalFailure) {
@@ -56,10 +67,14 @@ if (isTerminalFailure) {
 } else if (shouldConfirm) {
   const { data, error } = await apiFetch<{
     tarjetas?: { idTarjeta: string }[];
+    catastro?: Comprobante;
     message?: string;
   }>("/pagopar/confirmar", {
     method: "POST",
-    body: JSON.stringify({ idCliente }),
+    body: JSON.stringify({
+      idCliente,
+      ...(idMembresia ? { idMembresia } : {}),
+    }),
   });
 
   if (error) {
@@ -68,6 +83,7 @@ if (isTerminalFailure) {
   } else if (data?.tarjetas && data.tarjetas.length > 0) {
     confirmResult.status = "success";
     confirmResult.tarjetasCount = data.tarjetas.length;
+    confirmResult.comprobante = data.catastro ?? null;
   } else {
     confirmResult.status = "error";
     confirmResult.errorMsg =
@@ -108,6 +124,56 @@ const retryUrl = canRetry
               </span>
             )}
           </p>
+
+          {confirmResult.comprobante && (
+            <div class="comprobante">
+              <p class="comprobante-titulo">Comprobante de registro</p>
+              <dl class="comprobante-list">
+                <div class="comprobante-row">
+                  <dt>Cliente</dt>
+                  <dd>{confirmResult.comprobante.cliente.nombre}</dd>
+                </div>
+                <div class="comprobante-row">
+                  <dt>Membresía</dt>
+                  <dd class="mono">{confirmResult.comprobante.membresia.codigo}</dd>
+                </div>
+                <div class="comprobante-row">
+                  <dt>Plan</dt>
+                  <dd>{confirmResult.comprobante.membresia.plan}</dd>
+                </div>
+                {confirmResult.comprobante.vehiculo && (
+                  <div class="comprobante-row">
+                    <dt>Vehículo</dt>
+                    <dd>
+                      {confirmResult.comprobante.vehiculo.descripcion}
+                      {` (${confirmResult.comprobante.vehiculo.chapa})`}
+                    </dd>
+                  </div>
+                )}
+                {confirmResult.comprobante.tarjeta && (
+                  <div class="comprobante-row">
+                    <dt>Tarjeta</dt>
+                    <dd class="mono">
+                      {confirmResult.comprobante.tarjeta.marca
+                        ? `${confirmResult.comprobante.tarjeta.marca} · `
+                        : ""}
+                      {confirmResult.comprobante.tarjeta.numero}
+                    </dd>
+                  </div>
+                )}
+                <div class="comprobante-row">
+                  <dt>Monto mensual</dt>
+                  <dd>
+                    {new Intl.NumberFormat("es-PY").format(
+                      Math.round(confirmResult.comprobante.membresia.precioMensual),
+                    )}{" "}
+                    Gs.
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          )}
+
           <p class="callback-hint">Puedes cerrar esta ventana.</p>
         </div>
       )}
@@ -219,6 +285,56 @@ const retryUrl = canRetry
     font-size: 0.8125rem;
     color: var(--sl-color-gray-4);
     margin: 0 0 1.5rem;
+  }
+
+  .comprobante {
+    margin: 1.25rem 0 0.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1rem 1.125rem;
+    text-align: left;
+  }
+
+  .comprobante-titulo {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--sl-color-gray-4);
+    margin: 0 0 0.75rem;
+  }
+
+  .comprobante-list {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .comprobante-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .comprobante-row dt {
+    font-size: 0.75rem;
+    color: var(--sl-color-gray-4);
+    flex-shrink: 0;
+  }
+
+  .comprobante-row dd {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--sl-color-white);
+    text-align: right;
+  }
+
+  .comprobante-row dd.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: #34d399;
   }
 
   .callback-actions {

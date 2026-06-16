@@ -1,0 +1,374 @@
+---
+export const prerender = false;
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+/**
+ * /tarjetas/registrar — Página pública de catastro de tarjeta (link estable).
+ *
+ * El panel genera un link como:
+ *   /tarjetas/registrar?idCliente=UUID&idMembresia=UUID&token=HMAC_HEX
+ *
+ * Réplica visual fiel de la página React del panel
+ * (apps/web/src/app/(public)/tarjetas/registrar/page.tsx), reimplementada en
+ * Astro + JS vanilla. En cada visita, tras elegir proveedor, llama a
+ * POST /api/iniciar-catastro (proxy → NestJS) para obtener un processId fresco
+ * y renderiza el iframe de Bancard o uPay.
+ *
+ * El link es reusable (HMAC determinista, sin expiración) y no requiere login.
+ */
+
+const idCliente = Astro.url.searchParams.get("idCliente") ?? "";
+const token = Astro.url.searchParams.get("token") ?? "";
+const idMembresia = Astro.url.searchParams.get("idMembresia") ?? "";
+const paramsOk = !!idCliente && !!token;
+---
+
+<BaseLayout
+  title="Registro de tarjeta | Fórmula NG"
+  description="Registrá tu tarjeta para débito automático de forma segura."
+  noindex={true}
+>
+  {!paramsOk ? (
+    <div class="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      <div class="w-full max-w-md rounded-2xl border border-red-200 bg-white p-8 shadow-sm">
+        <div class="text-center">
+          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+            <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h2 class="text-lg font-semibold text-gray-900">Enlace invalido</h2>
+          <p class="mt-2 text-sm text-gray-500">
+            Este enlace no es valido. Solicita un nuevo enlace a tu proveedor de servicio.
+          </p>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div
+      class="flex min-h-screen items-start justify-center bg-gray-50 p-2 sm:items-center sm:p-4"
+      data-id-cliente={idCliente}
+      data-token={token}
+      data-id-membresia={idMembresia}
+      id="registrar-root"
+    >
+      <div class="w-full max-w-lg">
+        {/* Header con logo */}
+        <div class="mb-3 flex justify-center sm:mb-6">
+          <img src="/images/logo/fomulang.svg" alt="Formulang" class="h-8 w-auto sm:h-12" />
+        </div>
+
+        {/* Contexto cliente + membresía (se rellena por JS tras el fetch) */}
+        <div
+          id="contexto-card"
+          class="mb-3 hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-sm sm:mb-4 sm:p-4"
+        >
+          <p class="text-[10px] uppercase tracking-wide text-gray-500 sm:text-xs">Cliente</p>
+          <p id="ctx-nombre" class="text-sm font-semibold text-gray-900 sm:text-base"></p>
+          <div class="mt-2 grid grid-cols-2 gap-2 text-sm sm:mt-3 sm:gap-3">
+            <div>
+              <p class="text-[10px] text-gray-500 sm:text-xs">Membresía</p>
+              <p id="ctx-codigo" class="font-mono text-sm font-semibold text-blue-600"></p>
+            </div>
+            <div>
+              <p class="text-[10px] text-gray-500 sm:text-xs">Plan</p>
+              <p id="ctx-plan" class="text-sm font-medium text-gray-900"></p>
+            </div>
+          </div>
+          <div class="mt-2 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-1.5 sm:mt-3 sm:py-2">
+            <span class="text-[10px] text-gray-500 sm:text-xs">Monto del plan</span>
+            <span id="ctx-monto" class="text-sm font-semibold text-gray-900"></span>
+          </div>
+        </div>
+
+        {/* Selector de proveedor */}
+        <div id="selector" class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <p class="mb-4 text-center text-sm font-medium text-gray-700">
+            Elegí el método para registrar tu tarjeta
+          </p>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              data-proveedor="Bancard"
+              class="prov-btn flex flex-col items-center justify-center rounded-xl border-2 border-gray-200 bg-white p-5 text-center transition-colors hover:border-blue-500 hover:bg-blue-50"
+            >
+              <span class="text-base font-semibold text-gray-900">Bancard</span>
+              <span class="mt-1 text-xs text-gray-500">Tarjetas de crédito/débito Bancard</span>
+            </button>
+            <button
+              type="button"
+              data-proveedor="uPay"
+              class="prov-btn flex flex-col items-center justify-center rounded-xl border-2 border-gray-200 bg-white p-5 text-center transition-colors hover:border-purple-500 hover:bg-purple-50"
+            >
+              <span class="text-base font-semibold text-gray-900">uPay</span>
+              <span class="mt-1 text-xs text-gray-500">Tarjetas habilitadas vía uPay</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Panel con proveedor seleccionado */}
+        <div id="panel" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          {/* Cabecera con proveedor seleccionado + cambiar */}
+          <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+            <span class="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+              Proveedor:
+              <span id="panel-proveedor"></span>
+            </span>
+            <button id="cambiar-metodo" type="button" class="text-xs font-medium text-blue-600 hover:text-blue-800">
+              Cambiar método
+            </button>
+          </div>
+
+          {/* Error */}
+          <div id="panel-error" class="m-4 hidden rounded-lg border border-red-200 bg-red-50 p-4">
+            <p id="panel-error-msg" class="text-sm text-red-700"></p>
+          </div>
+
+          {/* Loading */}
+          <div id="panel-loading" class="flex items-center justify-center py-12">
+            <div class="text-center">
+              <svg class="mx-auto h-8 w-8 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <p class="mt-3 text-sm text-gray-500">Cargando formulario...</p>
+            </div>
+          </div>
+
+          {/* uPay iframe */}
+          <iframe
+            id="upay-iframe"
+            title="Catastro de tarjeta uPay"
+            class="hidden block w-full"
+            style="height: 720px; border: none;"
+          ></iframe>
+
+          {/* Bancard iframe container */}
+          <div id="bancard-wrap" class="hidden">
+            <div id="bancard-iframe-container"></div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div id="footer" class="mt-4 hidden text-center">
+          <p class="text-xs text-gray-400">
+            Tus datos son procesados de forma segura por
+            <span id="footer-proveedor"></span>. No almacenamos informacion de tu tarjeta.
+          </p>
+        </div>
+      </div>
+    </div>
+  )}
+</BaseLayout>
+
+<style is:global>
+  #bancard-iframe-container {
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: visible;
+  }
+  #bancard-iframe-container iframe {
+    width: 100% !important;
+    border: none !important;
+    display: block !important;
+    margin: 0 auto !important;
+  }
+</style>
+
+<script>
+  const root = document.getElementById("registrar-root");
+  if (root) {
+    const idCliente = root.dataset.idCliente || "";
+    const token = root.dataset.token || "";
+    const idMembresia = root.dataset.idMembresia || "";
+
+    type Proveedor = "Bancard" | "uPay";
+
+    const $ = (id: string) => document.getElementById(id);
+    const show = (id: string) => $(id)?.classList.remove("hidden");
+    const hide = (id: string) => $(id)?.classList.add("hidden");
+
+    let bancardFormRendered = false;
+
+    /**
+     * Carga el script de Bancard sorteando el conflicto de babel-polyfill.
+     * (mismo workaround que la versión React del panel)
+     */
+    function loadBancardScript(): Promise<void> {
+      return new Promise((resolve, reject) => {
+        const w = window as unknown as Record<string, unknown>;
+        if (w.Bancard) {
+          resolve();
+          return;
+        }
+        const g = globalThis as unknown as Record<string, unknown>;
+        const saved = g._babelPolyfill;
+        g._babelPolyfill = false;
+
+        const script = document.createElement("script");
+        script.src = "/bancard-checkout-5.0.1.js";
+        script.async = false;
+        script.onload = () => {
+          g._babelPolyfill = saved;
+          resolve();
+        };
+        script.onerror = () => {
+          g._babelPolyfill = saved;
+          reject(new Error("Failed to load Bancard Checkout script"));
+        };
+        document.head.appendChild(script);
+      });
+    }
+
+    function showError(msg: string) {
+      const el = $("panel-error-msg");
+      if (el) el.textContent = msg;
+      show("panel-error");
+      hide("panel-loading");
+      hide("upay-iframe");
+      hide("bancard-wrap");
+    }
+
+    function renderContexto(ctx: {
+      clienteNombre: string;
+      codigoMembresia: string;
+      planNombre: string;
+      planPrecio: string;
+    } | null) {
+      if (!ctx) return;
+      const set = (id: string, v: string) => {
+        const el = $(id);
+        if (el) el.textContent = v;
+      };
+      set("ctx-nombre", ctx.clienteNombre);
+      set("ctx-codigo", ctx.codigoMembresia);
+      set("ctx-plan", ctx.planNombre);
+      const monto = new Intl.NumberFormat("es-PY").format(
+        Math.round(parseFloat(ctx.planPrecio)),
+      );
+      set("ctx-monto", `${monto} Gs.`);
+      show("contexto-card");
+    }
+
+    function renderUpay(processId: string) {
+      const iframe = $("upay-iframe") as HTMLIFrameElement | null;
+      if (!iframe) return;
+      iframe.src = `https://www.pagopar.com/upay-iframe/?id-form=${encodeURIComponent(processId)}`;
+      hide("panel-loading");
+      show("upay-iframe");
+    }
+
+    async function renderBancard(processId: string) {
+      try {
+        await loadBancardScript();
+      } catch {
+        showError(
+          "Error al cargar el formulario de pago. Por favor intenta de nuevo mas tarde o contacta a tu proveedor de servicio.",
+        );
+        return;
+      }
+      if (bancardFormRendered) return;
+      const Bancard = (window as unknown as Record<string, unknown>).Bancard as
+        | {
+            Cards: {
+              createForm: (
+                containerId: string,
+                processId: string,
+                options?: Record<string, unknown>,
+              ) => void;
+            };
+          }
+        | undefined;
+      if (!Bancard?.Cards) {
+        showError("Error al cargar el formulario de pago.");
+        return;
+      }
+      try {
+        const styles = {
+          "form-background-color": "#FFFFFF",
+          "input-background-color": "#F9FAFB",
+          "input-text-color": "#111827",
+          "input-border-color": "#D1D5DB",
+          "button-background-color": "#2563EB",
+          "button-text-color": "#FFFFFF",
+          "button-border-color": "#1D4ED8",
+          "header-background-color": "#F9FAFB",
+          "header-text-color": "#111827",
+        };
+        hide("panel-loading");
+        show("bancard-wrap");
+        Bancard.Cards.createForm("bancard-iframe-container", processId, { styles });
+        bancardFormRendered = true;
+      } catch {
+        showError("Error al cargar el formulario de pago.");
+      }
+    }
+
+    async function iniciar(proveedor: Proveedor) {
+      // UI: pasar de selector a panel
+      hide("selector");
+      show("panel");
+      show("footer");
+      const provLabel = $("panel-proveedor");
+      if (provLabel) {
+        provLabel.textContent = proveedor;
+        provLabel.className =
+          proveedor === "uPay" ? "text-purple-700" : "text-blue-700";
+      }
+      const footerProv = $("footer-proveedor");
+      if (footerProv) footerProv.textContent = ` ${proveedor}`;
+      hide("panel-error");
+      hide("upay-iframe");
+      hide("bancard-wrap");
+      show("panel-loading");
+
+      try {
+        const res = await fetch("/api/iniciar-catastro", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            idCliente,
+            token,
+            proveedor,
+            ...(idMembresia ? { idMembresia } : {}),
+          }),
+        });
+        if (!res.ok) {
+          const data = await res
+            .json()
+            .catch(() => ({ error: "Error al iniciar registro." }));
+          throw new Error(data.error || data.message || `Error ${res.status}`);
+        }
+        const data = await res.json();
+        if (!data.processId) throw new Error("Respuesta inesperada del servidor.");
+
+        renderContexto(data.contexto ?? null);
+
+        const provResp: Proveedor =
+          data.proveedor === "Bancard" ? "Bancard" : "uPay";
+        if (provResp === "uPay") {
+          renderUpay(data.processId);
+        } else {
+          await renderBancard(data.processId);
+        }
+      } catch (err) {
+        const e = err as { message?: string };
+        showError(e?.message ?? "Error al preparar el formulario.");
+      }
+    }
+
+    document.querySelectorAll<HTMLButtonElement>(".prov-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const prov = (btn.dataset.proveedor as Proveedor) || "uPay";
+        iniciar(prov);
+      });
+    });
+
+    // "Cambiar método": el SDK de Bancard inyecta DOM global y no se desmonta
+    // limpio, así que recargamos para volver al selector con estado fresco.
+    $("cambiar-metodo")?.addEventListener("click", () => {
+      window.location.reload();
+    });
+  }
+</script>
