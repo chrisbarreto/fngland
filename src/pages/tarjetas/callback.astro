@@ -2,20 +2,24 @@
 export const prerender = false;
 
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import { apiFetch } from "@/lib/api";
 
 /**
- * /tarjetas/callback — Callback page for Bancard card registration (catastro).
+ * /tarjetas/callback — Callback del catastro de tarjeta (link estable del panel).
  *
- * After the client completes (or cancels) the Bancard iframe, Bancard redirects
- * here with query params appended to the PAGOPAR_REDIRECT_URL:
+ * Bancard/uPay redirige acá tras completar (o cancelar) el iframe:
+ *   /tarjetas/callback?idCliente=UUID&token=HMAC&idMembresia=UUID&status=add_new_card_success
+ *   /tarjetas/callback?idCliente=UUID&token=HMAC&idMembresia=UUID&status=add_new_card_fail&description=...
  *
- *   /tarjetas/callback?idCliente=UUID&token=HMAC&status=add_new_card_success
- *   /tarjetas/callback?idCliente=UUID&token=HMAC&status=add_new_card_fail&description=...
+ * Flujo (replica de la página del panel apps/web):
+ *   1. POST /api/confirmar con idMembresiaActivar = idMembresia → confirma la
+ *      tarjeta y, si la membresía está vencida/desactivada, ACTIVA débito y
+ *      programa el cobro (diferido 40s por antifraude del banco).
+ *   2. Si cobroDiferido → "Procesando pago" + polling a /api/verificar-cobro
+ *      hasta ~110s para mostrar éxito (con nueva fechaFin) o fallo del cobro.
+ *   3. Si la membresía ya estaba activa → "Tarjeta registrada" (sin cobro).
  *
- * On success (or "already registered"), this page calls the NestJS backend to
- * confirm/sync the card. On terminal failure, it shows a retry button that
- * links back to the panel's stable registration link.
+ * Toda la lógica corre en el cliente; los proxies /api/* mantienen la API key
+ * en el servidor.
  */
 
 const idCliente = Astro.url.searchParams.get("idCliente") ?? "";
@@ -23,81 +27,6 @@ const token = Astro.url.searchParams.get("token") ?? "";
 const idMembresia = Astro.url.searchParams.get("idMembresia") ?? "";
 const bancardStatus = Astro.url.searchParams.get("status") ?? "";
 const bancardDescription = Astro.url.searchParams.get("description") ?? "";
-
-type Comprobante = {
-  cliente: { nombre: string; ci: string };
-  membresia: { codigo: string; plan: string; precioMensual: number };
-  vehiculo: { chapa: string; descripcion: string } | null;
-  tarjeta: { numero: string; marca: string | null } | null;
-  fechaProximoDebito: string | null;
-};
-
-const bancardFailed =
-  bancardStatus !== "" && !bancardStatus.toLowerCase().includes("success");
-
-// "ya ha sido catastrada" means the card already exists on Bancard's side —
-// just needs to be confirmed/synced to our DB, not a real failure.
-const isAlreadyRegistered =
-  bancardFailed &&
-  bancardDescription.toLowerCase().includes("ya ha sido catastrada");
-
-const isTerminalFailure = bancardFailed && !isAlreadyRegistered;
-const shouldConfirm = !isTerminalFailure && !!idCliente;
-
-// --- Server-side confirmation ---
-let confirmResult: {
-  status: "success" | "error";
-  tarjetasCount: number;
-  errorMsg: string;
-  comprobante: Comprobante | null;
-} = {
-  status: "error",
-  tarjetasCount: 0,
-  errorMsg: "",
-  comprobante: null,
-};
-
-if (isTerminalFailure) {
-  confirmResult.status = "error";
-  confirmResult.errorMsg =
-    bancardDescription || "La tarjeta no pudo ser registrada.";
-} else if (!idCliente) {
-  confirmResult.status = "error";
-  confirmResult.errorMsg = "Falta el parámetro idCliente en la URL.";
-} else if (shouldConfirm) {
-  const { data, error } = await apiFetch<{
-    tarjetas?: { idTarjeta: string }[];
-    catastro?: Comprobante;
-    message?: string;
-  }>("/pagopar/confirmar", {
-    method: "POST",
-    body: JSON.stringify({
-      idCliente,
-      ...(idMembresia ? { idMembresia } : {}),
-    }),
-  });
-
-  if (error) {
-    confirmResult.status = "error";
-    confirmResult.errorMsg = error;
-  } else if (data?.tarjetas && data.tarjetas.length > 0) {
-    confirmResult.status = "success";
-    confirmResult.tarjetasCount = data.tarjetas.length;
-    confirmResult.comprobante = data.catastro ?? null;
-  } else {
-    confirmResult.status = "error";
-    confirmResult.errorMsg =
-      "La confirmación fue procesada pero no se encontraron tarjetas registradas. " +
-      "Es posible que el banco emisor haya rechazado la tarjeta.";
-  }
-}
-
-const canRetry = !!idCliente && !!token;
-
-// Build the stable retry link (points to the panel's public registration page)
-const retryUrl = canRetry
-  ? `/tarjetas/registrar?idCliente=${encodeURIComponent(idCliente)}&token=${encodeURIComponent(token)}`
-  : "";
 ---
 
 <BaseLayout
@@ -105,115 +34,362 @@ const retryUrl = canRetry
   description="Resultado del registro de tarjeta para débito automático."
   noindex={true}
 >
-  <div class="callback-page">
+  <div
+    class="callback-page"
+    id="cb-root"
+    data-id-cliente={idCliente}
+    data-token={token}
+    data-id-membresia={idMembresia}
+    data-status={bancardStatus}
+    data-description={bancardDescription}
+  >
     <div class="callback-card">
-      {/* ── Success ── */}
-      {confirmResult.status === "success" && (
-        <div class="callback-content">
-          <div class="icon-circle icon-success">
-            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h1 class="callback-title">Tarjeta registrada</h1>
-          <p class="callback-message">
-            Tu tarjeta fue confirmada exitosamente.
-            {confirmResult.tarjetasCount > 0 && (
-              <span>
-                {` Tienes ${confirmResult.tarjetasCount} tarjeta${confirmResult.tarjetasCount > 1 ? "s" : ""} activa${confirmResult.tarjetasCount > 1 ? "s" : ""}.`}
-              </span>
-            )}
-          </p>
+      {/* ── Confirmando ── */}
+      <div id="st-confirmando" class="callback-content">
+        <div class="spinner"></div>
+        <h1 class="callback-title">Confirmando tarjeta…</h1>
+        <p class="callback-message">
+          Estamos sincronizando tu tarjeta con el sistema. No cierres esta ventana.
+        </p>
+      </div>
 
-          {confirmResult.comprobante && (
-            <div class="comprobante">
-              <p class="comprobante-titulo">Comprobante de registro</p>
-              <dl class="comprobante-list">
-                <div class="comprobante-row">
-                  <dt>Cliente</dt>
-                  <dd>{confirmResult.comprobante.cliente.nombre}</dd>
-                </div>
-                <div class="comprobante-row">
-                  <dt>Membresía</dt>
-                  <dd class="mono">{confirmResult.comprobante.membresia.codigo}</dd>
-                </div>
-                <div class="comprobante-row">
-                  <dt>Plan</dt>
-                  <dd>{confirmResult.comprobante.membresia.plan}</dd>
-                </div>
-                {confirmResult.comprobante.vehiculo && (
-                  <div class="comprobante-row">
-                    <dt>Vehículo</dt>
-                    <dd>
-                      {confirmResult.comprobante.vehiculo.descripcion}
-                      {` (${confirmResult.comprobante.vehiculo.chapa})`}
-                    </dd>
-                  </div>
-                )}
-                {confirmResult.comprobante.tarjeta && (
-                  <div class="comprobante-row">
-                    <dt>Tarjeta</dt>
-                    <dd class="mono">
-                      {confirmResult.comprobante.tarjeta.marca
-                        ? `${confirmResult.comprobante.tarjeta.marca} · `
-                        : ""}
-                      {confirmResult.comprobante.tarjeta.numero}
-                    </dd>
-                  </div>
-                )}
-                <div class="comprobante-row">
-                  <dt>Monto mensual</dt>
-                  <dd>
-                    {new Intl.NumberFormat("es-PY").format(
-                      Math.round(confirmResult.comprobante.membresia.precioMensual),
-                    )}{" "}
-                    Gs.
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          )}
-
-          <p class="callback-hint">Puedes cerrar esta ventana.</p>
+      {/* ── Esperando cobro ── */}
+      <div id="st-esperando" class="callback-content" hidden>
+        <div class="spinner"></div>
+        <h1 class="callback-title">Procesando pago automático</h1>
+        <p class="callback-message">
+          Tu tarjeta fue registrada. Estamos cobrando la renovación de tu
+          membresía. Esto puede tardar hasta 90 segundos.
+        </p>
+        <div class="progress">
+          <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
         </div>
-      )}
+        <p class="callback-hint">No cierres ni recargues esta ventana.</p>
+      </div>
+
+      {/* ── Éxito (con o sin cobro) ── */}
+      <div id="st-exito" class="callback-content" hidden>
+        <div class="icon-circle icon-success">
+          <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h1 id="exito-title" class="callback-title">Tarjeta registrada</h1>
+        <p id="exito-message" class="callback-message"></p>
+
+        <div id="fecha-box" class="fecha-box" hidden>
+          <p class="fecha-label">Membresía activa hasta</p>
+          <p id="fecha-valor" class="fecha-valor"></p>
+        </div>
+
+        <div id="comprobante" class="comprobante" hidden></div>
+
+        <p class="callback-hint">Puedes cerrar esta ventana.</p>
+      </div>
+
+      {/* ── Cobro fallido ── */}
+      <div id="st-cobro-fallido" class="callback-content" hidden>
+        <div class="icon-circle icon-warning">
+          <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h1 class="callback-title">Tarjeta registrada, pero el cobro falló</h1>
+        <p class="callback-message">
+          Tu tarjeta quedó registrada correctamente, pero el banco rechazó el
+          cobro de la renovación.
+        </p>
+        <p id="cobro-fallido-msg" class="callback-error-msg" hidden></p>
+        <p class="callback-hint">
+          Comunicate con tu proveedor de servicio para regularizar el pago.
+        </p>
+      </div>
 
       {/* ── Error ── */}
-      {confirmResult.status === "error" && (
-        <div class="callback-content">
-          <div class="icon-circle icon-error">
-            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </div>
-          <h1 class="callback-title">No se pudo registrar la tarjeta</h1>
-          <p class="callback-error-msg">{confirmResult.errorMsg}</p>
-          {canRetry ? (
-            <p class="callback-hint">Puedes intentar nuevamente con el mismo enlace.</p>
-          ) : (
-            <p class="callback-hint">
-              Solicita un nuevo enlace a tu proveedor de servicio para intentar de nuevo.
-            </p>
-          )}
-          <div class="callback-actions">
-            {canRetry && (
-              <a href={retryUrl} class="btn btn-primary">
-                Intentar de nuevo
-              </a>
-            )}
-          </div>
+      <div id="st-error" class="callback-content" hidden>
+        <div class="icon-circle icon-error">
+          <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </div>
-      )}
+        <h1 class="callback-title">No se pudo registrar la tarjeta</h1>
+        <p id="error-msg" class="callback-error-msg"></p>
+        <p id="error-hint" class="callback-hint"></p>
+        <div class="callback-actions">
+          <a id="retry-btn" href="#" class="btn btn-primary" hidden>Intentar de nuevo</a>
+        </div>
+      </div>
     </div>
 
     <div class="callback-footer">
       <p>
-        Tus datos son procesados de forma segura por Bancard.
+        Tus datos son procesados de forma segura por el banco.
         No almacenamos información de tu tarjeta.
       </p>
     </div>
   </div>
 </BaseLayout>
+
+<script>
+  const root = document.getElementById("cb-root");
+  if (root) {
+    const idCliente = root.dataset.idCliente || "";
+    const token = root.dataset.token || "";
+    const idMembresia = root.dataset.idMembresia || "";
+    const bancardStatus = root.dataset.status || "";
+    const bancardDescription = root.dataset.description || "";
+
+    const $ = (id: string) => document.getElementById(id);
+    const showState = (id: string) => {
+      ["st-confirmando", "st-esperando", "st-exito", "st-cobro-fallido", "st-error"].forEach(
+        (s) => $(s)?.toggleAttribute("hidden", s !== id),
+      );
+    };
+
+    type Comprobante = {
+      cliente: { nombre: string; ci: string };
+      membresia: { codigo: string; plan: string; precioMensual: number };
+      vehiculo: { chapa: string; descripcion: string } | null;
+      tarjeta: { numero: string; marca: string | null } | null;
+      fechaProximoDebito: string | null;
+    };
+
+    function formatFecha(fechaIso: string): string {
+      const d = fechaIso.includes("T") ? fechaIso.split("T")[0] : fechaIso;
+      const [y, m, day] = d.split("-").map(Number);
+      if (!y || !m || !day) return d;
+      return new Date(y, m - 1, day).toLocaleDateString("es-PY");
+    }
+
+    function renderComprobante(c: Comprobante | null, tarjetasCount: number) {
+      const box = $("comprobante");
+      if (!box || !c) return;
+      const rows: string[] = [];
+      const row = (label: string, value: string, mono = false) =>
+        `<div class="comprobante-row"><dt>${label}</dt><dd${mono ? ' class="mono"' : ""}>${value}</dd></div>`;
+      rows.push(row("Cliente", c.cliente.nombre));
+      rows.push(row("Membresía", c.membresia.codigo, true));
+      rows.push(row("Plan", c.membresia.plan));
+      if (c.vehiculo) {
+        rows.push(row("Vehículo", `${c.vehiculo.descripcion} (${c.vehiculo.chapa})`));
+      }
+      if (c.tarjeta) {
+        const marca = c.tarjeta.marca ? `${c.tarjeta.marca} · ` : "";
+        rows.push(row("Tarjeta", `${marca}${c.tarjeta.numero}`, true));
+      }
+      const monto = new Intl.NumberFormat("es-PY").format(
+        Math.round(c.membresia.precioMensual),
+      );
+      rows.push(row("Monto mensual", `${monto} Gs.`));
+      box.innerHTML =
+        `<p class="comprobante-titulo">Comprobante de registro</p>` +
+        `<dl class="comprobante-list">${rows.join("")}</dl>`;
+      box.removeAttribute("hidden");
+    }
+
+    function showExito(opts: {
+      conCobro: boolean;
+      tarjetasCount: number;
+      comprobante: Comprobante | null;
+      fechaFin?: string | null;
+    }) {
+      const title = $("exito-title");
+      const msg = $("exito-message");
+      if (opts.conCobro) {
+        if (title) title.textContent = "¡Pago realizado!";
+        if (msg)
+          msg.textContent =
+            "Tu tarjeta fue registrada y el cobro de tu membresía se realizó correctamente.";
+        if (opts.fechaFin) {
+          const fv = $("fecha-valor");
+          if (fv) fv.textContent = formatFecha(opts.fechaFin);
+          $("fecha-box")?.removeAttribute("hidden");
+        }
+      } else {
+        if (title) title.textContent = "Tarjeta registrada";
+        if (msg) {
+          const extra =
+            opts.tarjetasCount > 0
+              ? ` Tienes ${opts.tarjetasCount} tarjeta${opts.tarjetasCount > 1 ? "s" : ""} activa${opts.tarjetasCount > 1 ? "s" : ""}.`
+              : "";
+          msg.textContent = `Tu tarjeta quedó habilitada para el débito automático.${extra}`;
+        }
+      }
+      renderComprobante(opts.comprobante, opts.tarjetasCount);
+      showState("st-exito");
+    }
+
+    function showError(msg: string) {
+      const el = $("error-msg");
+      if (el) el.textContent = msg;
+      const canRetry = !!idCliente && !!token;
+      const hint = $("error-hint");
+      if (hint)
+        hint.textContent = canRetry
+          ? "Puedes intentar nuevamente con el mismo enlace."
+          : "Solicita un nuevo enlace a tu proveedor de servicio para intentar de nuevo.";
+      const retry = $("retry-btn") as HTMLAnchorElement | null;
+      if (retry && canRetry) {
+        const params = new URLSearchParams({ idCliente, token });
+        if (idMembresia) params.set("idMembresia", idMembresia);
+        retry.href = `/tarjetas/registrar?${params.toString()}`;
+        retry.removeAttribute("hidden");
+      }
+      showState("st-error");
+    }
+
+    function showCobroFallido(motivo: string | null) {
+      if (motivo) {
+        const el = $("cobro-fallido-msg");
+        if (el) {
+          el.textContent = motivo;
+          el.removeAttribute("hidden");
+        }
+      }
+      showState("st-cobro-fallido");
+    }
+
+    // ── Polling del cobro diferido ──
+    let pollingActive = true;
+    function startPollingCobro(fechaFinPrevia: string) {
+      const maxIntervals = 22; // 22 * 5s = 110s
+      const intervalMs = 5000;
+      let intentos = 0;
+
+      const tick = async () => {
+        if (!pollingActive) return;
+        intentos++;
+        const bar = $("progress-bar");
+        if (bar)
+          bar.style.width = `${Math.min(100, Math.round((intentos / maxIntervals) * 100))}%`;
+        try {
+          const res = await fetch("/api/verificar-cobro", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idCliente, idMembresia, token }),
+          });
+          const r = await res.json();
+          if (!pollingActive) return;
+
+          const fechaFinCambio =
+            r.fechaFin && r.fechaFin.slice(0, 10) !== fechaFinPrevia.slice(0, 10);
+
+          if (r.cobroExitoso || (fechaFinCambio && r.estado === "activa")) {
+            showExito({
+              conCobro: true,
+              tarjetasCount: pollingCtx.tarjetasCount,
+              comprobante: pollingCtx.comprobante,
+              fechaFin: r.fechaFin,
+            });
+            return;
+          }
+          if (r.cobroFallido) {
+            showCobroFallido(
+              r.ultimoIntento?.errorMensaje ||
+                "No se pudo procesar el cobro automático. Comunicate con tu proveedor.",
+            );
+            return;
+          }
+          if (intentos >= maxIntervals) {
+            // Sin respuesta concluyente: el cron del backend reintentará igual.
+            showExito({
+              conCobro: false,
+              tarjetasCount: pollingCtx.tarjetasCount,
+              comprobante: pollingCtx.comprobante,
+            });
+            return;
+          }
+          setTimeout(tick, intervalMs);
+        } catch {
+          if (intentos >= maxIntervals) {
+            showExito({
+              conCobro: false,
+              tarjetasCount: pollingCtx.tarjetasCount,
+              comprobante: pollingCtx.comprobante,
+            });
+            return;
+          }
+          setTimeout(tick, intervalMs);
+        }
+      };
+      setTimeout(tick, intervalMs);
+    }
+
+    const pollingCtx: { tarjetasCount: number; comprobante: Comprobante | null } = {
+      tarjetasCount: 0,
+      comprobante: null,
+    };
+
+    window.addEventListener("beforeunload", () => {
+      pollingActive = false;
+    });
+
+    // ── Determinar fallo terminal de Bancard ──
+    const bancardFailed =
+      bancardStatus !== "" && !bancardStatus.toLowerCase().includes("success");
+    // "ya ha sido catastrada" = la tarjeta ya existe en el banco; solo hay que
+    // confirmar/sincronizar, no es un fallo real.
+    const isAlreadyRegistered =
+      bancardFailed &&
+      bancardDescription.toLowerCase().includes("ya ha sido catastrada");
+    const isTerminalFailure = bancardFailed && !isAlreadyRegistered;
+
+    async function run() {
+      if (isTerminalFailure) {
+        showError(bancardDescription || "La tarjeta no pudo ser registrada.");
+        return;
+      }
+      if (!idCliente) {
+        showError("Falta el parámetro idCliente en la URL.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/confirmar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            idCliente,
+            ...(idMembresia ? { idMembresiaActivar: idMembresia } : {}),
+          }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || data.message || `Error ${res.status}`);
+        }
+
+        if (!data.tarjetas || data.tarjetas.length === 0) {
+          showError(
+            "La confirmación fue procesada pero no se encontraron tarjetas registradas. " +
+              "Es posible que el banco emisor haya rechazado la tarjeta.",
+          );
+          return;
+        }
+
+        const tarjetasCount = data.tarjetas.length as number;
+        const comprobante = (data.catastro ?? null) as Comprobante | null;
+
+        // Cobro diferido (membresía vencida/desactivada) → polling.
+        if (data.cobroDiferido && idMembresia && comprobante?.fechaProximoDebito) {
+          pollingCtx.tarjetasCount = tarjetasCount;
+          pollingCtx.comprobante = comprobante;
+          showState("st-esperando");
+          startPollingCobro(comprobante.fechaProximoDebito);
+          return;
+        }
+
+        // Membresía ya activa → solo registro de tarjeta, sin cobro.
+        showExito({ conCobro: false, tarjetasCount, comprobante });
+      } catch (err) {
+        const e = err as { message?: string };
+        showError(e?.message ?? "Error al confirmar la tarjeta con el servidor.");
+      }
+    }
+
+    run();
+  }
+</script>
 
 <style>
   .callback-page {
@@ -240,6 +416,22 @@ const retryUrl = canRetry
     text-align: center;
   }
 
+  .spinner {
+    width: 3rem;
+    height: 3rem;
+    margin: 0 auto 1.25rem;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #f92606;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   .icon-circle {
     width: 4rem;
     height: 4rem;
@@ -253,6 +445,11 @@ const retryUrl = canRetry
   .icon-success {
     background: rgba(16, 185, 129, 0.15);
     color: #34d399;
+  }
+
+  .icon-warning {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
   }
 
   .icon-error {
@@ -284,11 +481,49 @@ const retryUrl = canRetry
   .callback-hint {
     font-size: 0.8125rem;
     color: var(--sl-color-gray-4);
-    margin: 0 0 1.5rem;
+    margin: 0.75rem 0 0;
+  }
+
+  .progress {
+    margin: 1rem 0 0.25rem;
+    height: 0.5rem;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: #3b82f6;
+    transition: width 0.4s ease;
+  }
+
+  .fecha-box {
+    margin: 1.25rem 0 0;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.1);
+    padding: 0.75rem 1rem;
+  }
+
+  .fecha-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #34d399;
+    margin: 0;
+  }
+
+  .fecha-valor {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #6ee7b7;
+    margin: 0.125rem 0 0;
   }
 
   .comprobante {
-    margin: 1.25rem 0 0.5rem;
+    margin: 1.25rem 0 0;
     border-radius: 0.75rem;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.03);
@@ -342,6 +577,7 @@ const retryUrl = canRetry
     justify-content: center;
     gap: 0.75rem;
     flex-wrap: wrap;
+    margin-top: 1rem;
   }
 
   .btn {
