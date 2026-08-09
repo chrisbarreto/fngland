@@ -1378,7 +1378,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     guardarContextoMembresiaV2,
     prepararCambioTarjetaMembresiaV2,
     prepararCatastroMembresiaV2,
-    type CotizacionPublicaMembresiaV2,
   } from "@/lib/membresias-v2";
 
   interface TurnstileInstance {
@@ -1713,18 +1712,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       return membresiasV2EnabledCache;
     }
 
-    function confirmarImporteCotizacionV2(
-      cotizacion: CotizacionPublicaMembresiaV2,
-    ): boolean {
-      const monto = new Intl.NumberFormat("es-PY").format(
-        Math.round(Number(cotizacion.importes.totalCobrarAhora)),
-      );
-      const hasta = cotizacion.fechas.finCoberturaInicial.presentacion;
-      return window.confirm(
-        `El cobro inicial será de Gs. ${monto} y cubrirá tu membresía hasta el ${hasta}. ¿Deseás continuar con el registro de la tarjeta?`,
-      );
-    }
-
     async function redirigirACatastroV2(input: {
       idCliente: string;
       idCotizacion: string;
@@ -1745,6 +1732,12 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         token: preparado.catastro.token,
         tipoOperacion: input.tipoOperacion,
       });
+      // La navegación al catastro es parte normal del flujo V2. Liberar el
+      // guard evita que el navegador muestre "Es posible que los cambios no se
+      // guarden" antes de abrir la página segura de registro de tarjeta.
+      _modalDirty = false;
+      _modalLocked = false;
+      updateBeforeUnload();
       window.location.assign(preparado.catastro.url);
     }
 
@@ -1757,13 +1750,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
         idCliente,
         idRegistroPendiente,
       });
-      if (!confirmarImporteCotizacionV2(cotizacion)) {
-        showResult(
-          "Alta pendiente",
-          "Tu registro quedó guardado. Podés retomarlo ingresando nuevamente tu cédula.",
-        );
-        return;
-      }
       submitLoading.textContent = "Preparando registro seguro...";
       await redirigirACatastroV2({
         idCliente,
@@ -1782,10 +1768,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           idCliente,
           idMembresia,
         });
-        if (!confirmarImporteCotizacionV2(cotizacion)) {
-          hideProcessing();
-          return;
-        }
         await redirigirACatastroV2({
           idCliente,
           idCotizacion: cotizacion.idCotizacion,
@@ -1837,6 +1819,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           token: preparado.catastro.token,
           tipoOperacion: "CAMBIO_TARJETA",
         });
+        // El cambio de tarjeta también es una salida esperada hacia el
+        // catastro seguro, por lo que no debe activar la advertencia nativa.
+        _modalDirty = false;
+        _modalLocked = false;
+        updateBeforeUnload();
         window.location.assign(preparado.catastro.url);
       } catch (error) {
         showResult(
