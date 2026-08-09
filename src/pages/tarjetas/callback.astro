@@ -25,6 +25,9 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 const idCliente = Astro.url.searchParams.get("idCliente") ?? "";
 const token = Astro.url.searchParams.get("token") ?? "";
 const idMembresia = Astro.url.searchParams.get("idMembresia") ?? "";
+const idCotizacion = Astro.url.searchParams.get("idCotizacion") ?? "";
+const tokenVersion = Astro.url.searchParams.get("tokenVersion") ?? "";
+const purpose = Astro.url.searchParams.get("purpose") ?? "";
 const bancardStatus = Astro.url.searchParams.get("status") ?? "";
 const bancardDescription = Astro.url.searchParams.get("description") ?? "";
 ---
@@ -40,6 +43,9 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
     data-id-cliente={idCliente}
     data-token={token}
     data-id-membresia={idMembresia}
+    data-id-cotizacion={idCotizacion}
+    data-token-version={tokenVersion}
+    data-purpose={purpose}
     data-status={bancardStatus}
     data-description={bancardDescription}
   >
@@ -131,11 +137,19 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
 </BaseLayout>
 
 <script>
+  import {
+    guardarContextoMembresiaV2,
+    reintentarCobroMembresiaV2,
+  } from "@/lib/membresias-v2";
+
   const root = document.getElementById("cb-root");
   if (root) {
     const idCliente = root.dataset.idCliente || "";
     const token = root.dataset.token || "";
     const idMembresia = root.dataset.idMembresia || "";
+    const idCotizacion = root.dataset.idCotizacion || "";
+    const tokenVersion = root.dataset.tokenVersion || "";
+    const purpose = root.dataset.purpose || "";
     const bancardStatus = root.dataset.status || "";
     const bancardDescription = root.dataset.description || "";
 
@@ -345,18 +359,70 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
       }
 
       try {
-        const res = await fetch("/api/confirmar", {
+        const esCotizacionV2 =
+          tokenVersion === "V2" &&
+          purpose !== "AGREGAR_TARJETA_MEMBRESIA" &&
+          !!idCotizacion;
+        const esCambioTarjetaV2 =
+          tokenVersion === "V2" &&
+          purpose === "AGREGAR_TARJETA_MEMBRESIA" &&
+          !!idMembresia;
+        const endpoint = esCotizacionV2
+          ? "/api/membresias-v2?accion=catastro%2Fconfirmar"
+          : "/api/confirmar";
+        const payload = esCotizacionV2
+          ? { idCliente, idMembresia, idCotizacion, token }
+          : esCambioTarjetaV2
+            ? { idCliente, idMembresia }
+            : {
+                idCliente,
+                ...(idMembresia
+                  ? { idMembresiaActivar: idMembresia }
+                  : {}),
+              };
+
+        const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            idCliente,
-            ...(idMembresia ? { idMembresiaActivar: idMembresia } : {}),
-          }),
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
 
         if (!res.ok) {
           throw new Error(data.error || data.message || `Error ${res.status}`);
+        }
+
+        if (esCotizacionV2 || (esCambioTarjetaV2 && !!idCotizacion)) {
+          if (esCambioTarjetaV2) {
+            await reintentarCobroMembresiaV2({
+              idCliente,
+              idMembresia,
+              idCotizacion,
+              token,
+            });
+          }
+          guardarContextoMembresiaV2(sessionStorage, {
+            idCliente,
+            idMembresia,
+            idCotizacion,
+            token,
+            tipoOperacion: esCambioTarjetaV2
+              ? "CAMBIO_TARJETA"
+              : purpose === "REACTIVACION_MEMBRESIA_V2"
+                ? "REACTIVACION"
+                : "ALTA",
+          });
+          const params = new URLSearchParams({
+            checkout: "ok",
+            billingVersion: "V2",
+            cobroDiferido: "true",
+            idCliente,
+            idMembresia,
+            idCotizacion,
+            token,
+          });
+          window.location.replace(`/gracias?${params.toString()}`);
+          return;
         }
 
         if (!data.tarjetas || data.tarjetas.length === 0) {

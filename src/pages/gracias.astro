@@ -56,18 +56,38 @@ import Footer from "@/components/Footer.astro";
 
 <script>
   import { logEvent } from "@/lib/telemetry";
+  import {
+    consultarEstadoCobroMembresiaV2,
+    guardarContextoMembresiaV2,
+    leerContextoMembresiaV2,
+    limpiarContextoMembresiaV2,
+    prepararCambioTarjetaMembresiaV2,
+    type SeguimientoCobroMembresiaV2,
+  } from "@/lib/membresias-v2";
 
   const params = new URLSearchParams(window.location.search);
   const checkoutStatus = params.get("checkout");
   const checkoutMessage = params.get("checkout_msg");
   const cobroDiferido = params.get("cobroDiferido") === "true";
+  const billingVersion = params.get("billingVersion") || "LEGACY";
   const numeroComprobante = params.get("numeroComprobante");
   const idMembresiaQs = params.get("idMembresia") || undefined;
 
   // Telemetría: cuando uPay redirige top-level a /gracias, el modal nunca pudo
   // emitir los eventos finales. Reemitirlos acá para que la sesión cierre con
   // `bancard_response: add_new_card_success` + `confirmar: CONFIRMAR_OK`.
-  if (checkoutStatus === "ok") {
+  if (checkoutStatus === "ok" && billingVersion === "V2") {
+    logEvent({
+      paso: "confirmar",
+      severidad: "info",
+      codigo: "COBRO_V2_EN_PROCESO",
+      contexto: {
+        origen: "gracias_redirect",
+        idCotizacion: params.get("idCotizacion"),
+      },
+      idMembresia: idMembresiaQs,
+    });
+  } else if (checkoutStatus === "ok") {
     logEvent({
       paso: "bancard_response",
       severidad: "info",
@@ -82,6 +102,7 @@ import Footer from "@/components/Footer.astro";
       contexto: {
         origen: "gracias_redirect",
         cobroDiferido,
+        billingVersion,
         numeroComprobante: numeroComprobante ?? null,
       },
       idMembresia: idMembresiaQs,
@@ -104,8 +125,161 @@ import Footer from "@/components/Footer.astro";
   const actionPrimary = document.getElementById("action-primary") as HTMLAnchorElement | null;
   const btnComprobante = document.getElementById("btn-descargar-comprobante") as HTMLButtonElement | null;
 
+  async function iniciarSeguimientoV2(): Promise<void> {
+    if (!card || !icon || !eyebrow || !title || !description || !actionPrimary) {
+      return;
+    }
+    const guardado = leerContextoMembresiaV2(sessionStorage);
+    const idCliente = params.get("idCliente") || guardado?.idCliente || "";
+    const idMembresia = params.get("idMembresia") || guardado?.idMembresia || "";
+    const idCotizacion =
+      params.get("idCotizacion") || guardado?.idCotizacion || "";
+    const token = params.get("token") || guardado?.token || "";
+    if (!idCliente || !idMembresia || !idCotizacion || !token) {
+      card.dataset.status = "error";
+      icon.textContent = "!";
+      eyebrow.textContent = "No pudimos recuperar el seguimiento";
+      title.textContent = "Tu operación sigue protegida";
+      description.textContent =
+        "No vuelvas a registrar otra tarjeta. Contactanos para consultar el resultado con seguridad.";
+      actionPrimary.textContent = "Volver al registro";
+      actionPrimary.href = "/membresia";
+      return;
+    }
+
+    let activo = true;
+    let consultas = 0;
+    const maxConsultas = 30;
+    window.addEventListener("beforeunload", () => {
+      activo = false;
+    });
+
+    const prepararReintento = async (estado: SeguimientoCobroMembresiaV2) => {
+      actionPrimary.textContent = "Registrar otra tarjeta";
+      actionPrimary.href = "#";
+      actionPrimary.onclick = async (event) => {
+        event.preventDefault();
+        actionPrimary.setAttribute("aria-disabled", "true");
+        actionPrimary.textContent = "Preparando enlace seguro...";
+        try {
+          const preparado = await prepararCambioTarjetaMembresiaV2({
+            idCliente,
+            idMembresia,
+            idCotizacion,
+          });
+          guardarContextoMembresiaV2(sessionStorage, {
+            idCliente,
+            idMembresia,
+            idCotizacion,
+            token: preparado.catastro.token,
+            tipoOperacion: "CAMBIO_TARJETA",
+          });
+          logEvent({
+            paso: "confirmar",
+            severidad: "info",
+            codigo: "CAMBIO_TARJETA_REINTENTO_INICIADO",
+            contexto: { idCotizacion, estado: estado.estado },
+            idMembresia,
+          });
+          window.location.assign(preparado.catastro.url);
+        } catch (error) {
+          actionPrimary.removeAttribute("aria-disabled");
+          actionPrimary.textContent = "Registrar otra tarjeta";
+          description.textContent =
+            error instanceof Error
+              ? error.message
+              : "No pudimos preparar el cambio de tarjeta.";
+        }
+      };
+    };
+
+    const render = async (estado: SeguimientoCobroMembresiaV2) => {
+      if (estado.definitivo) limpiarContextoMembresiaV2(sessionStorage);
+      if (estado.estado === "PAGADO") {
+        activo = false;
+        card.dataset.status = "success";
+        icon.textContent = "✓";
+        eyebrow.textContent = "Pago confirmado";
+        title.textContent = "Tu membresía quedó activa";
+        description.textContent = estado.membresia.fechaFin
+          ? `El pago fue aplicado. Tu cobertura está vigente hasta el ${estado.membresia.fechaFin.split("-").reverse().join("/")}.`
+          : estado.mensaje;
+        actionPrimary.textContent = "Agendar mi primer servicio";
+        actionPrimary.href = "/agenda";
+        logEvent({
+          paso: "confirmar",
+          severidad: "info",
+          codigo: "COBRO_V2_CONFIRMADO",
+          contexto: { idCotizacion, intento: estado.intento?.numeroIntento },
+          idMembresia,
+        });
+        return;
+      }
+      if (estado.estado === "RECHAZADO") {
+        activo = false;
+        card.dataset.status = "error";
+        icon.textContent = "×";
+        eyebrow.textContent = "Cobro rechazado";
+        title.textContent = "El banco no aprobó el pago";
+        description.textContent = estado.mensaje;
+        await prepararReintento(estado);
+        return;
+      }
+      if (estado.estado === "FALLIDO_DEFINITIVO") {
+        activo = false;
+        card.dataset.status = "error";
+        icon.textContent = "!";
+        eyebrow.textContent = "Necesitamos ayudarte";
+        title.textContent = "El proceso no pudo completarse";
+        description.textContent = estado.mensaje;
+        actionPrimary.textContent = "Volver al registro";
+        actionPrimary.href = "/membresia";
+        return;
+      }
+      card.dataset.status = "pending";
+      icon.textContent = "…";
+      eyebrow.textContent =
+        estado.estado === "INDETERMINADO"
+          ? "Esperando confirmación del banco"
+          : "Procesando pago";
+      title.textContent = "No vuelvas a registrar otra tarjeta";
+      description.textContent = estado.mensaje;
+      actionPrimary.textContent = "Volver al inicio";
+      actionPrimary.href = "/membresia";
+    };
+
+    const consultar = async () => {
+      if (!activo) return;
+      consultas += 1;
+      try {
+        const estado = await consultarEstadoCobroMembresiaV2({
+          idCliente,
+          idMembresia,
+          idCotizacion,
+          token,
+        });
+        await render(estado);
+        if (!activo) return;
+      } catch (error) {
+        description.textContent =
+          consultas >= maxConsultas
+            ? "No pudimos actualizar el estado ahora. El worker continuará procesando; no intentes pagar nuevamente."
+            : "Seguimos intentando consultar el resultado de forma segura.";
+      }
+      if (consultas < maxConsultas && activo) {
+        window.setTimeout(consultar, 4_000);
+      } else if (activo) {
+        eyebrow.textContent = "El procesamiento continúa";
+        title.textContent = "Podés cerrar esta página";
+      }
+    };
+    await consultar();
+  }
+
   if (card && icon && eyebrow && title && description) {
-    if (checkoutStatus === "ok" && cobroDiferido) {
+    if (checkoutStatus === "ok" && billingVersion === "V2") {
+      void iniciarSeguimientoV2();
+    } else if (checkoutStatus === "ok" && cobroDiferido) {
       // Catastro OK con cobro pendiente (diferido 40s para evitar antifraude)
       const nombre = params.get("nombre") || "";
       const codigo = params.get("codigo") || "";
@@ -139,7 +313,9 @@ import Footer from "@/components/Footer.astro";
       } else {
         title.textContent = "Listo, tu tarjeta quedó registrada";
         description.textContent =
-          "Asociamos tu tarjeta a tu membresía. No realizamos ningún cobro en este momento — los próximos vencimientos se debitarán automáticamente.";
+          billingVersion === "V2"
+            ? "El débito automático quedó habilitado y el cobro inicial está siendo procesado por el nuevo sistema de membresías. No vuelvas a registrar otra tarjeta."
+            : "Asociamos tu tarjeta a tu membresía. No realizamos ningún cobro en este momento — los próximos vencimientos se debitarán automáticamente.";
       }
 
       if (actionPrimary) {

@@ -1371,6 +1371,34 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
 <script>
   import { logEvent } from "@/lib/telemetry";
+  import {
+    consultarDisponibilidadMembresiasV2,
+    cotizarAltaMembresiaV2,
+    cotizarReactivacionMembresiaV2,
+    guardarContextoMembresiaV2,
+    prepararCambioTarjetaMembresiaV2,
+    prepararCatastroMembresiaV2,
+    type CotizacionPublicaMembresiaV2,
+  } from "@/lib/membresias-v2";
+
+  interface TurnstileInstance {
+    reset: (container?: HTMLElement | string) => void;
+    getResponse: (container?: HTMLElement | string) => string | undefined;
+    remove: (container?: HTMLElement | string) => void;
+    render: (
+      container: HTMLElement | string,
+      params: Record<string, unknown>,
+    ) => string;
+    execute: (container?: HTMLElement | string) => void;
+  }
+  declare global {
+    interface Window {
+      turnstile?: TurnstileInstance;
+      __tsOnSuccess: (token: string) => void;
+      __tsOnExpired: () => void;
+      __tsOnError: () => void;
+    }
+  }
   {
     // ---- DOM Elements ----
     const modal = document.getElementById("registro-modal") as HTMLElement;
@@ -1395,6 +1423,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     let modoActualizarVehiculo = false;
     let lastLookedUpCI = "";      // evita re-disparar lookup para el mismo CI
     let lookupInProgress = false; // evita lookups simultáneos (race condition)
+    let membresiasV2EnabledCache: boolean | null = null;
     // Cuando el backend rechaza la chapa por duplicada (409) y el usuario
     // confirma que sí es suya, esta bandera hace que el próximo submit envíe
     // `chapa + "DP"` para evitar el constraint y dejar la operación marcada
@@ -1405,22 +1434,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     let _chapaMarcadaParaRevisionManual = false;
 
     // ---- Turnstile token state ----
-    interface TurnstileInstance {
-      reset: (container?: HTMLElement | string) => void;
-      getResponse: (container?: HTMLElement | string) => string | undefined;
-      remove: (container?: HTMLElement | string) => void;
-      render: (container: HTMLElement | string, params: Record<string, unknown>) => string;
-      execute: (container?: HTMLElement | string) => void;
-    }
-    declare global {
-      interface Window {
-        turnstile?: TurnstileInstance;
-        __tsOnSuccess: (token: string) => void;
-        __tsOnExpired: () => void;
-        __tsOnError: () => void;
-      }
-    }
-
     const _tsSiteKey = (document.querySelector(".cf-turnstile") as HTMLElement | null)?.getAttribute("data-sitekey") ?? "";
     let _tsTokenReady = false;
     let _tsTokenValue = "";
@@ -1692,6 +1705,146 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           throw err;
         })
         .finally(() => clearTimeout(timer));
+    }
+
+    async function membresiasV2Habilitadas(): Promise<boolean> {
+      if (membresiasV2EnabledCache !== null) return membresiasV2EnabledCache;
+      membresiasV2EnabledCache = await consultarDisponibilidadMembresiasV2();
+      return membresiasV2EnabledCache;
+    }
+
+    function confirmarImporteCotizacionV2(
+      cotizacion: CotizacionPublicaMembresiaV2,
+    ): boolean {
+      const monto = new Intl.NumberFormat("es-PY").format(
+        Math.round(Number(cotizacion.importes.totalCobrarAhora)),
+      );
+      const hasta = cotizacion.fechas.finCoberturaInicial.presentacion;
+      return window.confirm(
+        `El cobro inicial será de Gs. ${monto} y cubrirá tu membresía hasta el ${hasta}. ¿Deseás continuar con el registro de la tarjeta?`,
+      );
+    }
+
+    async function redirigirACatastroV2(input: {
+      idCliente: string;
+      idCotizacion: string;
+      tipoOperacion: "ALTA" | "REACTIVACION";
+    }): Promise<void> {
+      const preparado = await prepararCatastroMembresiaV2({
+        idCliente: input.idCliente,
+        idCotizacion: input.idCotizacion,
+      });
+      const idMembresia = preparado.materializacion?.idMembresia;
+      if (!idMembresia || !preparado.catastro?.url) {
+        throw new Error("No se pudo preparar el registro seguro de la tarjeta.");
+      }
+      guardarContextoMembresiaV2(sessionStorage, {
+        idCliente: input.idCliente,
+        idMembresia,
+        idCotizacion: input.idCotizacion,
+        token: preparado.catastro.token,
+        tipoOperacion: input.tipoOperacion,
+      });
+      window.location.assign(preparado.catastro.url);
+    }
+
+    async function iniciarAltaMembresiaV2(
+      idCliente: string,
+      idRegistroPendiente: string,
+    ): Promise<void> {
+      submitLoading.textContent = "Calculando cobro inicial...";
+      const cotizacion = await cotizarAltaMembresiaV2({
+        idCliente,
+        idRegistroPendiente,
+      });
+      if (!confirmarImporteCotizacionV2(cotizacion)) {
+        showResult(
+          "Alta pendiente",
+          "Tu registro quedó guardado. Podés retomarlo ingresando nuevamente tu cédula.",
+        );
+        return;
+      }
+      submitLoading.textContent = "Preparando registro seguro...";
+      await redirigirACatastroV2({
+        idCliente,
+        idCotizacion: cotizacion.idCotizacion,
+        tipoOperacion: "ALTA",
+      });
+    }
+
+    async function iniciarReactivacionMembresiaV2(
+      idCliente: string,
+      idMembresia: string,
+    ): Promise<void> {
+      showProcessing();
+      try {
+        const cotizacion = await cotizarReactivacionMembresiaV2({
+          idCliente,
+          idMembresia,
+        });
+        if (!confirmarImporteCotizacionV2(cotizacion)) {
+          hideProcessing();
+          return;
+        }
+        await redirigirACatastroV2({
+          idCliente,
+          idCotizacion: cotizacion.idCotizacion,
+          tipoOperacion: "REACTIVACION",
+        });
+      } catch (error) {
+        showResult(
+          "No pudimos iniciar la reactivación",
+          error instanceof Error ? error.message : "Intentá nuevamente.",
+          true,
+        );
+      }
+    }
+
+    async function continuarCatastroMembresiaV2(input: {
+      idCliente: string;
+      idCotizacion: string;
+      tipoOperacion: "ALTA" | "REACTIVACION";
+    }): Promise<void> {
+      showProcessing();
+      try {
+        await redirigirACatastroV2(input);
+      } catch (error) {
+        showResult(
+          "No pudimos continuar el registro",
+          error instanceof Error ? error.message : "Intentá nuevamente.",
+          true,
+        );
+      }
+    }
+
+    async function cambiarTarjetaMembresiaV2(
+      idCliente: string,
+      idMembresia: string,
+    ): Promise<void> {
+      showProcessing();
+      try {
+        const preparado = await prepararCambioTarjetaMembresiaV2({
+          idCliente,
+          idMembresia,
+        });
+        if (!preparado.catastro?.url) {
+          throw new Error("No se pudo generar el enlace seguro de tarjeta.");
+        }
+        guardarContextoMembresiaV2(sessionStorage, {
+          idCliente,
+          idMembresia,
+          idCotizacion: null,
+          token: preparado.catastro.token,
+          tipoOperacion: "CAMBIO_TARJETA",
+        });
+        window.location.assign(preparado.catastro.url);
+      } catch (error) {
+        showResult(
+          "No pudimos preparar el cambio de tarjeta",
+          error instanceof Error ? error.message : "Intentá nuevamente.",
+          true,
+        );
+      }
     }
 
     // ---- Auto-debit: día calculado automáticamente al activar ----
@@ -3127,6 +3280,10 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           return;
         }
 
+        if (typeof data.membresiasV2Enabled === "boolean") {
+          membresiasV2EnabledCache = data.membresiasV2Enabled;
+        }
+
         // ---- Cuenta dada de baja (soft-deleted) ----
         // Mostrar banner explicativo y NO ofrecer el formulario; si lo dejaramos
         // proceder, el submit fallaría con "ya existe un RUC" después de tipear todo.
@@ -3222,6 +3379,39 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           banner.style.cssText = "margin-top:1rem;padding:0.85rem 1rem;background:rgba(249,166,6,0.12);border:1px solid rgba(249,166,6,0.35);border-radius:10px;font-size:0.85rem;color:#f9a606;";
           banner.innerHTML = `<strong>Encontramos tu registro: ${nombreCensurado}, ${emailCensurado}</strong><br/>Tus datos fueron completados automáticamente. Revisalos y continuá al pago.`;
           step1El?.appendChild(banner);
+          const accionRp = rp.flujoV2?.accion;
+          const idCotizacionRp = rp.flujoV2?.idCotizacion;
+          if (
+            data.membresiasV2Enabled &&
+            (accionRp === "PREPARAR_CATASTRO" ||
+              accionRp === "CONTINUAR_CATASTRO") &&
+            idCotizacionRp
+          ) {
+            const continuar = document.createElement("button");
+            continuar.type = "button";
+            continuar.className = "btn-next";
+            continuar.style.marginTop = "0.75rem";
+            continuar.textContent = "Continuar registro de tarjeta →";
+            continuar.addEventListener("click", () => {
+              void continuarCatastroMembresiaV2({
+                idCliente: data.idCliente,
+                idCotizacion: idCotizacionRp,
+                tipoOperacion:
+                  rp.flujoV2?.tipoOperacion === "REACTIVACION"
+                    ? "REACTIVACION"
+                    : "ALTA",
+              });
+            });
+            banner.appendChild(continuar);
+          } else if (
+            data.membresiasV2Enabled &&
+            accionRp === "ESPERAR_COBRO"
+          ) {
+            banner.innerHTML =
+              `<strong>Encontramos tu registro: ${nombreCensurado}</strong><br/>` +
+              "Tu tarjeta ya fue confirmada y el cobro está siendo procesado. No vuelvas a registrar otra tarjeta.";
+            return;
+          }
           revelarCamposPersonales();
           return;
         }
@@ -3232,10 +3422,42 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
 
           const nombreCensurado = censurar(data.nombre, 4);
           const planSeleccionado = _pendingPlanId || "";
-          const memPagopar = data.membresias.filter((m: any) => m.renovacionAutomatica);
-          const memEfectivo = data.membresias.filter((m: any) => !m.renovacionAutomatica);
+          const membresiasV2 = data.membresias.filter(
+            (m: any) => m.billingVersion === "V2",
+          );
+          const membresiasLegacy = data.membresias.filter(
+            (m: any) => m.billingVersion !== "V2",
+          );
+          const memPagopar = membresiasLegacy.filter((m: any) => m.renovacionAutomatica);
+          const memEfectivo = membresiasLegacy.filter((m: any) => !m.renovacionAutomatica);
           const hayPagopar = memPagopar.length > 0;
           const hayEfectivo = memEfectivo.length > 0;
+
+          const accionesV2HTML = data.membresiasV2Enabled
+            ? membresiasV2
+                .map((m: any) => {
+                  const accion = m.flujoV2?.accion;
+                  const detalle = `Membresía ${escapeHtml(m.codigo)} · Chapa ${escapeHtml(censurar(m.chapa ?? "", 2))}`;
+                  if (accion === "COTIZAR_REACTIVACION") {
+                    return `<button type="button" class="rp-v2-action" data-v2-accion="${accion}" data-id-membresia="${escapeHtml(m.idMembresia)}" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:rgba(249,166,6,0.08);border:1px solid rgba(249,166,6,0.4);border-radius:10px;color:#fff;cursor:pointer;text-align:left;"><span style="font-size:1.3rem;">↻</span><span><strong style="display:block;font-size:0.875rem;">Reactivar membresía</strong><small style="color:#aaa;font-size:0.78rem;">${detalle}</small></span></button>`;
+                  }
+                  if (
+                    (accion === "PREPARAR_CATASTRO" ||
+                      accion === "CONTINUAR_CATASTRO") &&
+                    m.flujoV2?.idCotizacion
+                  ) {
+                    return `<button type="button" class="rp-v2-action" data-v2-accion="${accion}" data-id-membresia="${escapeHtml(m.idMembresia)}" data-id-cotizacion="${escapeHtml(m.flujoV2.idCotizacion)}" data-tipo-operacion="${escapeHtml(m.flujoV2.tipoOperacion ?? "REACTIVACION")}" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:rgba(79,70,229,0.12);border:1px solid rgba(99,102,241,0.45);border-radius:10px;color:#fff;cursor:pointer;text-align:left;"><span style="font-size:1.3rem;">💳</span><span><strong style="display:block;font-size:0.875rem;">Continuar registro de tarjeta</strong><small style="color:#aaa;font-size:0.78rem;">${detalle}</small></span></button>`;
+                  }
+                  if (accion === "ESPERAR_COBRO") {
+                    return `<div style="padding:0.75rem 1rem;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.35);border-radius:10px;color:#fff;"><strong style="display:block;font-size:0.875rem;color:#86efac;">Pago en procesamiento</strong><small style="color:#aaa;font-size:0.78rem;">${detalle}. No es necesario volver a registrar la tarjeta.</small></div>`;
+                  }
+                  if (accion === "GESTIONAR_TARJETA") {
+                    return `<button type="button" class="rp-v2-action" data-v2-accion="${accion}" data-id-membresia="${escapeHtml(m.idMembresia)}" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:rgba(255,255,255,0.05);border:1px solid rgba(249,166,6,0.4);border-radius:10px;color:#fff;cursor:pointer;text-align:left;"><span style="font-size:1.3rem;">💳</span><span><strong style="display:block;font-size:0.875rem;">Actualizar tarjeta</strong><small style="color:#aaa;font-size:0.78rem;">${detalle}. No genera un cobro adicional.</small></span></button>`;
+                  }
+                  return "";
+                })
+                .join("")
+            : "";
 
           // Débito automático activo con plan DISTINTO al seleccionado → bloquear
           const membresiaDebitoConPlanDistinto = memPagopar.find(
@@ -3324,6 +3546,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
           panel.innerHTML = `
             <p style="font-size:0.9rem;color:#f9a606;font-weight:700;margin:0 0 0.75rem;">👋 Hola ${nombreCensurado}, ya sos cliente.</p>
             <div style="display:flex;flex-direction:column;gap:0.6rem;">
+              ${accionesV2HTML}
               ${btnActualizarHTML}
               ${btnActivarHTML}
               ${botonesActualizarVehiculoHTML}
@@ -3341,6 +3564,41 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             panel.remove();
             form.style.display = "none";
             await startRetryCheckout(data.idCliente);
+          });
+
+          panel.querySelectorAll<HTMLButtonElement>(".rp-v2-action").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const accion = btn.dataset.v2Accion;
+              const idMembresia = btn.dataset.idMembresia ?? "";
+              const idCotizacion = btn.dataset.idCotizacion ?? "";
+              if (!idMembresia) return;
+              panel.remove();
+              form.style.display = "none";
+              if (accion === "COTIZAR_REACTIVACION") {
+                void iniciarReactivacionMembresiaV2(
+                  data.idCliente,
+                  idMembresia,
+                );
+              } else if (
+                (accion === "PREPARAR_CATASTRO" ||
+                  accion === "CONTINUAR_CATASTRO") &&
+                idCotizacion
+              ) {
+                void continuarCatastroMembresiaV2({
+                  idCliente: data.idCliente,
+                  idCotizacion,
+                  tipoOperacion:
+                    btn.dataset.tipoOperacion === "ALTA"
+                      ? "ALTA"
+                      : "REACTIVACION",
+                });
+              } else if (accion === "GESTIONAR_TARJETA") {
+                void cambiarTarjetaMembresiaV2(
+                  data.idCliente,
+                  idMembresia,
+                );
+              }
+            });
           });
 
           // Wire "Seleccionar todas" master checkbox + sync visual cuando cambian individuales
@@ -4322,6 +4580,28 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             const idPlanForm = (document.getElementById("idPlan") as HTMLInputElement)?.value;
             if (idPlanForm) sessionStorage.setItem("formulang_idPlanPendiente", idPlanForm);
           }
+        }
+
+        const idRegistroParaV2 = sessionStorage.getItem(
+          "formulang_idRegistroPendiente",
+        );
+        if (await membresiasV2Habilitadas()) {
+          if (!idRegistroParaV2) {
+            throw new Error(
+              "El registro quedó incompleto y no puede cotizarse todavía. Intentá nuevamente.",
+            );
+          }
+          logEvent({
+            paso: "submit_registro",
+            severidad: "info",
+            codigo: "MEMBRESIA_V2_ALTA_INICIADA",
+            contexto: {
+              idRegistroPendiente: idRegistroParaV2,
+              flujo: "V2",
+            },
+          });
+          await iniciarAltaMembresiaV2(idCliente, idRegistroParaV2);
+          return;
         }
 
         submitLoading.textContent = "Redirigiendo a Pagopar...";
