@@ -81,8 +81,15 @@ const providerSelectorEnabled =
             </div>
           </div>
           <div class="mt-2 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-1.5 sm:mt-3 sm:py-2">
-            <span class="text-[10px] text-gray-500 sm:text-xs">Monto del plan</span>
+            <span id="ctx-monto-label" class="text-[10px] text-gray-500 sm:text-xs">Monto del plan</span>
             <span id="ctx-monto" class="text-sm font-semibold text-gray-900"></span>
+          </div>
+          <div
+            id="ctx-vigencia"
+            class="mt-2 hidden items-center justify-between rounded-lg bg-blue-50 px-3 py-1.5 sm:py-2"
+          >
+            <span class="text-[10px] text-blue-700 sm:text-xs">Vigencia de este pago</span>
+            <span id="ctx-vigencia-valor" class="text-xs font-semibold text-blue-900 sm:text-sm"></span>
           </div>
         </div>
 
@@ -244,6 +251,9 @@ const providerSelectorEnabled =
       codigoMembresia: string;
       planNombre: string;
       planPrecio: string;
+      montoCobrarAhora: string | null;
+      vigenciaCobroDesde: string | null;
+      vigenciaCobroHasta: string | null;
     } | null) {
       if (!ctx) return;
       const set = (id: string, v: string) => {
@@ -253,10 +263,28 @@ const providerSelectorEnabled =
       set("ctx-nombre", ctx.clienteNombre);
       set("ctx-codigo", ctx.codigoMembresia);
       set("ctx-plan", ctx.planNombre);
+      const esCobroCotizado = ctx.montoCobrarAhora !== null;
       const monto = new Intl.NumberFormat("es-PY").format(
-        Math.round(parseFloat(ctx.planPrecio)),
+        Math.round(parseFloat(ctx.montoCobrarAhora ?? ctx.planPrecio)),
+      );
+      set(
+        "ctx-monto-label",
+        esCobroCotizado ? "Monto a cobrar ahora" : "Monto del plan",
       );
       set("ctx-monto", `${monto} Gs.`);
+      if (ctx.vigenciaCobroDesde && ctx.vigenciaCobroHasta) {
+        const formatFecha = (fecha: string) => {
+          const [anio, mes, dia] = fecha.split("-");
+          return `${dia}/${mes}/${anio}`;
+        };
+        set(
+          "ctx-vigencia-valor",
+          `${formatFecha(ctx.vigenciaCobroDesde)} al ${formatFecha(ctx.vigenciaCobroHasta)}`,
+        );
+        const vigencia = $("ctx-vigencia");
+        vigencia?.classList.remove("hidden");
+        vigencia?.classList.add("flex");
+      }
       show("contexto-card");
     }
 
