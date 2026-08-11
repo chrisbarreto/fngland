@@ -22,6 +22,9 @@ const idCliente = Astro.url.searchParams.get("idCliente") ?? "";
 const token = Astro.url.searchParams.get("token") ?? "";
 const idMembresia = Astro.url.searchParams.get("idMembresia") ?? "";
 const paramsOk = !!idCliente && !!token;
+// Por defecto se abre uPay directamente. La selección puede reactivarse luego.
+const providerSelectorEnabled =
+  import.meta.env.PUBLIC_PAGOPAR_PROVIDER_SELECTOR_ENABLED === "true";
 ---
 
 <BaseLayout
@@ -51,6 +54,7 @@ const paramsOk = !!idCliente && !!token;
       data-id-cliente={idCliente}
       data-token={token}
       data-id-membresia={idMembresia}
+      data-provider-selector-enabled={String(providerSelectorEnabled)}
       id="registrar-root"
     >
       <div class="w-full max-w-lg">
@@ -82,30 +86,31 @@ const paramsOk = !!idCliente && !!token;
           </div>
         </div>
 
-        {/* Selector de proveedor */}
-        <div id="selector" class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <p class="mb-4 text-center text-sm font-medium text-gray-700">
-            Elegí el método para registrar tu tarjeta
-          </p>
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              data-proveedor="Bancard"
-              class="prov-btn flex flex-col items-center justify-center rounded-xl border-2 border-gray-200 bg-white p-5 text-center transition-colors hover:border-blue-500 hover:bg-blue-50"
-            >
-              <span class="text-base font-semibold text-gray-900">Bancard</span>
-              <span class="mt-1 text-xs text-gray-500">Tarjetas de crédito/débito Bancard</span>
-            </button>
-            <button
-              type="button"
-              data-proveedor="uPay"
-              class="prov-btn flex flex-col items-center justify-center rounded-xl border-2 border-gray-200 bg-white p-5 text-center transition-colors hover:border-purple-500 hover:bg-purple-50"
-            >
-              <span class="text-base font-semibold text-gray-900">uPay</span>
-              <span class="mt-1 text-xs text-gray-500">Tarjetas habilitadas vía uPay</span>
-            </button>
+        {providerSelectorEnabled && (
+          <div id="selector" class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <p class="mb-4 text-center text-sm font-medium text-gray-700">
+              Elegí el método para registrar tu tarjeta
+            </p>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                data-proveedor="Bancard"
+                class="prov-btn flex flex-col items-center justify-center rounded-xl border-2 border-gray-200 bg-white p-5 text-center transition-colors hover:border-blue-500 hover:bg-blue-50"
+              >
+                <span class="text-base font-semibold text-gray-900">Bancard</span>
+                <span class="mt-1 text-xs text-gray-500">Tarjetas de crédito/débito Bancard</span>
+              </button>
+              <button
+                type="button"
+                data-proveedor="uPay"
+                class="prov-btn flex flex-col items-center justify-center rounded-xl border-2 border-gray-200 bg-white p-5 text-center transition-colors hover:border-purple-500 hover:bg-purple-50"
+              >
+                <span class="text-base font-semibold text-gray-900">uPay</span>
+                <span class="mt-1 text-xs text-gray-500">Tarjetas habilitadas vía uPay</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Panel con proveedor seleccionado */}
         <div id="panel" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -115,9 +120,11 @@ const paramsOk = !!idCliente && !!token;
               Proveedor:
               <span id="panel-proveedor"></span>
             </span>
-            <button id="cambiar-metodo" type="button" class="text-xs font-medium text-blue-600 hover:text-blue-800">
-              Cambiar método
-            </button>
+            {providerSelectorEnabled && (
+              <button id="cambiar-metodo" type="button" class="text-xs font-medium text-blue-600 hover:text-blue-800">
+                Cambiar método
+              </button>
+            )}
           </div>
 
           {/* Error */}
@@ -182,6 +189,8 @@ const paramsOk = !!idCliente && !!token;
     const idCliente = root.dataset.idCliente || "";
     const token = root.dataset.token || "";
     const idMembresia = root.dataset.idMembresia || "";
+    const providerSelectorEnabled =
+      root.dataset.providerSelectorEnabled === "true";
 
     type Proveedor = "Bancard" | "uPay";
 
@@ -370,5 +379,9 @@ const paramsOk = !!idCliente && !!token;
     $("cambiar-metodo")?.addEventListener("click", () => {
       window.location.reload();
     });
+
+    if (!providerSelectorEnabled) {
+      void iniciar("uPay");
+    }
   }
 </script>
