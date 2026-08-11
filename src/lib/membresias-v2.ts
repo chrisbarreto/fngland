@@ -10,6 +10,7 @@ export type AccionFlujoMembresiaV2 =
 export interface FlujoMembresiaV2 {
   accion: AccionFlujoMembresiaV2;
   idCotizacion: string | null;
+  idMembresia: string | null;
   tipoOperacion: "ALTA" | "REACTIVACION" | null;
   estadoCotizacion: string | null;
   expiresAt: string | null;
@@ -34,6 +35,20 @@ export interface CotizacionPublicaMembresiaV2 {
     totalCobrarAhora: string;
   };
   expiresAt: string;
+}
+
+export interface CambioPlanAltaPendienteMembresiaV2 {
+  success: true;
+  billingVersion: "V2";
+  idRegistroPendiente: string;
+  idCliente: string;
+  idVehiculo: string;
+  idMembresiaAnterior: string;
+  idPlanAnterior: string;
+  idPlanNuevo: string;
+  expiresAt: string;
+  reemplazada: true;
+  idempotente: boolean;
 }
 
 export interface CatastroPreparadoMembresiaV2 {
@@ -215,6 +230,21 @@ export async function cotizarAltaMembresiaV2(
     fetcher,
   );
   return result.cotizacion;
+}
+
+export async function cambiarPlanAltaPendienteMembresiaV2(
+  input: {
+    idCliente: string;
+    idMembresia: string;
+    idPlanNuevo: string;
+  },
+  fetcher: FetchLike = fetch,
+): Promise<CambioPlanAltaPendienteMembresiaV2> {
+  return requestV2<CambioPlanAltaPendienteMembresiaV2>(
+    "altas/cambiar-plan",
+    input,
+    fetcher,
+  );
 }
 
 export async function cotizarReactivacionMembresiaV2(

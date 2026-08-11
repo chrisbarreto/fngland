@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   MEMBRESIA_V2_CONTEXT_KEY,
+  cambiarPlanAltaPendienteMembresiaV2,
   consultarDisponibilidadMembresiasV2,
   consultarEstadoCobroMembresiaV2,
   cotizarAltaMembresiaV2,
@@ -123,6 +124,41 @@ describe("membresias V2 landing", () => {
       idempotencyKey: expect.stringMatching(
         /^landing:reactivacion:mem-1:\d{4}-\d{2}-\d{2}$/,
       ),
+    });
+  });
+
+  it("cambia el plan de un alta pendiente sin crear otro cliente o vehiculo", async () => {
+    const cambio = {
+      success: true,
+      billingVersion: "V2",
+      idRegistroPendiente: "rp-nuevo",
+      idCliente: "cli-1",
+      idVehiculo: "veh-1",
+      idMembresiaAnterior: "mem-1",
+      idPlanAnterior: "plan-1",
+      idPlanNuevo: "plan-2",
+      reemplazada: true,
+      idempotente: false,
+    };
+    const fetcher = vi.fn().mockResolvedValue(response(cambio));
+
+    await expect(
+      cambiarPlanAltaPendienteMembresiaV2(
+        {
+          idCliente: "cli-1",
+          idMembresia: "mem-1",
+          idPlanNuevo: "plan-2",
+        },
+        fetcher,
+      ),
+    ).resolves.toEqual(cambio);
+    expect(fetcher.mock.calls[0][0]).toBe(
+      "/api/membresias-v2?accion=altas%2Fcambiar-plan",
+    );
+    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({
+      idCliente: "cli-1",
+      idMembresia: "mem-1",
+      idPlanNuevo: "plan-2",
     });
   });
 

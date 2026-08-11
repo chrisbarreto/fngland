@@ -1382,10 +1382,12 @@ const providerSelectorEnabled =
 <script>
   import { logEvent } from "@/lib/telemetry";
   import {
+    cambiarPlanAltaPendienteMembresiaV2,
     consultarDisponibilidadMembresiasV2,
     cotizarAltaMembresiaV2,
     cotizarReactivacionMembresiaV2,
     guardarContextoMembresiaV2,
+    limpiarContextoMembresiaV2,
     prepararCambioTarjetaMembresiaV2,
     prepararCatastroMembresiaV2,
   } from "@/lib/membresias-v2";
@@ -1675,6 +1677,7 @@ const providerSelectorEnabled =
       sessionStorage.removeItem("formulang_idCliente");
       sessionStorage.removeItem("formulang_idRegistroPendiente");
       sessionStorage.removeItem("formulang_idPlanPendiente");
+      sessionStorage.removeItem("formulang_idMembresiaAltaPendiente");
       sessionStorage.removeItem("formulang_idMembresiaActivar");
       sessionStorage.removeItem("formulang_idsMembresiasActivar");
       sessionStorage.removeItem("formulang_idVehiculo");
@@ -1744,6 +1747,12 @@ const providerSelectorEnabled =
         token: preparado.catastro.token,
         tipoOperacion: input.tipoOperacion,
       });
+      if (input.tipoOperacion === "ALTA") {
+        sessionStorage.setItem(
+          "formulang_idMembresiaAltaPendiente",
+          idMembresia,
+        );
+      }
       // La navegación al catastro es parte normal del flujo V2. Liberar el
       // guard evita que el navegador muestre "Es posible que los cambios no se
       // guarden" antes de abrir la página segura de registro de tarjeta.
@@ -3230,6 +3239,7 @@ const providerSelectorEnabled =
       sessionStorage.removeItem("formulang_idCliente");
       sessionStorage.removeItem("formulang_idRegistroPendiente");
       sessionStorage.removeItem("formulang_idPlanPendiente");
+      sessionStorage.removeItem("formulang_idMembresiaAltaPendiente");
       sessionStorage.removeItem("formulang_idMembresiaActivar");
       sessionStorage.removeItem("formulang_idsMembresiasActivar");
       sessionStorage.removeItem("formulang_idVehiculo");
@@ -3371,7 +3381,18 @@ const providerSelectorEnabled =
 
           sessionStorage.setItem("formulang_idCliente", data.idCliente);
           sessionStorage.setItem("formulang_idRegistroPendiente", rp.idRegistroPendiente);
+          if (rp.idVehiculo) {
+            sessionStorage.setItem("formulang_idVehiculo", rp.idVehiculo);
+          }
           if (rp.idPlan) sessionStorage.setItem("formulang_idPlanPendiente", rp.idPlan);
+          if (rp.flujoV2?.idMembresia) {
+            sessionStorage.setItem(
+              "formulang_idMembresiaAltaPendiente",
+              rp.flujoV2.idMembresia,
+            );
+          } else {
+            sessionStorage.removeItem("formulang_idMembresiaAltaPendiente");
+          }
 
           const nombreCensurado = censurar(data.nombre, 4);
           const emailCensurado = censurarEmail(data.email);
@@ -3968,9 +3989,10 @@ const providerSelectorEnabled =
         document.getElementById("rp-opciones-panel")?.remove();
         sessionStorage.removeItem("formulang_idCliente");
         sessionStorage.removeItem("formulang_idRegistroPendiente");
-      sessionStorage.removeItem("formulang_idPlanPendiente");
+        sessionStorage.removeItem("formulang_idPlanPendiente");
+        sessionStorage.removeItem("formulang_idMembresiaAltaPendiente");
         sessionStorage.removeItem("formulang_idMembresiaActivar");
-      sessionStorage.removeItem("formulang_idsMembresiasActivar");
+        sessionStorage.removeItem("formulang_idsMembresiasActivar");
         modoNuevoVehiculo = false;
       }
     });
@@ -4454,38 +4476,90 @@ const providerSelectorEnabled =
           // El cliente ya existe en BD; el RegistroPendiente del intento anterior
           // está cacheado en sessionStorage. Dos casos:
           //   1) Mismo plan que antes → reusar todo, ir directo a checkout.
-          //   2) Plan distinto → crear NUEVO RegistroPendiente con el plan actual
-          //      vía /api/registro-vehiculo (reusa idCliente, NO recrea cliente).
+          //   2) Plan distinto → reemplazar el alta pendiente conservando
+          //      el mismo cliente y el mismo vehículo.
           //
-          // CRÍTICO (Fix bug "Ya existe un registro con el RUC"): NO llamar a
-          // POST /api/registro acá — el cliente YA existe en BD y el backend
-          // responde 409. submitNuevoVehiculo() es la API correcta para
-          // adjuntar un nuevo plan/vehículo a un cliente preexistente.
+          // No se vuelve a registrar el cliente ni el vehículo. Cuando el alta
+          // ya fue materializada se usa el reemplazo transaccional; antes de
+          // eso solo se reemplaza el registro pendiente del mismo vehículo.
           const idPlanForm = (document.getElementById("idPlan") as HTMLInputElement)?.value;
           const idPlanPendienteCache = sessionStorage.getItem("formulang_idPlanPendiente");
+          const idMembresiaAltaPendienteCache = sessionStorage.getItem(
+            "formulang_idMembresiaAltaPendiente",
+          );
           const planCambio =
             !!idPlanForm && !!idPlanPendienteCache && idPlanForm !== idPlanPendienteCache;
           if (planCambio) {
+            if (!idPlanForm) {
+              throw new Error("Seleccioná un plan para continuar.");
+            }
             logEvent({
               paso: "submit_registro",
               severidad: "warn",
               codigo: "PLAN_CAMBIO_REUSA_CLIENTE",
               mensaje:
-                "Plan elegido distinto al del registro pendiente — se crea nuevo RegistroPendiente reusando el cliente existente",
+                "Plan elegido distinto al del registro pendiente — se reemplaza el alta sin duplicar cliente ni vehiculo",
               contexto: {
                 idPlanForm,
                 idPlanPendienteCache,
                 idClienteCache: idClienteExistente,
                 idRegPendienteCache: idRegPendienteExistente,
+                hasIdMembresiaAltaPendiente:
+                  !!idMembresiaAltaPendienteCache,
               },
             });
-            // Descartar SOLO el RegistroPendiente y el plan cacheado — NO el cliente.
-            sessionStorage.removeItem("formulang_idRegistroPendiente");
-            sessionStorage.removeItem("formulang_idPlanPendiente");
-            // Crear nuevo RegistroPendiente con el plan/chapa actuales,
-            // reusando idClienteExistente. Esta función ya maneja el 409
-            // por chapa duplicada propagando un error con code=CHAPA_DUPLICADA.
-            await submitNuevoVehiculo(idClienteExistente);
+            submitLoading.textContent = "Actualizando el plan...";
+            if (
+              idMembresiaAltaPendienteCache &&
+              (await membresiasV2Habilitadas())
+            ) {
+              const cambio = await cambiarPlanAltaPendienteMembresiaV2({
+                idCliente: idClienteExistente,
+                idMembresia: idMembresiaAltaPendienteCache,
+                idPlanNuevo: idPlanForm,
+              });
+              sessionStorage.setItem(
+                "formulang_idRegistroPendiente",
+                cambio.idRegistroPendiente,
+              );
+              sessionStorage.setItem("formulang_idVehiculo", cambio.idVehiculo);
+              limpiarContextoMembresiaV2(sessionStorage);
+            } else {
+              const idVehiculoExistente = sessionStorage.getItem(
+                "formulang_idVehiculo",
+              );
+              if (!idVehiculoExistente) {
+                throw new Error(
+                  "No pudimos identificar el vehículo del registro pendiente. Volvé a ingresar tu CI para reanudarlo.",
+                );
+              }
+              const cambioRes = await fetchWithTimeout(
+                "/api/registro-pendiente",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    idCliente: idClienteExistente,
+                    idVehiculo: idVehiculoExistente,
+                    idPlan: idPlanForm,
+                  }),
+                },
+                20000,
+              );
+              const cambioBody = await cambioRes.json().catch(() => ({}));
+              if (!cambioRes.ok || !cambioBody.idRegistroPendiente) {
+                throw new Error(
+                  cambioBody.error ||
+                    cambioBody.message ||
+                    "No pudimos actualizar el plan. Intentá nuevamente.",
+                );
+              }
+              sessionStorage.setItem(
+                "formulang_idRegistroPendiente",
+                cambioBody.idRegistroPendiente,
+              );
+            }
+            sessionStorage.removeItem("formulang_idMembresiaAltaPendiente");
             idCliente = idClienteExistente;
             if (idPlanForm) sessionStorage.setItem("formulang_idPlanPendiente", idPlanForm);
           } else {
@@ -4574,6 +4648,7 @@ const providerSelectorEnabled =
             }
 
             sessionStorage.setItem("formulang_idCliente", idCliente);
+            sessionStorage.removeItem("formulang_idMembresiaAltaPendiente");
             const idRegistroPendiente = body.data?.idRegistroPendiente;
             if (idRegistroPendiente) sessionStorage.setItem("formulang_idRegistroPendiente", idRegistroPendiente);
             // Guardar también el plan asociado al registro para detectar cambios
@@ -4782,9 +4857,6 @@ const providerSelectorEnabled =
           return;
         }
 
-        sessionStorage.removeItem("formulang_idCliente");
-        sessionStorage.removeItem("formulang_idRegistroPendiente");
-      sessionStorage.removeItem("formulang_idPlanPendiente");
         // Filter out raw technical errors (SyntaxError, TypeError, etc.)
         const isTechnical = err instanceof SyntaxError || err instanceof TypeError ||
           (err.message && (err.message.includes("Unexpected token") || err.message.includes("undefined")));
@@ -4907,9 +4979,10 @@ const providerSelectorEnabled =
             }
             sessionStorage.removeItem("formulang_idCliente");
             sessionStorage.removeItem("formulang_idRegistroPendiente");
-      sessionStorage.removeItem("formulang_idPlanPendiente");
+            sessionStorage.removeItem("formulang_idPlanPendiente");
+            sessionStorage.removeItem("formulang_idMembresiaAltaPendiente");
             sessionStorage.removeItem("formulang_idMembresiaActivar");
-      sessionStorage.removeItem("formulang_idsMembresiasActivar");
+            sessionStorage.removeItem("formulang_idsMembresiasActivar");
             sessionStorage.removeItem("formulang_planId");
           } catch (err) {
             console.error("Error confirming card:", err);
