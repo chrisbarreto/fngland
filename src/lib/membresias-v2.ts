@@ -129,8 +129,11 @@ function fechaLocalIso(fecha = new Date()): string {
   return `${anio}-${mes}-${dia}`;
 }
 
-export function idempotencyKeyAlta(idRegistroPendiente: string): string {
-  return `landing:alta:${idRegistroPendiente}`;
+export function idempotencyKeyAlta(
+  idRegistroPendiente: string,
+  fecha = new Date(),
+): string {
+  return `landing:alta:${idRegistroPendiente}:${fechaLocalIso(fecha)}`;
 }
 
 export function idempotencyKeyReactivacion(
@@ -226,6 +229,7 @@ export async function cotizarAltaMembresiaV2(
     {
       ...input,
       idempotencyKey: idempotencyKeyAlta(input.idRegistroPendiente),
+      fechaInicio: fechaLocalIso(),
     },
     fetcher,
   );

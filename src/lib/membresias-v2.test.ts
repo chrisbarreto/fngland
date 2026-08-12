@@ -37,7 +37,9 @@ describe("membresias V2 landing", () => {
   beforeEach(() => vi.useRealTimers());
 
   it("genera claves idempotentes estables por operacion", () => {
-    expect(idempotencyKeyAlta("registro-1")).toBe("landing:alta:registro-1");
+    expect(idempotencyKeyAlta("registro-1", new Date(2026, 7, 12, 14, 0))).toBe(
+      "landing:alta:registro-1:2026-08-12",
+    );
     expect(
       idempotencyKeyReactivacion("membresia-1", new Date(2026, 7, 7, 23, 30)),
     ).toBe("landing:reactivacion:membresia-1:2026-08-07");
@@ -110,7 +112,10 @@ describe("membresias V2 landing", () => {
     expect(JSON.parse(fetcher.mock.calls[0][1].body)).toMatchObject({
       idCliente: "cli-1",
       idRegistroPendiente: "rp-1",
-      idempotencyKey: "landing:alta:rp-1",
+      idempotencyKey: expect.stringMatching(
+        /^landing:alta:rp-1:\d{4}-\d{2}-\d{2}$/,
+      ),
+      fechaInicio: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
     });
 
     fetcher.mockClear();

@@ -3413,16 +3413,22 @@ const providerSelectorEnabled =
             continuar.type = "button";
             continuar.className = "btn-next";
             continuar.style.marginTop = "0.75rem";
-            continuar.textContent = "Continuar registro de tarjeta →";
+            continuar.textContent = "Actualizar importe y continuar →";
             continuar.addEventListener("click", () => {
-              void continuarCatastroMembresiaV2({
-                idCliente: data.idCliente,
-                idCotizacion: idCotizacionRp,
-                tipoOperacion:
-                  rp.flujoV2?.tipoOperacion === "REACTIVACION"
-                    ? "REACTIVACION"
-                    : "ALTA",
-              });
+              if (rp.flujoV2?.tipoOperacion === "REACTIVACION") {
+                const idMembresia = rp.flujoV2?.idMembresia;
+                if (idMembresia) {
+                  void iniciarReactivacionMembresiaV2(
+                    data.idCliente,
+                    idMembresia,
+                  );
+                }
+                return;
+              }
+              void iniciarAltaMembresiaV2(
+                data.idCliente,
+                rp.idRegistroPendiente,
+              );
             });
             banner.appendChild(continuar);
           } else if (
