@@ -22,9 +22,9 @@ const idCliente = Astro.url.searchParams.get("idCliente") ?? "";
 const token = Astro.url.searchParams.get("token") ?? "";
 const idMembresia = Astro.url.searchParams.get("idMembresia") ?? "";
 const paramsOk = !!idCliente && !!token;
-// Por defecto se abre uPay directamente. La selección puede reactivarse luego.
+// El selector queda habilitado por defecto; puede desactivarse explícitamente.
 const providerSelectorEnabled =
-  import.meta.env.PUBLIC_PAGOPAR_PROVIDER_SELECTOR_ENABLED === "true";
+  import.meta.env.PUBLIC_PAGOPAR_PROVIDER_SELECTOR_ENABLED !== "false";
 ---
 
 <BaseLayout

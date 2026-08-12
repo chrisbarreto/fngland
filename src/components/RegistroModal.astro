@@ -2,9 +2,9 @@
 // This component renders a full-screen registration modal.
 // All logic is client-side JavaScript (no framework needed).
 const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
-// Mantiene Bancard disponible para una futura reactivación sin exponerlo hoy.
+// El selector queda habilitado por defecto; puede desactivarse explícitamente.
 const providerSelectorEnabled =
-  import.meta.env.PUBLIC_PAGOPAR_PROVIDER_SELECTOR_ENABLED === "true";
+  import.meta.env.PUBLIC_PAGOPAR_PROVIDER_SELECTOR_ENABLED !== "false";
 ---
 
 <!-- Registration Modal -->
