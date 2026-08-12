@@ -6,9 +6,10 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 /**
  * /tarjetas/callback — Callback del catastro de tarjeta (link estable del panel).
  *
- * Bancard/uPay redirige acá tras completar (o cancelar) el iframe:
- *   /tarjetas/callback?idCliente=UUID&token=HMAC&idMembresia=UUID&status=add_new_card_success
- *   /tarjetas/callback?idCliente=UUID&token=HMAC&idMembresia=UUID&status=add_new_card_fail&description=...
+ * Bancard/uPay redirige acá tras completar (o cancelar) el iframe. Los
+ * catastros nuevos usan un state corto cuyo contexto se resuelve en el
+ * backend; los parámetros extensos anteriores siguen admitidos durante la
+ * transición.
  *
  * Flujo (replica de la página del panel apps/web):
  *   1. POST /api/confirmar con idMembresiaActivar = idMembresia → confirma la
@@ -28,6 +29,7 @@ const idMembresia = Astro.url.searchParams.get("idMembresia") ?? "";
 const idCotizacion = Astro.url.searchParams.get("idCotizacion") ?? "";
 const tokenVersion = Astro.url.searchParams.get("tokenVersion") ?? "";
 const purpose = Astro.url.searchParams.get("purpose") ?? "";
+const callbackState = Astro.url.searchParams.get("state") ?? "";
 const bancardStatus = Astro.url.searchParams.get("status") ?? "";
 const bancardDescription = Astro.url.searchParams.get("description") ?? "";
 ---
@@ -46,6 +48,7 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
     data-id-cotizacion={idCotizacion}
     data-token-version={tokenVersion}
     data-purpose={purpose}
+    data-callback-state={callbackState}
     data-status={bancardStatus}
     data-description={bancardDescription}
   >
@@ -144,12 +147,13 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
 
   const root = document.getElementById("cb-root");
   if (root) {
-    const idCliente = root.dataset.idCliente || "";
-    const token = root.dataset.token || "";
-    const idMembresia = root.dataset.idMembresia || "";
-    const idCotizacion = root.dataset.idCotizacion || "";
-    const tokenVersion = root.dataset.tokenVersion || "";
-    const purpose = root.dataset.purpose || "";
+    let idCliente = root.dataset.idCliente || "";
+    let token = root.dataset.token || "";
+    let idMembresia = root.dataset.idMembresia || "";
+    let idCotizacion = root.dataset.idCotizacion || "";
+    let tokenVersion = root.dataset.tokenVersion || "";
+    let purpose = root.dataset.purpose || "";
+    const callbackState = root.dataset.callbackState || "";
     const bancardStatus = root.dataset.status || "";
     const bancardDescription = root.dataset.description || "";
 
@@ -349,6 +353,35 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
     const isTerminalFailure = bancardFailed && !isAlreadyRegistered;
 
     async function run() {
+      if (callbackState) {
+        try {
+          const contextResponse = await fetch("/api/resolver-callback-catastro", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ state: callbackState }),
+          });
+          const context = await contextResponse.json();
+          if (!contextResponse.ok) {
+            throw new Error(
+              context.error || context.message || `Error ${contextResponse.status}`,
+            );
+          }
+          idCliente = context.idCliente || "";
+          token = context.token || "";
+          idMembresia = context.idMembresia || "";
+          idCotizacion = context.idCotizacion || "";
+          tokenVersion = context.tokenVersion || "";
+          purpose = context.purpose || "";
+        } catch (err) {
+          const error = err as { message?: string };
+          showError(
+            error.message ||
+              "No se pudo recuperar el contexto del registro de tarjeta.",
+          );
+          return;
+        }
+      }
+
       if (isTerminalFailure) {
         showError(bancardDescription || "La tarjeta no pudo ser registrada.");
         return;
