@@ -1434,6 +1434,7 @@ const providerSelectorEnabled =
     let planesLoaded = false;
     let modoNuevoVehiculo = false;
     let modoActualizarVehiculo = false;
+    let cuentaExpulsadaActual = false;
     let lastLookedUpCI = "";      // evita re-disparar lookup para el mismo CI
     let lookupInProgress = false; // evita lookups simultáneos (race condition)
     let membresiasV2EnabledCache: boolean | null = null;
@@ -1683,6 +1684,7 @@ const providerSelectorEnabled =
       sessionStorage.removeItem("formulang_idVehiculo");
       modoNuevoVehiculo = false;
       modoActualizarVehiculo = false;
+      cuentaExpulsadaActual = false;
       lastLookedUpCI = "";
       lookupInProgress = false;
       // Ocultar inputs de "Otro" y limpiar valores
@@ -3331,6 +3333,42 @@ const providerSelectorEnabled =
           return;
         }
 
+        // ---- Cuenta expulsada ----
+        // Una expulsión es permanente para nuevas altas: no se debe ofrecer
+        // reactivación ni el alta de otro vehículo, aunque la membresía
+        // original todavía conserve cobertura hasta su vencimiento.
+        const cuentaExpulsada = Boolean(
+          data.cuentaExpulsada ||
+          data.mensajeCuenta ||
+          data.membresias?.some((m: any) => Boolean(m.expulsada)),
+        );
+        if (cuentaExpulsada) {
+          cuentaExpulsadaActual = true;
+          const loadingElExp = document.getElementById("ci-lookup-loading") as HTMLElement | null;
+          if (loadingElExp) loadingElExp.style.display = "none";
+
+          const step1ElExp = rucInput.closest(".form-step");
+          step1ElExp?.querySelectorAll("#rp-resume-banner, #rp-info-banner, #rp-opciones-panel, #rp-cerrada-banner, #rp-expulsada-banner")
+            .forEach((b) => b.remove());
+
+          const nombreCensurado = censurar(data.nombre || "", 4);
+          const banner = document.createElement("div");
+          banner.id = "rp-expulsada-banner";
+          banner.style.cssText = "margin-top:1rem;padding:1rem 1.1rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.4);border-radius:12px;font-size:0.9rem;color:#fca5a5;";
+          banner.innerHTML =
+            `<strong>Hola ${nombreCensurado}. Esta cuenta está restringida.</strong><br/>` +
+            "Por decisión interna, no podés reactivar la membresía ni registrar otro vehículo o una nueva membresía con este documento. Comunicate con nosotros si necesitás más información.";
+          step1ElExp?.appendChild(banner);
+
+          logEvent({
+            paso: "validation_fail",
+            severidad: "warn",
+            codigo: "CUENTA_EXPULSADA",
+            contexto: { ci },
+          });
+          return;
+        }
+
         // Identidad verificada (cliente existente) — alert success
         const rucSuccess = document.getElementById("ruc-success") as HTMLElement | null;
         if (rucSuccess) rucSuccess.style.display = "flex";
@@ -4300,6 +4338,12 @@ const providerSelectorEnabled =
     // ---- Form Submission ----
     form?.addEventListener("submit", async (e) => {
       e.preventDefault();
+      if (cuentaExpulsadaActual) {
+        errorMsg.textContent =
+          "Esta cuenta está restringida y no puede registrar otra membresía o vehículo.";
+        errorBanner.style.display = "block";
+        return;
+      }
       if (!validateStep(currentStep)) {
         logEvent({
           paso: "validation_fail",
