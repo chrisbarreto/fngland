@@ -640,13 +640,6 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     cursor: not-allowed;
   }
 
-  .slots-grid :global(.slot-btn .slot-cupos) {
-    display: block;
-    font-size: 0.7rem;
-    color: var(--agenda-muted);
-    margin-top: 2px;
-  }
-
   .turnstile {
     display: inline-flex;
     padding: 0;
@@ -1618,6 +1611,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
             codigoInput.value = membresia.codigo;
           }
           loadServicios(membresia.codigo);
+          const fecha = document.getElementById("fechaCita")?.value;
+          if (fecha) loadSlots(fecha);
         });
 
         const mark = document.createElement("span");
@@ -1713,10 +1708,15 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     idSede,
     domicilio = false,
     soloTraslado = false,
+    codigoMembresia = "",
+    idServicios = [],
   ) {
     let lastError = null;
     const domicilioParam = domicilio ? "&domicilio=true" : "";
     const soloTrasladoParam = soloTraslado ? "&soloTraslado=true" : "";
+    const publicContextParam = domicilio
+      ? ""
+      : `${codigoMembresia ? `&codigoMembresia=${encodeURIComponent(codigoMembresia)}` : ""}${idServicios.length ? `&idServicios=${encodeURIComponent(idServicios.join(","))}` : ""}`;
 
     for (let attempt = 0; attempt <= SLOTS_MAX_RETRIES; attempt++) {
       if (attempt > 0) {
@@ -1725,7 +1725,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       }
 
       try {
-        const res = await fetch(`/proxy/agenda/slots?fecha=${fecha}&idSede=${encodeURIComponent(idSede)}${domicilioParam}${soloTrasladoParam}`);
+        const res = await fetch(`/proxy/agenda/slots?fecha=${fecha}&idSede=${encodeURIComponent(idSede)}${domicilioParam}${soloTrasladoParam}${publicContextParam}`);
 
         // Non-JSON response (e.g. Cloudflare HTML page, 502, etc.)
         const ct = res.headers.get("content-type") || "";
@@ -1793,6 +1793,14 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
     slotsHint.textContent = "Cargando horarios...";
 
     const esDomicilio = esDomicilioSeleccionado();
+    const codigoMembresia = normalizeCodigoMembresia(codigoInput?.value);
+    const idServicios = Array.from(
+      document.querySelectorAll('input[name="idServicios"]:checked'),
+    ).map((input) => input.value);
+    if (!esDomicilio && !codigoMembresia) {
+      slotsHint.textContent = "Seleccioná una membresía para consultar horarios.";
+      return;
+    }
     // El traslado (tipo 20) limita los horarios a 08:00–17:00 y a 2 cupos por
     // hora (cupo global). Domicilio tiene su propia agenda, así que tiene
     // prioridad si por algún motivo ambos estuvieran marcados.
@@ -1802,6 +1810,8 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       idSede,
       esDomicilio,
       esTraslado,
+      codigoMembresia,
+      idServicios,
     );
 
     if (result.error) {
@@ -1843,7 +1853,7 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "slot-btn";
-      btn.innerHTML = `${slot.hora}<span class="slot-cupos">${slot.disponibles} cupo${slot.disponibles !== 1 ? "s" : ""}</span>`;
+      btn.textContent = slot.hora;
       btn.dataset.hora = slot.hora;
 
       btn.addEventListener("click", () => {

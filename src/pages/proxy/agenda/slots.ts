@@ -8,6 +8,9 @@ export const GET: APIRoute = async ({ url }) => {
   const idSede = url.searchParams.get("idSede");
   const domicilio = url.searchParams.get("domicilio");
   const soloTraslado = url.searchParams.get("soloTraslado");
+  const codigoMembresia = url.searchParams.get("codigoMembresia");
+  const idMiembro = url.searchParams.get("idMiembro");
+  const idServicios = url.searchParams.get("idServicios");
 
   if (!fecha) {
     return new Response(
@@ -27,9 +30,13 @@ export const GET: APIRoute = async ({ url }) => {
     domicilio === "true" ? "&domicilio=true" : "";
   const soloTrasladoParam =
     soloTraslado === "true" ? "&soloTraslado=true" : "";
+  const publicContextParam =
+    domicilio === "true"
+      ? ""
+      : `${codigoMembresia ? `&codigoMembresia=${encodeURIComponent(codigoMembresia)}` : ""}${idMiembro ? `&idMiembro=${encodeURIComponent(idMiembro)}` : ""}${idServicios ? `&idServicios=${encodeURIComponent(idServicios)}` : ""}`;
 
   const { data, error, status } = await apiFetch(
-    `/agenda/slots?fecha=${encodeURIComponent(fecha)}&idSede=${encodeURIComponent(idSede)}${domicilioParam}${soloTrasladoParam}`,
+    `/agenda/slots?fecha=${encodeURIComponent(fecha)}&idSede=${encodeURIComponent(idSede)}${domicilioParam}${soloTrasladoParam}${publicContextParam}`,
   );
 
   if (error) {

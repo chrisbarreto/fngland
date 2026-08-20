@@ -1433,6 +1433,7 @@ const providerSelectorEnabled =
     let marcasLoaded = false;
     let planesLoaded = false;
     let modoNuevoVehiculo = false;
+    let modoVehiculoConservado = false;
     let modoActualizarVehiculo = false;
     let cuentaExpulsadaActual = false;
     let lastLookedUpCI = "";      // evita re-disparar lookup para el mismo CI
@@ -1683,6 +1684,7 @@ const providerSelectorEnabled =
       sessionStorage.removeItem("formulang_idsMembresiasActivar");
       sessionStorage.removeItem("formulang_idVehiculo");
       modoNuevoVehiculo = false;
+      modoVehiculoConservado = false;
       modoActualizarVehiculo = false;
       cuentaExpulsadaActual = false;
       lastLookedUpCI = "";
@@ -3238,6 +3240,9 @@ const providerSelectorEnabled =
       document.getElementById("rp-resume-banner")?.remove();
       document.getElementById("rp-opciones-panel")?.remove();
       document.getElementById("rp-info-banner")?.remove();
+      document.getElementById("rp-cerrada-banner")?.remove();
+      document.getElementById("rp-expulsada-banner")?.remove();
+      document.getElementById("rp-reingreso-vehiculo-panel")?.remove();
       sessionStorage.removeItem("formulang_idCliente");
       sessionStorage.removeItem("formulang_idRegistroPendiente");
       sessionStorage.removeItem("formulang_idPlanPendiente");
@@ -3246,7 +3251,9 @@ const providerSelectorEnabled =
       sessionStorage.removeItem("formulang_idsMembresiasActivar");
       sessionStorage.removeItem("formulang_idVehiculo");
       modoNuevoVehiculo = false;
+      modoVehiculoConservado = false;
       modoActualizarVehiculo = false;
+      cuentaExpulsadaActual = false;
 
       // Fix 3: restaurar contexto de intento fallido reciente desde localStorage.
       // Si la CI coincide con un fallo de catastro en las últimas 24h, prepoblar
@@ -3928,11 +3935,70 @@ const providerSelectorEnabled =
         }
 
         // ---- Scenario C: client exists but no membership or pending registration ----
-        // Pre-fill step 1 and let them register normally (via registro-vehiculo endpoint)
+        // Una limpieza V2 conserva cliente y vehiculo. En ese caso se reutiliza
+        // el vehiculo existente y solo se crea un nuevo RegistroPendiente.
         setVal("nombre", data.nombre);
         setVal("telefono", data.telefono);
         setVal("email", data.email);
         sessionStorage.setItem("formulang_idCliente", data.idCliente);
+
+        const vehiculosDisponibles = Array.isArray(data.vehiculosDisponibles)
+          ? data.vehiculosDisponibles
+          : [];
+        if (data.estadoCuenta === "CLIENTE_SIN_MEMBRESIA" && vehiculosDisponibles.length > 0) {
+          const panel = document.createElement("div");
+          panel.id = "rp-reingreso-vehiculo-panel";
+          panel.style.cssText = "margin-top:1rem;padding:1rem 1.1rem;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.35);border-radius:12px;font-size:0.85rem;color:#d1fae5;";
+          panel.innerHTML =
+            `<strong>Encontramos tu vehiculo guardado.</strong><br/>` +
+            `<span style="display:block;margin:0.35rem 0 0.75rem;color:rgba(255,255,255,0.7);">Elegilo para iniciar nuevamente el alta sin duplicar tus datos.</span>` +
+            `<div id="rp-reingreso-vehiculos" style="display:grid;gap:0.55rem;"></div>`;
+          step1El?.appendChild(panel);
+          const lista = panel.querySelector("#rp-reingreso-vehiculos") as HTMLElement | null;
+          vehiculosDisponibles.forEach((vehiculo: any) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:0.75rem;padding:0.75rem 0.9rem;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);border-radius:10px;color:#fff;cursor:pointer;text-align:left;";
+            button.innerHTML =
+              `<span><strong style="display:block;">${escapeHtml(String(vehiculo.chapa ?? ""))}</strong>` +
+              `<small style="color:#aaa;">${escapeHtml(String(vehiculo.color ?? ""))}</small></span>` +
+              `<span style="color:#86efac;font-weight:700;">Usar vehiculo →</span>`;
+            button.addEventListener("click", () => {
+              panel.remove();
+              modoVehiculoConservado = true;
+              modoNuevoVehiculo = false;
+              modoActualizarVehiculo = false;
+              sessionStorage.setItem("formulang_idCliente", data.idCliente);
+              sessionStorage.setItem("formulang_idVehiculo", String(vehiculo.idVehiculo));
+              setVal("chapa", vehiculo.chapa);
+              setVal("anio", vehiculo.anio);
+              setVal("color", vehiculo.color);
+              if (vehiculo.idTipoVehiculo) {
+                const tipoSel = document.getElementById("tipoVehiculo") as HTMLSelectElement | null;
+                if (tipoSel) tipoSel.value = String(vehiculo.idTipoVehiculo);
+              }
+              if (vehiculo.idMarca) {
+                const marcaSel = document.getElementById("idMarca") as HTMLSelectElement | null;
+                if (marcaSel) {
+                  marcaSel.value = String(vehiculo.idMarca);
+                  marcaSel.dispatchEvent(new Event("change"));
+                  if (vehiculo.idModelo) setTimeout(() => setVal("idModelo", vehiculo.idModelo), 800);
+                }
+              }
+              const info = document.createElement("div");
+              info.id = "rp-info-banner";
+              info.style.cssText = "margin-top:1rem;padding:0.75rem 1rem;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:10px;font-size:0.82rem;color:#bbf7d0;";
+              info.innerHTML = `<strong>Vehiculo conservado seleccionado.</strong> No se creara otro cliente ni otra chapa.`;
+              step1El?.appendChild(info);
+              revelarCamposPersonales();
+            });
+            lista?.appendChild(button);
+          });
+          revelarCamposPersonales();
+          return;
+        }
+
+        // Cliente sin vehiculo disponible: se permite registrar uno nuevo.
         modoNuevoVehiculo = true;
 
         const banner = document.createElement("div");
@@ -4038,6 +4104,7 @@ const providerSelectorEnabled =
         sessionStorage.removeItem("formulang_idMembresiaActivar");
         sessionStorage.removeItem("formulang_idsMembresiasActivar");
         modoNuevoVehiculo = false;
+        modoVehiculoConservado = false;
       }
     });
 
@@ -4520,6 +4587,30 @@ const providerSelectorEnabled =
             false,
           );
           return;
+
+        } else if (modoVehiculoConservado && idClienteExistente) {
+          const idVehiculoConservado = sessionStorage.getItem("formulang_idVehiculo");
+          if (!idVehiculoConservado) {
+            throw new Error("No pudimos identificar el vehiculo conservado. Volve a ingresar tu CI.");
+          }
+          const registroRes = await fetchWithTimeout("/api/registro-pendiente", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              idCliente: idClienteExistente,
+              idVehiculo: idVehiculoConservado,
+              idPlan,
+            }),
+          }, 20000);
+          const registroBody = await registroRes.json().catch(() => ({}));
+          if (!registroRes.ok || !registroBody.idRegistroPendiente) {
+            throw new Error(
+              registroBody.error || registroBody.message || "No pudimos iniciar nuevamente el alta.",
+            );
+          }
+          sessionStorage.setItem("formulang_idRegistroPendiente", registroBody.idRegistroPendiente);
+          sessionStorage.setItem("formulang_idPlanPendiente", idPlan);
+          idCliente = idClienteExistente;
 
         } else if (idClienteExistente && idRegPendienteExistente) {
           // Resume existing registration — skip POST /api/registro.
