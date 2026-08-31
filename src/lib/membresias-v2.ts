@@ -5,17 +5,70 @@ export type AccionFlujoMembresiaV2 =
   | "CONTINUAR_CATASTRO"
   | "ESPERAR_COBRO"
   | "GESTIONAR_TARJETA"
+  | "ACTIVAR_DEBITO_AUTOMATICO"
+  | "PAGAR_OBLIGACION"
   | "SIN_ACCION";
+
+export type ModoCatastroMembresiaV2 =
+  | "SOLO_CATASTRO"
+  | "PAGO_OBLIGACION_PENDIENTE";
+
+export type FlujoCallbackMembresiaV2 =
+  | "COTIZACION"
+  | "CATASTRO_SIMPLE"
+  | "OBLIGACION"
+  | "LEGACY"
+  | "INVALIDO_V2";
+
+export function clasificarCallbackMembresiaV2(input: {
+  token: string;
+  tokenVersion: string;
+  purpose: string;
+  idMembresia: string;
+  idCotizacion: string;
+  idObligacion: string;
+}): FlujoCallbackMembresiaV2 {
+  const esTokenV2 =
+    input.tokenVersion === "V2" || input.token.startsWith("mct2.");
+  if (!esTokenV2) return "LEGACY";
+  if (
+    input.purpose === "PAGAR_OBLIGACION_MEMBRESIA_V2" &&
+    input.idMembresia &&
+    input.idObligacion
+  ) {
+    return "OBLIGACION";
+  }
+  if (
+    input.purpose === "AGREGAR_TARJETA_MEMBRESIA" &&
+    input.idMembresia
+  ) {
+    return "CATASTRO_SIMPLE";
+  }
+  if (
+    (input.purpose === "ALTA_MEMBRESIA_V2" ||
+      input.purpose === "REACTIVACION_MEMBRESIA_V2") &&
+    input.idMembresia &&
+    input.idCotizacion
+  ) {
+    return "COTIZACION";
+  }
+  return "INVALIDO_V2";
+}
 
 export interface FlujoMembresiaV2 {
   accion: AccionFlujoMembresiaV2;
   idCotizacion: string | null;
   idMembresia: string | null;
+  idObligacion: string | null;
   tipoOperacion: "ALTA" | "REACTIVACION" | null;
   estadoCotizacion: string | null;
   expiresAt: string | null;
   confirmadaEn?: string | null;
   totalCobrarAhora: string | null;
+  modo: ModoCatastroMembresiaV2 | null;
+  montoCobrarAhora: string | null;
+  periodoDesde: string | null;
+  periodoHasta: string | null;
 }
 
 export interface CotizacionPublicaMembresiaV2 {
@@ -63,6 +116,9 @@ export interface CatastroPreparadoMembresiaV2 {
     token: string;
     tokenVersion: "V2";
     expiresAt: string;
+    idCotizacion?: string | null;
+    idObligacion?: string | null;
+    modo?: ModoCatastroMembresiaV2;
     url: string;
   };
 }
@@ -98,6 +154,40 @@ export interface SeguimientoCobroMembresiaV2 {
   membresia: {
     estadoCobertura: string | null;
     fechaFin: string | null;
+  };
+  intento: {
+    numeroIntento: number;
+    estadoTecnico: string | null;
+    estadoFinanciero: string | null;
+    creadoEn: string;
+  } | null;
+  trabajo: {
+    tipo: string;
+    estado: string;
+    intentos: number;
+    maxIntentos: number;
+    disponibleEn: string;
+  } | null;
+}
+
+export interface SeguimientoObligacionMembresiaV2 {
+  success: true;
+  billingVersion: "V2";
+  idObligacion: string;
+  idMembresia: string;
+  estado: EstadoCobroPublicoMembresiaV2;
+  definitivo: boolean;
+  puedeReintentar: boolean;
+  mensaje: string;
+  totalCobrarAhora: string;
+  membresia: {
+    estadoCobertura: string | null;
+    fechaFin: string | null;
+  };
+  obligacion: {
+    idObligacion: string;
+    estado: string;
+    fechaVencimiento: string;
   };
   intento: {
     numeroIntento: number;
@@ -281,11 +371,115 @@ export async function prepararCatastroMembresiaV2(
   );
 }
 
+export async function confirmarCatastroMembresiaV2(
+  input: {
+    idCliente: string;
+    idMembresia: string;
+    idCotizacion: string;
+    token: string;
+  },
+  fetcher: FetchLike = fetch,
+): Promise<{ success: true; billingVersion: "V2" }> {
+  return requestV2("catastro/confirmar", input, fetcher);
+}
+
+export async function confirmarCatastroObligacionMembresiaV2(
+  input: {
+    idCliente: string;
+    idMembresia: string;
+    idObligacion: string;
+    token: string;
+  },
+  fetcher: FetchLike = fetch,
+): Promise<{ success: true; billingVersion: "V2" }> {
+  return requestV2("catastro/confirmar-obligacion", input, fetcher);
+}
+
+export async function finalizarCatastroMembresiaV2(
+  input: {
+    idCliente: string;
+    idMembresia: string;
+    idCotizacion?: string;
+    token: string;
+  },
+  fetcher: FetchLike = fetch,
+): Promise<{
+  success: true;
+  billingVersion: "V2";
+  finalizado: true;
+  confirmacionProveedor: boolean;
+}> {
+  return requestV2("catastro/finalizar", input, fetcher);
+}
+
+export async function confirmarCallbackMembresiaV2(
+  input: {
+    token: string;
+    tokenVersion: string;
+    purpose: string;
+    idCliente: string;
+    idMembresia: string;
+    idCotizacion: string;
+    idObligacion: string;
+  },
+  fetcher: FetchLike = fetch,
+): Promise<{
+  flujo: Exclude<FlujoCallbackMembresiaV2, "INVALIDO_V2">;
+  data: { success: true; billingVersion: "V2" } | null;
+}> {
+  const flujo = clasificarCallbackMembresiaV2(input);
+  if (flujo === "INVALIDO_V2") {
+    throw new Error(
+      "El contexto V2 del registro de tarjeta está incompleto o no es válido.",
+    );
+  }
+  if (flujo === "LEGACY") {
+    return { flujo, data: null };
+  }
+  if (flujo === "COTIZACION") {
+    const data = await confirmarCatastroMembresiaV2(
+      {
+        idCliente: input.idCliente,
+        idMembresia: input.idMembresia,
+        idCotizacion: input.idCotizacion,
+        token: input.token,
+      },
+      fetcher,
+    );
+    return { flujo, data };
+  }
+  if (flujo === "OBLIGACION") {
+    const data = await confirmarCatastroObligacionMembresiaV2(
+      {
+        idCliente: input.idCliente,
+        idMembresia: input.idMembresia,
+        idObligacion: input.idObligacion,
+        token: input.token,
+      },
+      fetcher,
+    );
+    return { flujo, data };
+  }
+  const data = await finalizarCatastroMembresiaV2(
+    {
+      idCliente: input.idCliente,
+      idMembresia: input.idMembresia,
+      ...(input.idCotizacion
+        ? { idCotizacion: input.idCotizacion }
+        : {}),
+      token: input.token,
+    },
+    fetcher,
+  );
+  return { flujo, data };
+}
+
 export async function prepararCambioTarjetaMembresiaV2(
   input: {
     idCliente: string;
     idMembresia: string;
     idCotizacion?: string;
+    idObligacion?: string;
   },
   fetcher: FetchLike = fetch,
 ): Promise<CatastroPreparadoMembresiaV2> {
@@ -307,6 +501,22 @@ export async function consultarEstadoCobroMembresiaV2(
 ): Promise<SeguimientoCobroMembresiaV2> {
   return requestV2<SeguimientoCobroMembresiaV2>(
     "cobros/estado",
+    input,
+    fetcher,
+  );
+}
+
+export async function consultarEstadoObligacionMembresiaV2(
+  input: {
+    idCliente: string;
+    idMembresia: string;
+    idObligacion: string;
+    token: string;
+  },
+  fetcher: FetchLike = fetch,
+): Promise<SeguimientoObligacionMembresiaV2> {
+  return requestV2<SeguimientoObligacionMembresiaV2>(
+    "cobros/estado-obligacion",
     input,
     fetcher,
   );

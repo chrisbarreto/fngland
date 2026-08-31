@@ -13,8 +13,17 @@ const POST_ROUTES = new Map([
   ["reactivaciones/cotizar", "/membresias-v2/reactivaciones/cotizar"],
   ["catastro/preparar", "/membresias-v2/catastro/preparar"],
   ["catastro/confirmar", "/membresias-v2/catastro/confirmar"],
+  [
+    "catastro/confirmar-obligacion",
+    "/membresias-v2/catastro/confirmar-obligacion",
+  ],
+  ["catastro/finalizar", "/membresias-v2/catastro/finalizar"],
   ["tarjetas/preparar", "/membresias-v2/tarjetas/preparar"],
   ["cobros/estado", "/membresias-v2/cobros/estado"],
+  [
+    "cobros/estado-obligacion",
+    "/membresias-v2/cobros/estado-obligacion",
+  ],
   ["cobros/reintentar", "/membresias-v2/cobros/reintentar"],
 ]);
 

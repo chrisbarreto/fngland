@@ -99,6 +99,15 @@ function isUuid(s: string | undefined): s is string {
   return !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 }
 
+export function sanitizarUrlTelemetria(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.origin}${parsed.pathname}`.slice(0, 500);
+  } catch {
+    return url.split(/[?#]/, 1)[0].slice(0, 500);
+  }
+}
+
 function sanitize(ev: EventoLandingPayload): EventoLandingWire | null {
   let contexto: Record<string, unknown> | undefined;
   if (ev.contexto) {
@@ -130,7 +139,7 @@ function sanitize(ev: EventoLandingPayload): EventoLandingWire | null {
   if (isUuid(idCliente)) wire.idCliente = idCliente;
   if (isUuid(idMembresia)) wire.idMembresia = idMembresia;
   if (typeof window !== "undefined" && window.location) {
-    wire.url = window.location.href.slice(0, 500);
+    wire.url = sanitizarUrlTelemetria(window.location.href);
   }
   return wire;
 }

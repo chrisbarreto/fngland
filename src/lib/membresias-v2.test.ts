@@ -2,8 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   MEMBRESIA_V2_CONTEXT_KEY,
   cambiarPlanAltaPendienteMembresiaV2,
+  clasificarCallbackMembresiaV2,
+  confirmarCatastroMembresiaV2,
+  confirmarCatastroObligacionMembresiaV2,
   consultarDisponibilidadMembresiasV2,
   consultarEstadoCobroMembresiaV2,
+  consultarEstadoObligacionMembresiaV2,
   cotizarAltaMembresiaV2,
   cotizarReactivacionMembresiaV2,
   guardarContextoMembresiaV2,
@@ -11,6 +15,7 @@ import {
   idempotencyKeyReactivacion,
   idempotencyKeyReintentoCobro,
   leerContextoMembresiaV2,
+  finalizarCatastroMembresiaV2,
   prepararCatastroMembresiaV2,
   prepararCambioTarjetaMembresiaV2,
   reintentarCobroMembresiaV2,
@@ -35,6 +40,69 @@ function storageMock(): StorageLike {
 
 describe("membresias V2 landing", () => {
   beforeEach(() => vi.useRealTimers());
+
+  it("clasifica cada callback V2 sin degradarlo al flujo legacy", () => {
+    expect(
+      clasificarCallbackMembresiaV2({
+        token: "mct2.tarjeta.signature",
+        tokenVersion: "V2",
+        purpose: "AGREGAR_TARJETA_MEMBRESIA",
+        idMembresia: "mem-1",
+        idCotizacion: "",
+        idObligacion: "",
+      }),
+    ).toBe("CATASTRO_SIMPLE");
+    expect(
+      clasificarCallbackMembresiaV2({
+        token: "mct2.obligacion.signature",
+        tokenVersion: "V2",
+        purpose: "PAGAR_OBLIGACION_MEMBRESIA_V2",
+        idMembresia: "mem-1",
+        idCotizacion: "",
+        idObligacion: "obl-1",
+      }),
+    ).toBe("OBLIGACION");
+    expect(
+      clasificarCallbackMembresiaV2({
+        token: "mct2.alta.signature",
+        tokenVersion: "V2",
+        purpose: "ALTA_MEMBRESIA_V2",
+        idMembresia: "mem-1",
+        idCotizacion: "cot-1",
+        idObligacion: "",
+      }),
+    ).toBe("COTIZACION");
+    expect(
+      clasificarCallbackMembresiaV2({
+        token: "mct2.obligacion.signature",
+        tokenVersion: "V2",
+        purpose: "PAGAR_OBLIGACION_MEMBRESIA_V2",
+        idMembresia: "mem-1",
+        idCotizacion: "",
+        idObligacion: "",
+      }),
+    ).toBe("INVALIDO_V2");
+    expect(
+      clasificarCallbackMembresiaV2({
+        token: "legacy-hmac",
+        tokenVersion: "",
+        purpose: "",
+        idMembresia: "",
+        idCotizacion: "",
+        idObligacion: "",
+      }),
+    ).toBe("LEGACY");
+    expect(
+      clasificarCallbackMembresiaV2({
+        token: "mct2.tarjeta.signature",
+        tokenVersion: "",
+        purpose: "",
+        idMembresia: "",
+        idCotizacion: "",
+        idObligacion: "",
+      }),
+    ).toBe("INVALIDO_V2");
+  });
 
   it("genera claves idempotentes estables por operacion", () => {
     expect(idempotencyKeyAlta("registro-1", new Date(2026, 7, 12, 14, 0))).toBe(
@@ -191,6 +259,21 @@ describe("membresias V2 landing", () => {
     expect(fetcher.mock.calls[0][0]).toBe(
       "/api/membresias-v2?accion=tarjetas%2Fpreparar",
     );
+
+    fetcher.mockClear();
+    await prepararCambioTarjetaMembresiaV2(
+      {
+        idCliente: "cli-1",
+        idMembresia: "mem-1",
+        idObligacion: "obl-1",
+      },
+      fetcher,
+    );
+    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({
+      idCliente: "cli-1",
+      idMembresia: "mem-1",
+      idObligacion: "obl-1",
+    });
   });
 
   it("propaga el mensaje normalizado del backend", async () => {
@@ -204,6 +287,92 @@ describe("membresias V2 landing", () => {
         fetcher,
       ),
     ).rejects.toThrow("Cotizacion vencida");
+  });
+
+  it("confirma, finaliza y consulta la obligacion por rutas V2 dedicadas", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(response({ success: true, billingVersion: "V2" }));
+
+    await confirmarCatastroMembresiaV2(
+      {
+        idCliente: "cli-1",
+        idMembresia: "mem-1",
+        idCotizacion: "cot-1",
+        token: "mct2.cotizacion.signature",
+      },
+      fetcher,
+    );
+    expect(fetcher.mock.calls[0][0]).toBe(
+      "/api/membresias-v2?accion=catastro%2Fconfirmar",
+    );
+
+    fetcher.mockClear();
+    await confirmarCatastroObligacionMembresiaV2(
+      {
+        idCliente: "cli-1",
+        idMembresia: "mem-1",
+        idObligacion: "obl-1",
+        token: "mct2.obligacion.signature",
+      },
+      fetcher,
+    );
+    expect(fetcher.mock.calls[0][0]).toBe(
+      "/api/membresias-v2?accion=catastro%2Fconfirmar-obligacion",
+    );
+    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({
+      idCliente: "cli-1",
+      idMembresia: "mem-1",
+      idObligacion: "obl-1",
+      token: "mct2.obligacion.signature",
+    });
+
+    fetcher.mockClear();
+    await finalizarCatastroMembresiaV2(
+      {
+        idCliente: "cli-1",
+        idMembresia: "mem-1",
+        token: "mct2.tarjeta.signature",
+      },
+      fetcher,
+    );
+    expect(fetcher.mock.calls[0][0]).toBe(
+      "/api/membresias-v2?accion=catastro%2Ffinalizar",
+    );
+    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({
+      idCliente: "cli-1",
+      idMembresia: "mem-1",
+      token: "mct2.tarjeta.signature",
+    });
+
+    fetcher.mockClear();
+    fetcher.mockResolvedValue(
+      response({
+        success: true,
+        billingVersion: "V2",
+        idMembresia: "mem-1",
+        idObligacion: "obl-1",
+        estado: "PROCESANDO",
+      }),
+    );
+    await consultarEstadoObligacionMembresiaV2(
+      {
+        idCliente: "cli-1",
+        idMembresia: "mem-1",
+        idObligacion: "obl-1",
+        token: "mct2.obligacion.signature",
+      },
+      fetcher,
+    );
+    expect(fetcher.mock.calls[0][0]).toBe(
+      "/api/membresias-v2?accion=cobros%2Festado-obligacion",
+    );
+    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({
+      idCliente: "cli-1",
+      idMembresia: "mem-1",
+      idObligacion: "obl-1",
+      token: "mct2.obligacion.signature",
+    });
   });
 
   it("consulta el estado por POST sin ordenar un nuevo cobro", async () => {

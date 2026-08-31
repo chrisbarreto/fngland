@@ -11,13 +11,11 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
  * backend; los parámetros extensos anteriores siguen admitidos durante la
  * transición.
  *
- * Flujo (replica de la página del panel apps/web):
- *   1. POST /api/confirmar con idMembresiaActivar = idMembresia → confirma la
- *      tarjeta y, si la membresía está vencida/desactivada, ACTIVA débito y
- *      programa el cobro (diferido 40s por antifraude del banco).
- *   2. Si cobroDiferido → "Procesando pago" + polling a /api/verificar-cobro
- *      hasta ~110s para mostrar éxito (con nueva fechaFin) o fallo del cobro.
- *   3. Si la membresía ya estaba activa → "Tarjeta registrada" (sin cobro).
+ * Flujo:
+ *   1. Resuelve el state corto y clasifica el propósito del token.
+ *   2. V2 confirma una cotización, finaliza un catastro sin cobro o encola
+ *      exactamente la obligación firmada; Legacy conserva su ruta transitoria.
+ *   3. Los cobros V2 se consultan sin volver a ordenar el pago.
  *
  * Toda la lógica corre en el cliente; los proxies /api/* mantienen la API key
  * en el servidor.
@@ -27,6 +25,7 @@ const idCliente = Astro.url.searchParams.get("idCliente") ?? "";
 const token = Astro.url.searchParams.get("token") ?? "";
 const idMembresia = Astro.url.searchParams.get("idMembresia") ?? "";
 const idCotizacion = Astro.url.searchParams.get("idCotizacion") ?? "";
+const idObligacion = Astro.url.searchParams.get("idObligacion") ?? "";
 const tokenVersion = Astro.url.searchParams.get("tokenVersion") ?? "";
 const purpose = Astro.url.searchParams.get("purpose") ?? "";
 const callbackState = Astro.url.searchParams.get("state") ?? "";
@@ -46,6 +45,7 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
     data-token={token}
     data-id-membresia={idMembresia}
     data-id-cotizacion={idCotizacion}
+    data-id-obligacion={idObligacion}
     data-token-version={tokenVersion}
     data-purpose={purpose}
     data-callback-state={callbackState}
@@ -65,15 +65,15 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
       {/* ── Esperando cobro ── */}
       <div id="st-esperando" class="callback-content" hidden>
         <div class="spinner"></div>
-        <h1 class="callback-title">Procesando pago automático</h1>
-        <p class="callback-message">
+        <h1 id="esperando-title" class="callback-title">Procesando pago automático</h1>
+        <p id="esperando-message" class="callback-message">
           Tu tarjeta fue registrada. Estamos cobrando la renovación de tu
           membresía. Esto puede tardar hasta 90 segundos.
         </p>
         <div class="progress">
           <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
         </div>
-        <p class="callback-hint">No cierres ni recargues esta ventana.</p>
+        <p id="esperando-hint" class="callback-hint">No cierres ni recargues esta ventana.</p>
       </div>
 
       {/* ── Éxito (con o sin cobro) ── */}
@@ -140,7 +140,10 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
 </BaseLayout>
 
 <script>
+  import { logEvent } from "@/lib/telemetry";
   import {
+    confirmarCallbackMembresiaV2,
+    consultarEstadoObligacionMembresiaV2,
     guardarContextoMembresiaV2,
     reintentarCobroMembresiaV2,
   } from "@/lib/membresias-v2";
@@ -151,6 +154,7 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
     let token = root.dataset.token || "";
     let idMembresia = root.dataset.idMembresia || "";
     let idCotizacion = root.dataset.idCotizacion || "";
+    let idObligacion = root.dataset.idObligacion || "";
     let tokenVersion = root.dataset.tokenVersion || "";
     let purpose = root.dataset.purpose || "";
     const callbackState = root.dataset.callbackState || "";
@@ -333,6 +337,124 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
       setTimeout(tick, intervalMs);
     }
 
+    function showSeguimientoPendiente(mensaje: string) {
+      const title = $("esperando-title");
+      const message = $("esperando-message");
+      const hint = $("esperando-hint");
+      const bar = $("progress-bar");
+      if (title) title.textContent = "Pago en proceso";
+      if (message) {
+        message.textContent =
+          mensaje ||
+          "Tu tarjeta fue registrada y el pago continúa procesándose.";
+      }
+      if (hint) {
+        hint.textContent =
+          "Podés cerrar esta ventana. El sistema continuará el proceso de forma segura.";
+      }
+      if (bar) bar.style.width = "100%";
+      showState("st-esperando");
+    }
+
+    function startPollingObligacionV2() {
+      const maxIntervals = 22;
+      const intervalMs = 5000;
+      let intentos = 0;
+
+      const tick = async () => {
+        if (!pollingActive) return;
+        intentos++;
+        const bar = $("progress-bar");
+        if (bar) {
+          bar.style.width =
+            String(
+              Math.min(
+                100,
+                Math.round((intentos / maxIntervals) * 100),
+              ),
+            ) + "%";
+        }
+
+        try {
+          const seguimiento =
+            await consultarEstadoObligacionMembresiaV2({
+              idCliente,
+              idMembresia,
+              idObligacion,
+              token,
+            });
+          if (!pollingActive) return;
+
+          if (seguimiento.estado === "PAGADO") {
+            logEvent({
+              paso: "confirmar",
+              severidad: "info",
+              codigo: "OBLIGACION_V2_PAGADA",
+              contexto: {
+                estado: seguimiento.estado,
+                intento: seguimiento.intento?.numeroIntento ?? null,
+              },
+              idMembresia,
+            });
+            showExito({
+              conCobro: true,
+              tarjetasCount: 0,
+              comprobante: null,
+              fechaFin: seguimiento.membresia.fechaFin,
+            });
+            return;
+          }
+          if (
+            seguimiento.estado === "RECHAZADO" ||
+            seguimiento.estado === "FALLIDO_DEFINITIVO"
+          ) {
+            logEvent({
+              paso: "confirmar",
+              severidad:
+                seguimiento.estado === "RECHAZADO" ? "warn" : "error",
+              codigo:
+                seguimiento.estado === "RECHAZADO"
+                  ? "OBLIGACION_V2_RECHAZADA"
+                  : "OBLIGACION_V2_FALLO_DEFINITIVO",
+              contexto: { estado: seguimiento.estado },
+              idMembresia,
+            });
+            showCobroFallido(seguimiento.mensaje);
+            return;
+          }
+          if (intentos >= maxIntervals) {
+            logEvent({
+              paso: "confirmar",
+              severidad: "warn",
+              codigo: "OBLIGACION_V2_PENDIENTE",
+              contexto: { estado: seguimiento.estado, intentos },
+              idMembresia,
+            });
+            showSeguimientoPendiente(seguimiento.mensaje);
+            return;
+          }
+          setTimeout(() => void tick(), intervalMs);
+        } catch {
+          if (intentos >= maxIntervals) {
+            logEvent({
+              paso: "confirmar",
+              severidad: "error",
+              codigo: "OBLIGACION_V2_SEGUIMIENTO_ERROR",
+              contexto: { intentos },
+              idMembresia,
+            });
+            showSeguimientoPendiente(
+              "Tu tarjeta fue registrada. No pudimos consultar todavía el resultado del pago.",
+            );
+            return;
+          }
+          setTimeout(() => void tick(), intervalMs);
+        }
+      };
+
+      void tick();
+    }
+
     const pollingCtx: { tarjetasCount: number; comprobante: Comprobante | null } = {
       tarjetasCount: 0,
       comprobante: null,
@@ -370,6 +492,7 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
           token = context.token || "";
           idMembresia = context.idMembresia || "";
           idCotizacion = context.idCotizacion || "";
+          idObligacion = context.idObligacion || "";
           tokenVersion = context.tokenVersion || "";
           purpose = context.purpose || "";
         } catch (err) {
@@ -391,38 +514,54 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
         return;
       }
 
+      let flujoObservado: string | null = null;
       try {
-        const esCotizacionV2 =
-          tokenVersion === "V2" &&
-          purpose !== "AGREGAR_TARJETA_MEMBRESIA" &&
-          !!idCotizacion;
-        const esCambioTarjetaV2 =
-          tokenVersion === "V2" &&
-          purpose === "AGREGAR_TARJETA_MEMBRESIA" &&
-          !!idMembresia;
-        const endpoint = esCotizacionV2
-          ? "/api/membresias-v2?accion=catastro%2Fconfirmar"
-          : "/api/confirmar";
-        const payload = esCotizacionV2
-          ? { idCliente, idMembresia, idCotizacion, token }
-          : esCambioTarjetaV2
-            ? { idCliente, idMembresia }
-            : {
-                idCliente,
-                ...(idMembresia
-                  ? { idMembresiaActivar: idMembresia }
-                  : {}),
-              };
-
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+        const confirmado = await confirmarCallbackMembresiaV2({
+          token,
+          tokenVersion,
+          purpose,
+          idCliente,
+          idMembresia,
+          idCotizacion,
+          idObligacion,
         });
-        const data = await res.json();
+        const flujoCallback = confirmado.flujo;
+        flujoObservado = flujoCallback;
+        const esCotizacionV2 = flujoCallback === "COTIZACION";
+        const esCambioTarjetaV2 = flujoCallback === "CATASTRO_SIMPLE";
+        const esObligacionV2 = flujoCallback === "OBLIGACION";
+        let data: any = confirmado.data;
+        if (flujoCallback === "LEGACY") {
+          const res = await fetch("/api/confirmar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              idCliente,
+              ...(idMembresia
+                ? { idMembresiaActivar: idMembresia }
+                : {}),
+            }),
+          });
+          data = await res.json();
+          if (!res.ok) {
+            throw new Error(
+              data.error || data.message || "Error " + res.status,
+            );
+          }
+        } else {
+          logEvent({
+            paso: "confirmar",
+            severidad: "info",
+            codigo: "CALLBACK_V2_CONFIRMADO",
+            contexto: { flujo: flujoCallback, purpose },
+            idMembresia,
+          });
+        }
 
-        if (!res.ok) {
-          throw new Error(data.error || data.message || `Error ${res.status}`);
+        if (esObligacionV2) {
+          showState("st-esperando");
+          startPollingObligacionV2();
+          return;
         }
 
         if (esCotizacionV2 || (esCambioTarjetaV2 && !!idCotizacion)) {
@@ -458,6 +597,22 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
           return;
         }
 
+        if (esCambioTarjetaV2) {
+          logEvent({
+            paso: "confirmar",
+            severidad: "info",
+            codigo: "CATASTRO_V2_SIN_COBRO_OK",
+            contexto: { flujo: flujoCallback },
+            idMembresia,
+          });
+          showExito({
+            conCobro: false,
+            tarjetasCount: 0,
+            comprobante: null,
+          });
+          return;
+        }
+
         if (!data.tarjetas || data.tarjetas.length === 0) {
           showError(
             "La confirmación fue procesada pero no se encontraron tarjetas registradas. " +
@@ -482,6 +637,20 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
         showExito({ conCobro: false, tarjetasCount, comprobante });
       } catch (err) {
         const e = err as { message?: string };
+        const pareceV2 = tokenVersion === "V2" || token.startsWith("mct2.");
+        if (pareceV2) {
+          logEvent({
+            paso: "confirmar",
+            severidad: "error",
+            codigo: "CALLBACK_V2_ERROR",
+            mensaje: "Falló la confirmación del catastro V2.",
+            contexto: {
+              flujo: flujoObservado ?? "NO_CLASIFICADO",
+              purpose,
+            },
+            idMembresia,
+          });
+        }
         showError(e?.message ?? "Error al confirmar la tarjeta con el servidor.");
       }
     }
