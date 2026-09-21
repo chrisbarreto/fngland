@@ -147,6 +147,7 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
     guardarContextoMembresiaV2,
     reintentarCobroMembresiaV2,
   } from "@/lib/membresias-v2";
+  import { describirResultadoCatastro } from "@/lib/catastro-presentacion";
 
   const root = document.getElementById("cb-root");
   if (root) {
@@ -183,7 +184,7 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
       return new Date(y, m - 1, day).toLocaleDateString("es-PY");
     }
 
-    function renderComprobante(c: Comprobante | null, tarjetasCount: number) {
+    function renderComprobante(c: Comprobante | null) {
       const box = $("comprobante");
       if (!box || !c) return;
       const rows: string[] = [];
@@ -214,30 +215,20 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
       tarjetasCount: number;
       comprobante: Comprobante | null;
       fechaFin?: string | null;
+      debitoAutomatico?: boolean;
+      requiereConciliacion?: boolean;
     }) {
       const title = $("exito-title");
       const msg = $("exito-message");
-      if (opts.conCobro) {
-        if (title) title.textContent = "¡Pago realizado!";
-        if (msg)
-          msg.textContent =
-            "Tu tarjeta fue registrada y el cobro de tu membresía se realizó correctamente.";
-        if (opts.fechaFin) {
-          const fv = $("fecha-valor");
-          if (fv) fv.textContent = formatFecha(opts.fechaFin);
-          $("fecha-box")?.removeAttribute("hidden");
-        }
-      } else {
-        if (title) title.textContent = "Tarjeta registrada";
-        if (msg) {
-          const extra =
-            opts.tarjetasCount > 0
-              ? ` Tienes ${opts.tarjetasCount} tarjeta${opts.tarjetasCount > 1 ? "s" : ""} activa${opts.tarjetasCount > 1 ? "s" : ""}.`
-              : "";
-          msg.textContent = `Tu tarjeta quedó habilitada para el débito automático.${extra}`;
-        }
+      const presentacion = describirResultadoCatastro(opts);
+      if (title) title.textContent = presentacion.titulo;
+      if (msg) msg.textContent = presentacion.mensaje;
+      if (opts.conCobro && opts.fechaFin) {
+        const fv = $("fecha-valor");
+        if (fv) fv.textContent = formatFecha(opts.fechaFin);
+        $("fecha-box")?.removeAttribute("hidden");
       }
-      renderComprobante(opts.comprobante, opts.tarjetasCount);
+      renderComprobante(opts.comprobante);
       showState("st-exito");
     }
 
@@ -609,6 +600,8 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
             conCobro: false,
             tarjetasCount: 0,
             comprobante: null,
+            debitoAutomatico: data?.debitoAutomatico === true,
+            requiereConciliacion: data?.requiereConciliacion === true,
           });
           return;
         }

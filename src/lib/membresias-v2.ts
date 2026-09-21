@@ -11,7 +11,28 @@ export type AccionFlujoMembresiaV2 =
 
 export type ModoCatastroMembresiaV2 =
   | "SOLO_CATASTRO"
-  | "PAGO_OBLIGACION_PENDIENTE";
+  | "ALTA_PENDIENTE"
+  | "PAGO_OBLIGACION_PENDIENTE"
+  | "REACTIVACION_PRORRATEADA";
+
+export interface ConfirmacionBaseMembresiaV2 {
+  success: true;
+  billingVersion: "V2";
+  debitoAutomatico?: boolean;
+  modo?: ModoCatastroMembresiaV2 | null;
+  requiereConciliacion?: boolean;
+}
+
+export interface CatastroFinalizadoMembresiaV2
+  extends ConfirmacionBaseMembresiaV2 {
+  finalizado: true;
+  confirmacionProveedor: boolean;
+  errorProveedor: string | null;
+  debitoAutomatico: boolean;
+  modo: ModoCatastroMembresiaV2 | null;
+  requiereConciliacion: boolean;
+  tarjeta: unknown;
+}
 
 export type FlujoCallbackMembresiaV2 =
   | "COTIZACION"
@@ -391,7 +412,7 @@ export async function confirmarCatastroObligacionMembresiaV2(
     token: string;
   },
   fetcher: FetchLike = fetch,
-): Promise<{ success: true; billingVersion: "V2" }> {
+): Promise<ConfirmacionBaseMembresiaV2 & { debitoAutomatico: true }> {
   return requestV2("catastro/confirmar-obligacion", input, fetcher);
 }
 
@@ -403,12 +424,7 @@ export async function finalizarCatastroMembresiaV2(
     token: string;
   },
   fetcher: FetchLike = fetch,
-): Promise<{
-  success: true;
-  billingVersion: "V2";
-  finalizado: true;
-  confirmacionProveedor: boolean;
-}> {
+): Promise<CatastroFinalizadoMembresiaV2> {
   return requestV2("catastro/finalizar", input, fetcher);
 }
 
@@ -425,7 +441,7 @@ export async function confirmarCallbackMembresiaV2(
   fetcher: FetchLike = fetch,
 ): Promise<{
   flujo: Exclude<FlujoCallbackMembresiaV2, "INVALIDO_V2">;
-  data: { success: true; billingVersion: "V2" } | null;
+  data: ConfirmacionBaseMembresiaV2 | CatastroFinalizadoMembresiaV2 | null;
 }> {
   const flujo = clasificarCallbackMembresiaV2(input);
   if (flujo === "INVALIDO_V2") {

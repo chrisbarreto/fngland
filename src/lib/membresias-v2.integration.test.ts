@@ -28,6 +28,11 @@ describe("flujo integral de catastro prepago V2", () => {
         billingVersion: "V2",
         finalizado: true,
         confirmacionProveedor: true,
+        errorProveedor: null,
+        debitoAutomatico: true,
+        modo: "SOLO_CATASTRO",
+        requiereConciliacion: false,
+        tarjeta: { idTarjeta: "tarjeta-nueva" },
       }),
     );
 
@@ -40,6 +45,11 @@ describe("flujo integral de catastro prepago V2", () => {
     );
 
     expect(resultado.flujo).toBe("CATASTRO_SIMPLE");
+    expect(resultado.data).toMatchObject({
+      debitoAutomatico: true,
+      modo: "SOLO_CATASTRO",
+      requiereConciliacion: false,
+    });
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(fetcher.mock.calls[0][0]).toBe(
       "/api/membresias-v2?accion=catastro%2Ffinalizar",
