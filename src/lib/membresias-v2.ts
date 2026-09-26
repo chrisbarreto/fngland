@@ -382,7 +382,7 @@ export async function cotizarReactivacionMembresiaV2(
 }
 
 export async function prepararCatastroMembresiaV2(
-  input: { idCliente: string; idCotizacion: string },
+  input: { idCliente: string; idCotizacion: string; autorizaDebitoAutomatico: true },
   fetcher: FetchLike = fetch,
 ): Promise<CatastroPreparadoMembresiaV2> {
   return requestV2<CatastroPreparadoMembresiaV2>(

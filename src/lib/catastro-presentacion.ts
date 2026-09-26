@@ -9,6 +9,7 @@ export interface ContextoCatastroPublico {
   vigenciaCobroDesde: string | null;
   vigenciaCobroHasta: string | null;
   modo?: ModoCatastroMembresiaV2 | null;
+  purpose?: string | null;
   cobraAhora?: boolean;
   requiereConciliacion?: boolean;
 }
@@ -42,6 +43,16 @@ export function describirContextoCatastro(
         "Registraremos tu nueva tarjeta. Hay un pago en verificación, por lo que no realizaremos otro cobro ni alteraremos ese proceso.",
       montoLabel: "Débito ahora",
       montoValor: "Sin cobro",
+    };
+  }
+
+  if (contexto.purpose === "ALTA_FINANCIADA") {
+    const monto = guaranies(contexto.montoCobrarAhora);
+    return {
+      titulo: "Registro y primera cuota de Gold",
+      mensaje: `Al terminar el registro de tu tarjeta, intentaremos cobrar la primera cuota de ${monto}. El plan se activará cuando se confirme el pago.`,
+      montoLabel: "Primera cuota tras el registro",
+      montoValor: monto,
     };
   }
 

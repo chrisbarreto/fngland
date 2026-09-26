@@ -3,11 +3,15 @@ export const prerender = true;
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Footer from "@/components/Footer.astro";
 import logoDark from "@/assets/logos/logo-dark.svg";
+import termsMarkdown from "@/legal/terminos-y-condiciones-v2-4.md?raw";
+import { marked } from "marked";
+
+const termsHtml = marked.parse(termsMarkdown, { async: false });
 ---
 
 <BaseLayout
   title="Términos y Condiciones | Fórmula NG"
-  description="Términos y condiciones de las membresías Fórmula, Premium, Gold y Domicilio de Fórmula NG."
+  description="Condiciones de Essential, Plus, Black, Domicilio y del Plan Gold financiado de Fórmula NG."
   canonicalPath="/terminos-y-condiciones"
   noindex={true}
 >
@@ -18,77 +22,7 @@ import logoDark from "@/assets/logos/logo-dark.svg";
       </a>
       <a href="/membresia" class="back-link">← Volver</a>
     </header>
-    <main class="legal-main">
-<h1>Términos y Condiciones</h1>
-<p class="meta">FORMULA NG E.A.S. · RUC 80156407-7 · Vigente desde agosto 2026</p>
-
-<h2>1. Alcance y aceptación</h2>
-<p>Estos términos regulan las membresías y servicios de estética automotriz ofrecidos por <strong>FORMULA NG E.A.S.</strong>, RUC <strong>80156407-7</strong>, con domicilio en 23 de Octubre 687 c/ Toribio Pacheco, Asunción, Paraguay.</p>
-<p>La contratación de cualquier plan requiere la lectura y aceptación expresa de estos términos. Sin esa aceptación, Fórmula NG no activará la membresía ni prestará los servicios solicitados.</p>
-
-<h2>2. Planes y modalidad</h2>
-<ul>
-  <li><strong>Fórmula, Premium y Domicilio:</strong> planes prepagos. Primero se abona el período y luego se habilita la cobertura.</li>
-  <li><strong>Gold:</strong> plan financiado de quince (15) meses consecutivos, sujeto a análisis y aprobación crediticia, contrato y pagaré.</li>
-</ul>
-<p>Los beneficios de Gold son valor agregado durante la financiación. Gold no es una membresía de libre cancelación: el cliente debe cumplir la obligación financiera total, salvo el pago anticipado de la totalidad de la deuda según el contrato.</p>
-
-<h2>3. Vigencia por mes calendario</h2>
-<p>Fórmula, Premium y Domicilio funcionan por mes calendario. La cobertura vence el último día calendario de cada mes; en febrero, el día 28 o 29, según corresponda. La vigencia no se computa como treinta días corridos desde la activación.</p>
-<p>Fines de semana y feriados no modifican el vencimiento ni desplazan la cobertura. Si un cobro no pudiera procesarse por razones operativas, podrá retomarse posteriormente sin modificar el calendario.</p>
-
-<h2>4. Altas, prorrateo y primer período</h2>
-<p>Una nueva membresía prepaga activada durante el mes se cobra únicamente desde la fecha de activación hasta el último día calendario. El sistema calcula el importe según el valor mensual del plan, los días totales del mes y los días restantes, redondeando al guaraní más cercano.</p>
-<p>El prorrateo no es multa, recargo, penalización, cuota adicional ni descuento permanente: cobra únicamente el período habilitado.</p>
-<ul>
-  <li>El primer día se cobra el valor mensual completo.</li>
-  <li>Entre el día 25 y el penúltimo día se aplica un mínimo de <strong>Gs. 50.000</strong>. Si el cálculo es inferior, la diferencia queda como saldo a favor o adelanto para la siguiente renovación.</li>
-  <li>El último día no se cobra proporcionalmente ese día; se cobra directamente el mes siguiente completo.</li>
-</ul>
-<p>Durante el primer período parcial se habilita el servicio principal y los beneficios ilimitados del plan. Los beneficios limitados comienzan en el primer mes completo. Si el alta es entre los días 20 y 24, el servicio principal puede utilizarse hasta dos veces; desde el día 25, hasta una vez.</p>
-
-<h2>5. Renovación y modalidades de pago</h2>
-<p>Después del primer período proporcional, cada renovación corresponde al valor mensual vigente y cubre el mes calendario siguiente completo. No se vuelve a prorratear mientras exista continuidad normal.</p>
-<p>El pago podrá realizarse mediante <strong>débito automático o pago electrónico recurrente</strong>. Si el cliente no está adherido al débito automático, podrá realizar un pago manual mediante los medios habilitados y autorizados por Fórmula NG; el sistema determinará el importe exacto.</p>
-<p>En planes prepagos, el débito se intenta a las 08:00 del vencimiento y, si falla por motivo financiero, puede intentarse nuevamente el tercer y quinto día posterior, sin más de un intento financiero por día. Una operación pendiente o dudosa debe verificarse antes de generar otro cobro.</p>
-
-<h2>6. Gracia, suspensión y reactivación</h2>
-<p>El día del vencimiento y los días 1, 2 y 3 posteriores, el cliente conserva cobertura y antigüedad. Durante los días 4 y 5 no puede usar los servicios mientras el pago esté pendiente, aunque puede conservar la antigüedad si regulariza. Desde el día 6, la membresía queda suspendida y se pierde la continuidad de antigüedad.</p>
-<p>Los meses completos sin cobertura no generan deuda. La reactivación mantiene el mismo cliente, membresía, vehículo y cargo de ingreso ya abonado. Se cobra desde la fecha efectiva hasta el cierre del mes; desde el día 25 aplica el mínimo de Gs. 50.000 cuando corresponda.</p>
-<p>Los beneficios propios del plan se conservan al reactivar. Los beneficios sujetos a antigüedad deben volver a calificarse si se perdió la continuidad.</p>
-
-<h2>7. Condiciones de uso</h2>
-<p>La membresía es personal, intransferible y está vinculada al vehículo registrado. Los días y servicios no utilizados vencen al terminar el período y no son acumulables ni prorrogables.</p>
-<p>Los servicios que requieran coordinación se realizan con agenda previa. Hay una tolerancia máxima de diez minutos; luego el turno puede cancelarse y deberá solicitarse uno nuevo según disponibilidad.</p>
-
-<h2>8. Beneficios por plan</h2>
-<ul>
-  <li><strong>Fórmula, Gs. 200.000:</strong> lavados, limpieza exterior e interior, desinfección, revitalización, hidratación, cera líquida una vez durante la membresía, motor una vez durante la membresía y dos traslados con agenda.</li>
-  <li><strong>Premium, Gs. 250.000:</strong> servicios base, cera líquida una vez durante la membresía, motor una vez durante la membresía y dos lavados a domicilio con agenda.</li>
-  <li><strong>Gold, Gs. 350.000:</strong> lavados mensuales, nano cerámico más pulida comercial una vez al año, tapizado superficial una vez al año, mantenimiento de nano una vez al mes, hidratación una vez al mes y un traslado al mes.</li>
-  <li><strong>Domicilio, Gs. 500.000:</strong> cuatro servicios de detailing al mes, con lavado exterior pH neutro, aspirado, desinfección, revitalización e hidratación. Se presta exclusivamente en la casa u oficina, nunca en el local.</li>
-</ul>
-<p>Los beneficios están sujetos a cantidades, agenda, disponibilidad y demás condiciones particulares del plan.</p>
-
-<h2>9. Servicios a domicilio</h2>
-<p>Requieren agenda, ubicación exacta y una persona responsable. Fórmula NG podrá identificar al personal y registrar mediante video de 360° el estado visible del vehículo.</p>
-<p>El servicio se realiza en garaje, cochera, patio u otro espacio del vehículo; el personal no está autorizado a ingresar a la vivienda. El cliente debe proporcionar agua, canilla, manguera, energía eléctrica y un espacio seguro, controlar mascotas, retirar objetos de valor y mantener disponible el vehículo.</p>
-<p>Si las condiciones no son seguras, el servicio podrá suspenderse o reprogramarse. Si el personal ya está en camino o llegó, podrá consumirse el beneficio o aplicarse el cargo informado.</p>
-
-<h2>10. Incumplimiento, adicionales y responsabilidad</h2>
-<p>Suciedad extrema, barro, pelo de mascotas adherido, residuos, insectos incrustados, manchas minerales, restauración, detailing adicional, pulidos, encerados premium o tratamientos nanocerámicos no incluidos requieren evaluación y aprobación previa, y pueden generar un cargo desde Gs. 30.000.</p>
-<p>Fórmula NG podrá suspender o cancelar por falta de pago, uso indebido, fraude, incumplimiento reiterado o faltas de respeto, sin reembolso en los casos permitidos por la normativa aplicable.</p>
-<p>Fórmula NG no responde por fallas mecánicas, eléctricas, electrónicas o técnicas existentes antes, durante o después del servicio, salvo daño causado directamente por negligencia de su personal. Tampoco responde por objetos dejados en el vehículo, datos incorrectos, falta de documentación o hechos ajenos a su control.</p>
-
-<h2>11. Cancelación y reembolsos</h2>
-<p>En Fórmula, Premium y Domicilio, la cancelación debe solicitarse con una anticipación mínima de treinta días corridos antes del próximo ciclo. El procedimiento completo está en la <a href="/cancelaciones-y-reembolsos">Política de Cancelaciones y Reembolsos</a>.</p>
-<p>Gold no es de cancelación libre: la obligación continúa durante quince meses o hasta el pago anticipado total de la deuda. Los períodos o servicios no utilizados no generan reembolso, cambio ni compensación, sin perjuicio de errores de cobro o derechos legales aplicables.</p>
-
-<h2>12. Pagos, datos y modificaciones</h2>
-<p>Los datos completos de tarjeta, CVV/CVC, PIN, contraseñas y códigos OTP no deben compartirse por teléfono, WhatsApp, correo o redes sociales. Los pagos son procesados por proveedores autorizados y Fórmula NG no almacena el número completo de la tarjeta. Ver la <a href="/politica-de-privacidad">Política de Privacidad</a> y la <a href="/debito-automatico">Autorización de Débito Automático</a>.</p>
-<p>Fórmula NG podrá actualizar estos términos y notificará los cambios por canales oficiales. Las controversias se someterán a los tribunales competentes de Asunción, Paraguay, sin perjuicio de los derechos irrenunciables aplicables.</p>
-<p>Consultas: <a href="mailto:info@formulang.com.py">info@formulang.com.py</a> · WhatsApp: <a href="https://wa.me/595992789328">0992 789 328</a></p>
-    </main>
+    <main class="legal-main" set:html={termsHtml} />
     <Footer />
   </div>
 </BaseLayout>
@@ -99,12 +33,12 @@ import logoDark from "@/assets/logos/logo-dark.svg";
   .back-link { font-size: 0.85rem; color: rgba(255,255,255,0.45); text-decoration: none; }
   .back-link:hover { color: #ff6b3d; }
   .legal-main { flex: 1; max-width: 860px; margin: 0 auto; width: 100%; padding: 3rem 1.5rem 4rem; box-sizing: border-box; color: rgba(255,255,255,0.8); line-height: 1.7; }
-  h1 { margin: 0 0 0.4rem; font-size: clamp(1.6rem, 4vw, 2.2rem); color: #fff; }
-  .meta { margin: 0 0 2.5rem; font-size: 0.8rem; color: rgba(255,255,255,0.35); }
-  h2 { margin: 2rem 0 0.6rem; font-size: 1.05rem; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem; }
-  p { margin: 0 0 0.8rem; font-size: 0.9rem; }
-  ul { margin: 0 0 0.8rem; padding-left: 1.3rem; font-size: 0.9rem; }
-  li { margin-bottom: 0.45rem; }
-  a { color: #ff6b3d; text-decoration: underline; }
-  a:hover { color: #f92606; }
+  :global(.legal-main h1) { margin: 0 0 0.4rem; font-size: clamp(1.6rem, 4vw, 2.2rem); color: #fff; }
+  :global(.legal-main > p:first-of-type) { margin: 0 0 2.5rem; font-size: 0.8rem; color: rgba(255,255,255,0.55); }
+  :global(.legal-main h2) { margin: 2rem 0 0.6rem; font-size: 1.05rem; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem; }
+  :global(.legal-main p) { margin: 0 0 0.8rem; font-size: 0.9rem; }
+  :global(.legal-main ul) { margin: 0 0 0.8rem; padding-left: 1.3rem; font-size: 0.9rem; }
+  :global(.legal-main li) { margin-bottom: 0.45rem; }
+  :global(.legal-main a) { color: #ff6b3d; text-decoration: underline; }
+  :global(.legal-main a:hover) { color: #f92606; }
 </style>

@@ -1,0 +1,305 @@
+---
+import { FINANCED_GOLD_PLAN, PUBLIC_PLANS, dailyEquivalent, formatGuaranies } from "@/lib/public-plans";
+---
+
+<div class="plans-grid">
+  {PUBLIC_PLANS.map((plan) => (
+    <article
+      class:list={[
+        "pricing-card",
+        plan.badge && "pricing-card-highlighted",
+        plan.key === "plus" && "pricing-card-popular",
+        plan.key === "black" && "pricing-card-black",
+      ]}
+      data-plan-id={plan.id}
+    >
+      {plan.badge && <div class="pricing-ribbon">{plan.badge}</div>}
+
+      <div class="pricing-offer">
+        <h3 class="pricing-name">{plan.name}</h3>
+        <div class="pricing-price-line">
+          <span class="pricing-price">Gs. {formatGuaranies(dailyEquivalent(plan.monthlyPrice))}</span>
+          <span class="pricing-price-period">/día</span>
+        </div>
+        <p class="pricing-monthly">Gs. {formatGuaranies(plan.monthlyPrice)}<span>/mes</span></p>
+        {plan.minimumTermMonths === 1 && <p class="pricing-term">Permanencia mínima: 1 mes</p>}
+        <button
+          type="button"
+          class:list={["pricing-button", plan.key === "black" && "pricing-button-primary"]}
+          data-plan-id={plan.id}
+          disabled={!plan.id}
+        >
+          {plan.id ? "Elegir " + plan.name : "Disponible próximamente"}
+        </button>
+      </div>
+
+      <div class="pricing-includes">
+        <section class="pricing-service-section">
+          <h4>Servicios incluidos</h4>
+          <ul class="pricing-features">
+            {plan.services.map((service) => (
+              <li><span>{service}</span><span class="pricing-feature-check" aria-hidden="true">✓</span></li>
+            ))}
+          </ul>
+        </section>
+        {plan.bonuses.length > 0 && (
+          <section class="pricing-bonuses">
+            <h4>Bonificaciones sin costo adicional</h4>
+            <ul class="pricing-features">
+              {plan.bonuses.map((bonus) => (
+                <li><span>{bonus}</span><span class="pricing-feature-check" aria-hidden="true">✓</span></li>
+              ))}
+            </ul>
+
+          </section>
+        )}
+        {plan.note && <p class="pricing-note">{plan.note}</p>}
+      </div>
+    </article>
+  ))}
+  <article class="pricing-card pricing-card-gold" data-plan-id={FINANCED_GOLD_PLAN.id}>
+    <div class="pricing-ribbon">{FINANCED_GOLD_PLAN.badge}</div>
+    <div class="pricing-offer">
+      <h3 class="pricing-name">{FINANCED_GOLD_PLAN.name}</h3>
+      <div class="pricing-price-line">
+        <span class="pricing-price">Gs. {formatGuaranies(FINANCED_GOLD_PLAN.installmentPrice)}</span>
+        <span class="pricing-price-period">/cuota</span>
+      </div>
+      <p class="pricing-monthly">{FINANCED_GOLD_PLAN.installments} cuotas · total Gs. {formatGuaranies(FINANCED_GOLD_PLAN.totalPrice)}</p>
+      <p class="pricing-financing">Primera cuota completa al contratar. La segunda vence al cierre del mes de alta; si contratás el último día, vence al cierre del mes siguiente. Sin prorrateo.</p>
+      <a
+        class="pricing-button pricing-button-gold"
+        data-gold-consulta
+        href="https://wa.me/595992789328?text=Hola%2C%20quiero%20consultar%20sobre%20el%20Plan%20Gold%20financiado"
+        target="_blank"
+        rel="noopener noreferrer"
+      >Consultar Plan Gold</a>
+      <button type="button" class="pricing-button pricing-button-gold" data-gold-contratar hidden>Contratar Plan Gold</button>
+    </div>
+    <div class="pricing-includes">
+      <section class="pricing-service-section">
+        <h4>Servicios incluidos</h4>
+        <ul class="pricing-features">
+          {FINANCED_GOLD_PLAN.services.map((service) => (
+            <li><span>{service}</span><span class="pricing-feature-check" aria-hidden="true">✓</span></li>
+          ))}
+        </ul>
+      </section>
+      <section class="pricing-bonuses">
+        <h4>Bonificaciones sin costo adicional</h4>
+        <ul class="pricing-features">
+          {FINANCED_GOLD_PLAN.bonuses.map((bonus) => (
+            <li><span>{bonus}</span><span class="pricing-feature-check" aria-hidden="true">✓</span></li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  </article>
+</div>
+
+<style>
+  .plans-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: stretch;
+  }
+  .pricing-card {
+    min-width: 0;
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 18px;
+    background: #222;
+    color: #fff;
+  }
+  .pricing-card-highlighted { margin-top: 0; }
+  .pricing-card-gold { margin-top: 0; border-color: rgba(216, 177, 99, 0.75); background: #24211c; }
+  .pricing-card-gold .pricing-ribbon { background: #d8b163; color: #171411; }
+  .pricing-card-gold .pricing-monthly { color: #e8c783; }
+  .pricing-card-gold .pricing-price-line { flex-wrap: wrap; white-space: normal; }
+  .pricing-card-gold .pricing-price { font-size: clamp(1.4rem, 1.8vw, 2.2rem); }
+  .pricing-card-popular { border-color: rgba(255,107,61,0.8); }
+  .pricing-card-black {
+    border-color: #f92606;
+    background: #241e1d;
+    box-shadow: 0 16px 42px rgba(249,38,6,0.14);
+  }
+  .pricing-ribbon {
+    min-height: 2.75rem;
+    display: grid;
+    place-items: center;
+    padding: 0.45rem 1rem;
+    background: #ff6b3d;
+    color: #161616;
+    font-size: 0.86rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-align: center;
+  }
+  .pricing-card-black .pricing-ribbon {
+    background: linear-gradient(110deg, #f92606, #ff6b3d);
+    color: #fff;
+  }
+  .pricing-offer {
+    display: flex;
+    flex-direction: column;
+    min-height: 16.75rem;
+    padding: 1.55rem 1.25rem 1.45rem;
+  }
+  .pricing-name {
+    margin: 0 0 1rem;
+    font-size: clamp(1.07rem, 1.35vw, 1.3rem);
+    font-weight: 700;
+    line-height: 1.25;
+    color: #fff;
+  }
+  .pricing-price-line {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    white-space: nowrap;
+  }
+  .pricing-price {
+    font-size: clamp(1.45rem, 1.9vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: -0.045em;
+    line-height: 1.06;
+    color: #fff;
+  }
+  .pricing-price-period {
+    font-size: 0.84rem;
+    color: rgba(255,255,255,0.72);
+  }
+  .pricing-monthly {
+    margin: 0.65rem 0 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ff8b68;
+  }
+  .pricing-financing {
+    margin: 0.7rem 0 1rem;
+    color: rgba(255,255,255,0.73);
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+  .pricing-term {
+    margin: 0.3rem 0 1.2rem;
+    font-size: 0.77rem;
+    color: rgba(255,255,255,0.62);
+  }
+  .pricing-button {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+    margin-top: auto;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.1rem;
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: 1.5px solid #ff6b3d;
+    border-radius: 10px;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .pricing-button[hidden] { display: none !important; }
+  .pricing-button:hover:not(:disabled) {
+    background: rgba(255,107,61,0.15);
+    transform: translateY(-1px);
+  }
+  .pricing-button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+  .pricing-button:disabled { opacity: 0.55; cursor: not-allowed; }
+  .pricing-button-gold { border-color: #d8b163; color: #f3d595; }
+  .pricing-button-gold:hover { background: rgba(216, 177, 99, 0.16); }
+  .pricing-button-primary {
+    border-color: transparent;
+    background: linear-gradient(110deg, #f92606, #ff6b3d);
+    box-shadow: 0 7px 22px rgba(249,38,6,0.25);
+  }
+  .pricing-button-primary:hover:not(:disabled) {
+    background: linear-gradient(110deg, #d92005, #f35d33);
+    box-shadow: 0 9px 26px rgba(249,38,6,0.34);
+  }
+  .pricing-includes {
+    flex: 1;
+    padding: 1.45rem 1.25rem 1.65rem;
+    border-top: 1px solid rgba(255,255,255,0.13);
+  }
+  .pricing-includes h4 {
+    margin: 0 0 1.25rem;
+    font-size: 0.98rem;
+    font-weight: 750;
+    color: #fff;
+  }
+  .pricing-features {
+    display: grid;
+    gap: 0.95rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .pricing-features li {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.7rem;
+    min-width: 0;
+    color: rgba(255,255,255,0.78);
+    font-size: 0.83rem;
+    line-height: 1.45;
+  }
+  .pricing-feature-check {
+    flex: none;
+    color: #42ce91;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+  .pricing-bonuses {
+    margin-top: 1.35rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(255,255,255,0.13);
+  }
+  .pricing-bonuses h4 {
+    color: #ff8b68;
+  }
+  .pricing-bonuses .pricing-feature-check {
+    color: #ff8b68;
+  }
+
+  .pricing-note {
+    margin: 1.3rem 0 0;
+    padding-top: 0.9rem;
+    border-top: 1px solid rgba(255,255,255,0.09);
+    color: rgba(255,255,255,0.68);
+    font-size: 0.79rem;
+    line-height: 1.5;
+  }
+  @media (max-width: 1180px) {
+    .plans-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+    .pricing-name { font-size: 1.3rem; }
+    .pricing-price { font-size: 2.45rem; }
+  }
+  @media (max-width: 620px) {
+    .plans-grid { grid-template-columns: minmax(0, 1fr); }
+    .pricing-card { margin-top: 0; }
+    .pricing-offer { min-height: 0; }
+    .pricing-button { margin-top: 1.2rem; }
+  }
+  @media (max-width: 380px) {
+    .pricing-price { font-size: 2.1rem; }
+    .pricing-offer, .pricing-includes { padding-left: 1rem; padding-right: 1rem; }
+  }
+</style>

@@ -1,0 +1,349 @@
+---
+const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
+---
+<div id="gold-modal" class="gold-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="gold-title" data-sitekey={siteKey}>
+  <div class="gold-dialog">
+    <button type="button" class="gold-close" id="gold-close" aria-label="Cerrar">×</button>
+    <p class="gold-eyebrow">PLAN FINANCIADO</p>
+    <h2 id="gold-title">Contratá Plan Gold</h2>
+    <p class="gold-intro">15 cuotas completas. La primera se paga al contratar; la cobertura prevista es de 15 meses desde la activación, manteniendo los pagos al día.</p>
+    <p class="gold-error" id="gold-error" role="alert" hidden></p>
+    <p class="gold-status" id="gold-status" role="status" hidden></p>
+
+    <section id="gold-register-section">
+      <h3>1. Tus datos y vehículo</h3>
+      <p class="gold-help">El contrato se emitirá con los datos que ingreses. Si ya sos cliente, comunicate con nosotros para vincular tu cuenta existente.</p>
+      <form id="gold-register-form">
+        <div class="gold-fields">
+          <label>Nombre completo<input name="nombre" required maxlength="200" autocomplete="name" /></label>
+          <label>RUC o CI<input name="ruc" required maxlength="20" inputmode="numeric" /></label>
+          <label>Teléfono<input name="telefono" required maxlength="20" autocomplete="tel" /></label>
+          <label>Correo electrónico<input name="email" type="email" required autocomplete="email" /></label>
+        </div>
+        <h4 class="gold-vehicle-heading">Tu vehículo</h4>
+        <div class="gold-fields">
+          <label>Chapa / Matrícula<input name="chapa" required minlength="3" maxlength="15" pattern="[A-Za-z0-9]+" autocapitalize="characters" placeholder="Ej.: ABCD123" /></label>
+          <label>Año<input name="anio" type="number" min="1900" max="2100" placeholder="Ej.: 2024" /></label>
+          <label>Marca<select id="gold-marca" name="idMarca"><option value="">Cargando marcas…</option></select></label>
+          <label>Modelo<select id="gold-modelo" name="idModelo" disabled><option value="">Primero seleccioná la marca</option></select></label>
+          <label id="gold-marca-nueva-wrap" hidden>Especificá la marca<input name="marcaNueva" maxlength="80" placeholder="Ej.: BYD" /></label>
+          <label id="gold-modelo-nuevo-wrap" hidden>Especificá el modelo<input name="modeloNuevo" maxlength="80" placeholder="Ej.: Dolphin" /></label>
+          <label>Tipo<select id="gold-tipo" name="idTipoVehiculo"><option value="">Cargando tipos…</option></select></label>
+          <label>Color<input name="color" maxlength="50" placeholder="Ej.: Blanco" /></label>
+        </div>
+        <div id="gold-turnstile" aria-label="Verificación de seguridad"></div>
+        <label class="gold-check"><input type="checkbox" name="acceptTerminos" required /> Acepto los <a href="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer">términos y condiciones</a> y la <a href="/politica-de-privacidad" target="_blank" rel="noopener noreferrer">política de privacidad</a> para registrar mis datos.</label>
+        <button class="gold-action" type="submit" id="gold-register-button">Continuar a la cotización</button>
+      </form>
+    </section>
+
+    <section id="gold-quote-section" hidden>
+      <h3>2. Revisá tu oferta y calendario</h3>
+      <div id="gold-quote-summary" class="gold-summary"></div>
+      <div class="gold-calendar-wrap"><table class="gold-calendar"><thead><tr><th>Cuota</th><th>Vencimiento</th><th>Importe</th></tr></thead><tbody id="gold-calendar-body"></tbody></table></div>
+      <p id="gold-coverage" class="gold-help"></p>
+      <p class="gold-help">El tratamiento nanocerámico inicial está incluido en el precio. Los lavados son una bonificación: hasta 4 por mes y 1 por semana; cada lavado semanal incluye su mantenimiento nanocerámico sin cita adicional. Las bonificaciones no tienen costo adicional y están sujetas a coordinación y disponibilidad operativa.</p>
+      <p class="gold-legal" id="gold-legal"></p>
+      <details class="gold-document"><summary>Leer las condiciones completas de esta oferta</summary><pre id="gold-document-text"></pre></details>
+      <label class="gold-check"><input type="checkbox" id="gold-accept-offer" /> <span>Leí y acepto esta oferta, los <a id="gold-accept-terms-link" href="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer">términos y condiciones</a> y el <span id="gold-payment-terms">calendario de cuotas e importe total mostrados</span>. Autorizo expresamente el débito automático de esas cuotas en la tarjeta que registraré, según la <a href="/debito-automatico" target="_blank" rel="noopener noreferrer">autorización de débito automático</a>. Puedo solicitar su cancelación en cualquier momento al personal de Fórmula NG.</span></label>
+      <button class="gold-action" type="button" id="gold-contract-button">Aceptar contrato y registrar tarjeta</button>
+      <button class="gold-secondary" type="button" id="gold-requote-button">Actualizar cotización</button>
+    </section>
+
+    <section id="gold-payment-section" hidden>
+      <h3>3. Primera cuota</h3>
+      <p id="gold-payment-message">El contrato está pendiente del pago completo de la primera cuota. Registrá tu tarjeta para procesarlo.</p>
+      <button class="gold-action" type="button" id="gold-card-button">Registrar tarjeta y pagar primera cuota</button>
+      <button class="gold-secondary" type="button" id="gold-status-button">Consultar estado del pago</button>
+    </section>
+  </div>
+</div>
+
+<style>
+  .gold-overlay[hidden], .gold-dialog [hidden], :global(.pricing-button[hidden]) { display: none !important; }
+  .gold-overlay { position: fixed; inset: 0; z-index: 12000; background: rgba(0,0,0,.82); display: flex; align-items: center; justify-content: center; padding: 1rem; overflow-y: auto; }
+  .gold-dialog { position: relative; width: min(100%, 720px); max-height: min(92vh, 900px); overflow-y: auto; background: #201e1b; border: 1px solid #b99252; border-radius: 20px; padding: clamp(1.2rem, 4vw, 2rem); color: #fff; box-shadow: 0 24px 90px #0009; }
+  .gold-close { position: absolute; right: 1rem; top: .6rem; border: 0; background: none; color: #fff; font-size: 2rem; cursor: pointer; }
+  .gold-eyebrow { color: #f0ce8b; font-size: .72rem; font-weight: 800; letter-spacing: .1em; margin: 0 0 .5rem; }
+  .gold-dialog h2 { font-size: clamp(1.55rem, 5vw, 2.2rem); margin: 0 .8rem .4rem 0; }
+  .gold-dialog h3 { font-size: 1.05rem; margin: 1.2rem 0 .75rem; }
+  .gold-vehicle-heading { font-size: .95rem; margin: 1.25rem 0 .75rem; padding-top: 1rem; border-top: 1px solid #51483b; }
+  .gold-intro, .gold-help, #gold-payment-message { color: #c9c5c1; line-height: 1.55; font-size: .91rem; }
+  .gold-error, .gold-status { padding: .8rem 1rem; border-radius: 9px; margin: .8rem 0; line-height: 1.45; }
+  .gold-error { background: #541b1b; color: #fff; }
+  .gold-status { background: #183323; color: #dcffe8; }
+  .gold-fields { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+  .gold-fields label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; font-weight: 600; }
+  .gold-fields input, .gold-fields select { width: 100%; box-sizing: border-box; border: 1px solid #5c5750; border-radius: 8px; padding: .7rem; background: #151412; color: #fff; font: inherit; }
+  .gold-fields input:focus-visible, .gold-fields select:focus-visible, .gold-action:focus-visible, .gold-secondary:focus-visible { outline: 2px solid #f1ce88; outline-offset: 2px; }
+  #gold-turnstile { margin: 1rem 0; min-height: 65px; }
+  .gold-check { display: flex; align-items: flex-start; gap: .55rem; margin: .9rem 0; font-size: .86rem; line-height: 1.4; }
+  .gold-check input { margin-top: .2rem; accent-color: #d9ae5a; }
+  .gold-check a, #gold-legal :global(a) { color: #f0cd87; text-decoration: underline; }
+  .gold-action, .gold-secondary { border-radius: 9px; font: inherit; font-weight: 700; cursor: pointer; padding: .8rem 1rem; max-width: 100%; }
+  .gold-action { width: 100%; background: #d8b163; border: 1px solid #d8b163; color: #17130d; margin-top: .8rem; }
+  .gold-action:disabled { opacity: .6; cursor: wait; }
+  .gold-secondary { width: 100%; background: transparent; border: 1px solid #706451; color: #f1ce88; margin-top: .6rem; }
+  .gold-summary { background: #332a1e; border: 1px solid #655037; border-radius: 10px; padding: 1rem; line-height: 1.65; }
+  .gold-calendar-wrap { max-height: 240px; overflow-y: auto; margin: 1rem 0; border: 1px solid #51483b; border-radius: 8px; }
+  .gold-calendar { width: 100%; border-collapse: collapse; font-size: .84rem; }
+  .gold-calendar th, .gold-calendar td { padding: .53rem .65rem; text-align: left; border-bottom: 1px solid #474038; }
+  .gold-calendar th { position: sticky; top: 0; background: #2c271f; }
+  .gold-document { border: 1px solid #51483b; border-radius: 8px; margin: 1rem 0; }
+  .gold-document summary { padding: .75rem; cursor: pointer; }
+  .gold-document pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 300px; overflow-y: auto; padding: .8rem; font: .78rem/1.45 system-ui; }
+  @media (max-width: 560px) { .gold-overlay { padding: 0; align-items: stretch; } .gold-dialog { border-radius: 0; max-height: 100dvh; width: 100%; } .gold-fields { grid-template-columns: 1fr; } }
+</style>
+
+<script>
+  import { solicitudFinanciada, type DisponibilidadFinanciada, type CotizacionFinanciada, type EstadoFinanciado } from "@/lib/membresias-financiadas";
+  const modal = document.getElementById("gold-modal") as HTMLElement | null;
+  if (modal) {
+    const $ = (id: string) => document.getElementById(id) as HTMLElement | null;
+    const sessionKey = "gold-financiado-sesion-v1";
+    const contractKey = "gold-financiado-contrato-v1";
+    let sessionToken = sessionStorage.getItem(sessionKey) ?? "";
+    let idContrato = sessionStorage.getItem(contractKey) ?? "";
+    let quote: CotizacionFinanciada | null = null;
+    let available: DisponibilidadFinanciada | null = null;
+    let widgetId: string | null = null;
+    let captchaToken = "";
+    const money = (value: string | number) => `Gs. ${new Intl.NumberFormat("es-PY").format(Number(value))}`;
+    const date = (value: string) => {
+      const [year, month, day] = value.slice(0, 10).split("-").map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString("es-PY");
+    };
+    const show = (section: string) => {
+      for (const id of ["gold-register-section", "gold-quote-section", "gold-payment-section"]) $(id)?.toggleAttribute("hidden", id !== section);
+    };
+    const error = (message: string) => { const el = $("gold-error"); if (el) { el.textContent = message; el.removeAttribute("hidden"); } };
+    const clear = () => { $("gold-error")?.setAttribute("hidden", ""); $("gold-status")?.setAttribute("hidden", ""); };
+    const status = (message: string) => { const el = $("gold-status"); if (el) { el.textContent = message; el.removeAttribute("hidden"); } };
+    const busy = (id: string, value: boolean) => { const el = $(id) as HTMLButtonElement | null; if (el) el.disabled = value; };
+    const marcaSelect = $("gold-marca") as HTMLSelectElement;
+    const modeloSelect = $("gold-modelo") as HTMLSelectElement;
+    const tipoSelect = $("gold-tipo") as HTMLSelectElement;
+    const marcaNuevaWrap = $("gold-marca-nueva-wrap") as HTMLLabelElement;
+    const modeloNuevoWrap = $("gold-modelo-nuevo-wrap") as HTMLLabelElement;
+    const marcaNuevaInput = marcaNuevaWrap.querySelector("input") as HTMLInputElement;
+    const modeloNuevoInput = modeloNuevoWrap.querySelector("input") as HTMLInputElement;
+    let catalogosCargados = false;
+    async function catalogo<T>(url: string): Promise<T[]> {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("No se pudo cargar el catálogo de vehículos. Intentá nuevamente.");
+      const values: unknown = await response.json();
+      if (!Array.isArray(values)) throw new Error("El catálogo de vehículos no está disponible.");
+      return values as T[];
+    }
+    async function cargarCatalogos() {
+      if (catalogosCargados) return;
+      const [marcas, tipos] = await Promise.all([
+        catalogo<{ idMarca: number; nombre: string }>("/api/marcas"),
+        catalogo<{ idTipoVehiculo: number; nombre: string }>("/api/tipos-vehiculo"),
+      ]);
+      marcaSelect.replaceChildren(new Option("Seleccionar marca...", ""),
+        ...marcas.map((marca) => new Option(marca.nombre, String(marca.idMarca))), new Option("Otro", "otro"));
+      tipoSelect.replaceChildren(new Option("Seleccionar tipo...", ""),
+        ...tipos.map((tipo) => new Option(tipo.nombre, String(tipo.idTipoVehiculo))));
+      catalogosCargados = true;
+    }
+    marcaSelect.addEventListener("change", async () => {
+      const idMarca = marcaSelect.value;
+      marcaNuevaWrap.hidden = idMarca !== "otro";
+      marcaNuevaInput.required = idMarca === "otro";
+      if (idMarca !== "otro") marcaNuevaInput.value = "";
+      modeloNuevoWrap.hidden = idMarca !== "otro";
+      modeloNuevoInput.required = false;
+      if (idMarca !== "otro") modeloNuevoInput.value = "";
+      modeloSelect.disabled = true;
+      modeloSelect.replaceChildren(new Option(idMarca === "otro" ? "Ingresá el modelo" : "Primero seleccioná la marca", ""));
+      if (!idMarca || idMarca === "otro") return;
+      modeloSelect.replaceChildren(new Option("Cargando modelos…", ""));
+      try {
+        const modelos = await catalogo<{ idModelo: number; nombre: string }>(`/api/modelos?idMarca=${encodeURIComponent(idMarca)}`);
+        if (marcaSelect.value !== idMarca) return;
+        modeloSelect.replaceChildren(new Option("Seleccionar modelo...", ""),
+          ...modelos.map((modelo) => new Option(modelo.nombre, String(modelo.idModelo))), new Option("Otro", "otro"));
+        modeloSelect.disabled = false;
+      } catch (e) {
+        if (marcaSelect.value === idMarca) error(e instanceof Error ? e.message : "No se pudieron cargar los modelos.");
+      }
+    });
+    modeloSelect.addEventListener("change", () => {
+      const otro = modeloSelect.value === "otro";
+      modeloNuevoWrap.hidden = !otro;
+      modeloNuevoInput.required = otro;
+      if (!otro) modeloNuevoInput.value = "";
+    });
+    async function renderTurnstile() {
+      const sitekey = modal?.dataset.sitekey ?? "";
+      if (!sitekey || widgetId) return;
+      for (let i = 0; i < 30; i++) {
+        const ts = (window as any).turnstile;
+        if (ts?.render) {
+          widgetId = ts.render("#gold-turnstile", { sitekey, theme: "dark", callback: (token: string) => { captchaToken = token; }, "expired-callback": () => { captchaToken = ""; } });
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+      error("No se pudo cargar la verificación de seguridad. Actualizá la página.");
+    }
+    async function consultStatus() {
+      if (!sessionToken || !idContrato) return;
+      const result = await solicitudFinanciada<EstadoFinanciado>("contratos/estado", { token: sessionToken, idContratoFinanciado: idContrato });
+      show("gold-payment-section");
+      const message = $("gold-payment-message");
+      const cardButton = $("gold-card-button");
+      if (result.estadoContrato === "ACTIVO") {
+        if (message) message.textContent = `Primera cuota confirmada. Contrato activo; ${result.cuotasPagadas} de ${result.numeroCuotas} cuotas pagadas.`;
+        cardButton?.setAttribute("hidden", "");
+      } else if (result.estadoPrimeraCuota === "PAGADA") {
+        if (message) message.textContent = "Primera cuota confirmada. Falta vincular la tarjeta y su autorización para activar el contrato; comunicate con nosotros.";
+        cardButton?.setAttribute("hidden", "");
+      } else if (["PENDIENTE", "INDETERMINADO"].includes(result.estadoIntento ?? "")) {
+        if (message) message.textContent = "El pago sigue en proceso o conciliación. Consultá el estado antes de intentar otro pago.";
+        cardButton?.setAttribute("hidden", "");
+      } else if (result.estadoIntento === "RECHAZADO") {
+        if (message) message.textContent = "El banco rechazó el cobro. Comunicate con nosotros para coordinar un nuevo intento seguro.";
+        cardButton?.setAttribute("hidden", "");
+      } else {
+        if (message) message.textContent = `Contrato pendiente. Primera cuota completa: ${money(result.importeCuota)}.`;
+        cardButton?.removeAttribute("hidden");
+      }
+    }
+    async function cotizar() {
+      clear();
+      if (!sessionToken) { show("gold-register-section"); return; }
+      status("Calculando calendario y documento contractual…");
+      try {
+        quote = await solicitudFinanciada<CotizacionFinanciada>("cotizaciones", { sesionToken: sessionToken, idempotencyKey: crypto.randomUUID() });
+        const q = quote;
+        const summary = $("gold-quote-summary");
+        if (summary) summary.textContent = `${q.numeroCuotas} cuotas de ${money(q.importeCuota)} · total ${money(q.importeTotal)}. Primera cuota completa al contratar. La segunda vence el ${date(q.segundoVencimiento)}. Sin prorrateo, intereses ni cargos adicionales.`;
+        const tbody = $("gold-calendar-body");
+        if (tbody) {
+          tbody.replaceChildren(...q.calendario.map((cuota) => {
+            const row = document.createElement("tr");
+            for (const value of [String(cuota.numero), date(cuota.vencimiento), money(cuota.importe)]) { const cell = document.createElement("td"); cell.textContent = value; row.append(cell); }
+            return row;
+          }));
+        }
+        const coverage = q.coberturaPrevista as Record<string, string>;
+        if ($("gold-coverage")) $("gold-coverage")!.textContent = `Cobertura prevista: del ${date(coverage.desde)} al ${date(coverage.ultimoDia)} (${coverage.mesesCobertura} meses). Se activa tras la primera cuota y depende de mantener los pagos al día.`;
+        const legal = $("gold-legal");
+        if (legal) { legal.replaceChildren(); legal.append("Consultá los "); const link = document.createElement("a"); link.href = q.versionTerminos.documento; link.textContent = "términos y condiciones"; link.target = "_blank"; link.rel = "noopener noreferrer"; legal.append(link, " antes de aceptar esta oferta."); }
+        const acceptanceTermsLink = $("gold-accept-terms-link") as HTMLAnchorElement | null;
+        if (acceptanceTermsLink) acceptanceTermsLink.href = q.versionTerminos.documento;
+        if ($("gold-document-text")) $("gold-document-text")!.textContent = q.documentoExacto;
+        if ($("gold-payment-terms")) $("gold-payment-terms")!.textContent = `calendario de ${q.numeroCuotas} cuotas de ${money(q.importeCuota)} cada una (total ${money(q.importeTotal)})`;
+        ($("gold-accept-offer") as HTMLInputElement).checked = false;
+        show("gold-quote-section"); clear();
+      } catch (e) { clear(); error(e instanceof Error ? e.message : "No se pudo cotizar"); }
+    }
+    async function recuperarContrato() {
+      if (!sessionToken) return false;
+      const result = await solicitudFinanciada<{ encontrado: false } | ({ encontrado: true } & EstadoFinanciado)>(
+        "contratos/recuperar", { sesionToken: sessionToken },
+      );
+      if (!result.encontrado) return false;
+      idContrato = result.idContratoFinanciado;
+      sessionStorage.setItem(contractKey, idContrato);
+      await consultStatus();
+      return true;
+    }
+    async function openModal() {
+      clear(); modal?.removeAttribute("hidden");
+      if (idContrato) { try { await consultStatus(); } catch (e) { error(e instanceof Error ? e.message : "No se pudo consultar el contrato"); } }
+      else if (sessionToken) {
+        try { if (!(await recuperarContrato())) await cotizar(); }
+        catch (e) { error(e instanceof Error ? e.message : "No se pudo recuperar el contrato"); }
+      }
+      else {
+        show("gold-register-section");
+        void cargarCatalogos().catch((e) => error(e instanceof Error ? e.message : "No se pudieron cargar los datos del vehículo."));
+        void renderTurnstile();
+      }
+    }
+    async function checkAvailability() {
+      try {
+        available = await solicitudFinanciada<DisponibilidadFinanciada>("disponibilidad");
+      } catch { /* La consulta comercial permanece disponible si no responde la API. */ }
+      const puedeContratar = available?.habilitado === true;
+      const puedeConsultarContrato = Boolean(sessionToken && idContrato);
+      if (!puedeContratar && !puedeConsultarContrato) return;
+      if (puedeContratar) {
+        document.querySelectorAll<HTMLElement>("[data-gold-consulta]").forEach((element) => element.setAttribute("hidden", ""));
+      }
+      document.querySelectorAll<HTMLButtonElement>("[data-gold-contratar]").forEach((element) => {
+        element.textContent = puedeContratar ? "Contratar Plan Gold" : "Consultar mi contrato Gold";
+        element.removeAttribute("hidden");
+        element.addEventListener("click", () => void openModal());
+      });
+    }
+    $("gold-close")?.addEventListener("click", () => modal?.setAttribute("hidden", ""));
+    modal.addEventListener("click", (event) => { if (event.target === modal) modal.setAttribute("hidden", ""); });
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape") modal.setAttribute("hidden", ""); });
+    ($("gold-register-form") as HTMLFormElement)?.addEventListener("submit", async (event) => {
+      event.preventDefault(); clear(); busy("gold-register-button", true);
+      try {
+        if (!captchaToken) throw new Error("Completá la verificación de seguridad.");
+        const data = new FormData(event.currentTarget as HTMLFormElement);
+        const payload: Record<string, string | number | boolean> = {
+          nombre: String(data.get("nombre") ?? "").trim(), ruc: String(data.get("ruc") ?? "").trim(),
+          telefono: String(data.get("telefono") ?? "").trim(), email: String(data.get("email") ?? "").trim(),
+          chapa: String(data.get("chapa") ?? "").trim().toUpperCase(),
+          acceptTerminos: data.get("acceptTerminos") === "on", turnstileToken: captchaToken,
+        };
+        const anio = String(data.get("anio") ?? "").trim();
+        const marca = String(data.get("idMarca") ?? "");
+        const modelo = String(data.get("idModelo") ?? "");
+        const tipo = String(data.get("idTipoVehiculo") ?? "");
+        const color = String(data.get("color") ?? "").trim();
+        if (anio) payload.anio = Number(anio);
+        if (marca === "otro") payload.marcaNueva = String(data.get("marcaNueva") ?? "").trim();
+        else if (marca) payload.idMarca = Number(marca);
+        if (marca === "otro" || modelo === "otro") {
+          const modeloNuevo = String(data.get("modeloNuevo") ?? "").trim();
+          if (modeloNuevo) payload.modeloNuevo = modeloNuevo;
+        } else if (modelo) payload.idModelo = Number(modelo);
+        if (tipo) payload.idTipoVehiculo = Number(tipo);
+        if (color) payload.color = color;
+        const result = await solicitudFinanciada<{ sesionToken: string }>("registro", payload);
+        sessionToken = result.sesionToken; sessionStorage.setItem(sessionKey, sessionToken);
+        await cotizar();
+      } catch (e) { error(e instanceof Error ? e.message : "No se pudo registrar"); }
+      finally { busy("gold-register-button", false); captchaToken = ""; if (widgetId) (window as any).turnstile?.reset(widgetId); }
+    });
+    $("gold-requote-button")?.addEventListener("click", () => void cotizar());
+    $("gold-contract-button")?.addEventListener("click", async () => {
+      if (!quote) return; clear();
+      const aceptaOferta = ($("gold-accept-offer") as HTMLInputElement).checked;
+      if (!aceptaOferta) { error("Para contratar, aceptá la oferta y el calendario de cuotas y autorizá el débito automático."); return; }
+      if (Date.now() >= new Date(quote.expiresAt).getTime()) { error("La oferta venció. Actualizá la cotización."); return; }
+      busy("gold-contract-button", true);
+      try {
+        const result = await solicitudFinanciada<EstadoFinanciado>("contratos", {
+          sesionToken: sessionToken, idCotizacionFinanciada: quote.idCotizacionFinanciada,
+          hashOferta: quote.hashOferta, idVersionTerminos: quote.versionTerminos.idVersion,
+          aceptaContrato: aceptaOferta, aceptaCalendario: aceptaOferta,
+          autorizaDebitoCuotas: aceptaOferta,
+        });
+        idContrato = result.idContratoFinanciado; sessionStorage.setItem(contractKey, idContrato);
+        await consultStatus();
+      } catch (e) {
+        try { if (await recuperarContrato()) return; } catch { /* Mostrar el error original si tampoco se pudo recuperar. */ }
+        error(e instanceof Error ? e.message : "No se pudo originar el contrato");
+      }
+      finally { busy("gold-contract-button", false); }
+    });
+    $("gold-card-button")?.addEventListener("click", async () => {
+      clear(); busy("gold-card-button", true);
+      try {
+        const prepared = await solicitudFinanciada<{ url: string }>("catastro/preparar", { token: sessionToken, idContratoFinanciado: idContrato });
+        window.location.assign(prepared.url);
+      } catch (e) { error(e instanceof Error ? e.message : "No se pudo preparar la tarjeta"); busy("gold-card-button", false); }
+    });
+    $("gold-status-button")?.addEventListener("click", () => void consultStatus().catch((e) => error(e.message)));
+    void checkAvailability();
+  }
+</script>

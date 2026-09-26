@@ -244,12 +244,17 @@ describe("membresias V2 landing", () => {
     const fetcher = vi.fn().mockResolvedValue(response(preparado));
 
     await prepararCatastroMembresiaV2(
-      { idCliente: "cli-1", idCotizacion: "cot-1" },
+      { idCliente: "cli-1", idCotizacion: "cot-1", autorizaDebitoAutomatico: true },
       fetcher,
     );
     expect(fetcher.mock.calls[0][0]).toBe(
       "/api/membresias-v2?accion=catastro%2Fpreparar",
     );
+    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({
+      idCliente: "cli-1",
+      idCotizacion: "cot-1",
+      autorizaDebitoAutomatico: true,
+    });
 
     fetcher.mockClear();
     await prepararCambioTarjetaMembresiaV2(
@@ -283,7 +288,7 @@ describe("membresias V2 landing", () => {
 
     await expect(
       prepararCatastroMembresiaV2(
-        { idCliente: "cli-1", idCotizacion: "cot-1" },
+        { idCliente: "cli-1", idCotizacion: "cot-1", autorizaDebitoAutomatico: true },
         fetcher,
       ),
     ).rejects.toThrow("Cotizacion vencida");

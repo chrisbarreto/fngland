@@ -6,6 +6,7 @@ import config from "@/config/config.json";
 import MetaPixel from "@/components/MetaPixel.astro";
 import CookieBanner from "@/components/CookieBanner.astro";
 import UtmCapture from "@/components/UtmCapture.astro";
+import { FINANCED_GOLD_PLAN, PUBLIC_PLANS } from "@/lib/public-plans";
 
 const {
   title: titleProp,
@@ -127,53 +128,28 @@ if (pf) {
         ],
         hasOfferCatalog: {
           "@type": "OfferCatalog",
-          name: "Membresía Fórmula NG",
-          itemListElement: [
-            {
-              "@type": "Offer",
-              itemOffered: {
-                "@type": "Service",
-                name: "Plan Fórmula",
-                description: "Lavados ilimitados, cera líquida, lavado de motor, hidratación de plásticos y 2 traslados gratis al mes.",
-              },
-              price: "200000",
-              priceCurrency: "PYG",
-              availability: "https://schema.org/InStock",
+          name: "Planes Fórmula NG",
+          itemListElement: PUBLIC_PLANS.map((plan) => ({
+            "@type": "Offer",
+            itemOffered: {
+              "@type": "Service",
+              name: plan.name,
+              description: ["Servicios incluidos: " + plan.services.join(", "), plan.bonuses.length ? "Bonificaciones sin costo adicional, sujetas a disponibilidad operativa: " + plan.bonuses.join(", ") : "", plan.note].filter(Boolean).join(". "),
             },
-            {
-              "@type": "Offer",
-              itemOffered: {
-                "@type": "Service",
-                name: "Plan Premium",
-                description: "Lavados ilimitados, cera líquida, lavado de motor y 2 lavados a domicilio al mes.",
-              },
-              price: "250000",
-              priceCurrency: "PYG",
-              availability: "https://schema.org/InStock",
+            price: String(plan.monthlyPrice),
+            priceCurrency: "PYG",
+            url: "https://formulang.com.py/membresia",
+          })).concat({
+            "@type": "Offer",
+            itemOffered: {
+              "@type": "Service",
+              name: FINANCED_GOLD_PLAN.name,
+              description: "Plan financiado en 15 cuotas de Gs. 400.000. El tratamiento nanocerámico premium inicial está incluido en el precio. Como bonificación sin costo adicional, hasta 4 lavados exteriores por mes y 1 por semana, con mantenimiento nanocerámico en el mismo turno. Primera cuota íntegra al contratar; segunda al cierre del mes de alta, o del siguiente si el alta ocurre el último día. Las bonificaciones están sujetas a coordinación y disponibilidad operativa.",
             },
-            {
-              "@type": "Offer",
-              itemOffered: {
-                "@type": "Service",
-                name: "Plan Gold",
-                description: "Lavados ilimitados, mantenimiento de nano cerámico anual, limpieza de tapizado superficial anual, servicio nano cerámico anual, pulida comercial anual y 1 traslado al mes.",
-              },
-              price: "350000",
-              priceCurrency: "PYG",
-              availability: "https://schema.org/InStock",
-            },
-            {
-              "@type": "Offer",
-              itemOffered: {
-                "@type": "Service",
-                name: "Plan Lavado a Domicilio",
-                description: "4 servicios de detailing profesional a domicilio por mes.",
-              },
-              price: "500000",
-              priceCurrency: "PYG",
-              availability: "https://schema.org/InStock",
-            },
-          ],
+            price: String(FINANCED_GOLD_PLAN.totalPrice),
+            priceCurrency: "PYG",
+            url: "https://formulang.com.py/membresia",
+          }),
         },
       })}
     </script>

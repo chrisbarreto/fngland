@@ -24,6 +24,18 @@ function contexto(
 }
 
 describe("presentación pública del catastro", () => {
+  it("informa el cobro de la primera cuota financiada después del catastro", () => {
+    const resultado = describirContextoCatastro(contexto({
+      purpose: "ALTA_FINANCIADA",
+      montoCobrarAhora: "400000",
+      cobraAhora: true,
+    }));
+    expect(resultado.titulo).toBe("Registro y primera cuota de Gold");
+    expect(resultado.montoValor).toBe("400.000 Gs.");
+    expect(resultado.mensaje).toContain("intentaremos cobrar la primera cuota");
+    expect(resultado.mensaje).not.toContain("débito automático");
+    expect(resultado.mensaje).not.toContain("ningún cobro");
+  });
   it("no muestra el precio del plan como un cobro inmediato", () => {
     expect(describirContextoCatastro(contexto())).toMatchObject({
       titulo: "Solo registro de tarjeta",

@@ -266,8 +266,7 @@ const providerSelectorEnabled =
               <span>
                 Acepto los
                 <a href="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer">Términos y Condiciones</a>,
-                <a href="/politica-de-privacidad" target="_blank" rel="noopener noreferrer">Política de Privacidad</a>
-                y la <a href="/debito-automatico" target="_blank" rel="noopener noreferrer">autorización de débito automático</a>.
+                <a href="/politica-de-privacidad" target="_blank" rel="noopener noreferrer">Política de Privacidad</a>.
               </span>
             </label>
             <span class="field-error" id="legal-accept-error"></span>
@@ -299,6 +298,21 @@ const providerSelectorEnabled =
           </button>
         </div>
       </form>
+
+      <!-- Revisión de la cotización V2 antes de registrar tarjeta -->
+      <section id="v2-quote-review" class="v2-quote-review" style="display:none;" aria-labelledby="v2-quote-title">
+        <h3 id="v2-quote-title">Revisá tu primer pago</h3>
+        <p id="v2-quote-amount"></p>
+        <p id="v2-quote-due"></p>
+        <p id="v2-quote-cycle"></p>
+        <label class="legal-accept-label checkbox-row">
+          <input type="checkbox" id="v2-quote-debit" />
+          <span>Autorizo el débito automático de los pagos de este plan en mi tarjeta registrada. Puedo solicitar su cancelación posteriormente al personal de Fórmula NG. <a href="/debito-automatico" target="_blank" rel="noopener noreferrer">Ver condiciones</a>.</span>
+        </label>
+        <p id="v2-quote-error" class="field-error" role="alert"></p>
+        <button type="button" id="v2-quote-continue" class="btn-primary">Registrar tarjeta y continuar</button>
+        <button type="button" id="v2-quote-back" class="btn-back">Volver al formulario</button>
+      </section>
 
       <!-- Success state -->
       <div id="registro-success" class="success-message" style="display:none;">
@@ -960,6 +974,11 @@ const providerSelectorEnabled =
 
   /* ── AUTO-DEBIT SECTION ── */
   /* ── LEGAL ACCEPT ── */
+  .v2-quote-review { padding: 1rem; color: #fff; }
+  .v2-quote-review h3 { margin: 0 0 1rem; font-size: 1.3rem; }
+  .v2-quote-review p { margin: .5rem 0; line-height: 1.5; }
+  .v2-quote-review .checkbox-row { margin: 1.2rem 0; }
+  .v2-quote-review button { margin: .45rem .45rem .45rem 0; }
   .legal-accept-wrapper {
     margin-top: 16px;
     display: grid;
@@ -1381,6 +1400,7 @@ const providerSelectorEnabled =
 
 <script>
   import { logEvent } from "@/lib/telemetry";
+  import { LEGACY_PLANS, PUBLIC_PLANS, formatGuaranies } from "@/lib/public-plans";
   import {
     cambiarPlanAltaPendienteMembresiaV2,
     consultarDisponibilidadMembresiasV2,
@@ -1390,6 +1410,7 @@ const providerSelectorEnabled =
     limpiarContextoMembresiaV2,
     prepararCambioTarjetaMembresiaV2,
     prepararCatastroMembresiaV2,
+    type CotizacionPublicaMembresiaV2,
   } from "@/lib/membresias-v2";
 
   interface TurnstileInstance {
@@ -1664,6 +1685,10 @@ const providerSelectorEnabled =
     }
 
     function resetModalState() {
+      const review = document.getElementById("v2-quote-review") as HTMLElement | null;
+      if (review) review.style.display = "none";
+      const debit = document.getElementById("v2-quote-debit") as HTMLInputElement | null;
+      if (debit) debit.checked = false;
       restoreSuccessState();
       goToStep(1);
       clearErrors();
@@ -1731,14 +1756,68 @@ const providerSelectorEnabled =
       return membresiasV2EnabledCache;
     }
 
+    async function revisarCotizacionV2(cotizacion: CotizacionPublicaMembresiaV2): Promise<boolean> {
+      hideProcessing();
+      const review = document.getElementById("v2-quote-review") as HTMLElement;
+      const debit = document.getElementById("v2-quote-debit") as HTMLInputElement;
+      const error = document.getElementById("v2-quote-error") as HTMLElement;
+      const amount = document.getElementById("v2-quote-amount") as HTMLElement;
+      const due = document.getElementById("v2-quote-due") as HTMLElement;
+      const cycle = document.getElementById("v2-quote-cycle") as HTMLElement;
+      amount.textContent = "Cobro inicial: Gs. " + formatGuaranies(Number(cotizacion.importes.totalCobrarAhora));
+      due.textContent = "Próximo vencimiento: " + cotizacion.fechas.vencimientoProximoCiclo.presentacion + ".";
+      const descripcionCobro: Record<string, string> = {
+        PRORRATEO: "El primer pago corresponde al período proporcional hasta el cierre del mes.",
+        MINIMO_CON_ANTICIPO: "Se cobra el mínimo de Gs. 50.000; la diferencia queda como anticipo.",
+        CICLO_ACTUAL_COMPLETO: "El primer pago cubre el mes actual completo.",
+        CICLO_SIGUIENTE_COMPLETO: "El primer pago cubre el mes siguiente completo.",
+      };
+      cycle.textContent = (descripcionCobro[cotizacion.tipoCobroInicial] ?? "Revisá las condiciones de este cobro.") +
+        " Cobertura inicial: " + cotizacion.fechas.inicio.presentacion + " a " +
+        cotizacion.fechas.finCoberturaInicial.presentacion + ".";
+      debit.checked = false;
+      error.textContent = "";
+      form.style.display = "none";
+      review.style.display = "block";
+      review.scrollIntoView({ behavior: "smooth", block: "start" });
+      return new Promise<boolean>((resolve) => {
+        const next = document.getElementById("v2-quote-continue") as HTMLButtonElement;
+        const back = document.getElementById("v2-quote-back") as HTMLButtonElement;
+        const finish = (confirmed: boolean) => {
+          next.removeEventListener("click", onNext);
+          back.removeEventListener("click", onBack);
+          review.style.display = "none";
+          if (!confirmed) form.style.display = "";
+          resolve(confirmed);
+        };
+        const onNext = () => {
+          if (Date.now() >= new Date(cotizacion.expiresAt).getTime()) {
+            error.textContent = "La cotización venció. Volvé y actualizá el importe.";
+            return;
+          }
+          if (!debit.checked) {
+            error.textContent = "Debés autorizar el débito automático para continuar.";
+            return;
+          }
+          finish(true);
+        };
+        const onBack = () => finish(false);
+        next.addEventListener("click", onNext);
+        back.addEventListener("click", onBack);
+      });
+    }
+
     async function redirigirACatastroV2(input: {
       idCliente: string;
       idCotizacion: string;
       tipoOperacion: "ALTA" | "REACTIVACION";
+      cotizacion: CotizacionPublicaMembresiaV2;
     }): Promise<void> {
+      if (!(await revisarCotizacionV2(input.cotizacion))) return;
       const preparado = await prepararCatastroMembresiaV2({
         idCliente: input.idCliente,
         idCotizacion: input.idCotizacion,
+        autorizaDebitoAutomatico: true,
       });
       const idMembresia = preparado.materializacion?.idMembresia;
       if (!idMembresia || !preparado.catastro?.url) {
@@ -1780,6 +1859,7 @@ const providerSelectorEnabled =
         idCliente,
         idCotizacion: cotizacion.idCotizacion,
         tipoOperacion: "ALTA",
+        cotizacion,
       });
     }
 
@@ -1797,6 +1877,7 @@ const providerSelectorEnabled =
           idCliente,
           idCotizacion: cotizacion.idCotizacion,
           tipoOperacion: "REACTIVACION",
+          cotizacion,
         });
       } catch (error) {
         showResult(
@@ -1810,18 +1891,25 @@ const providerSelectorEnabled =
     async function continuarCatastroMembresiaV2(input: {
       idCliente: string;
       idCotizacion: string;
+      idMembresia: string | null;
       tipoOperacion: "ALTA" | "REACTIVACION";
     }): Promise<void> {
-      showProcessing();
-      try {
-        await redirigirACatastroV2(input);
-      } catch (error) {
-        showResult(
-          "No pudimos continuar el registro",
-          error instanceof Error ? error.message : "Intentá nuevamente.",
-          true,
-        );
+      // Recalcular la oferta para que el cliente revise el importe vigente.
+      // La cotización previa puede haber vencido o cambiado de período.
+      if (input.tipoOperacion === "ALTA") {
+        const idRegistro = sessionStorage.getItem("formulang_idRegistroPendiente");
+        if (!idRegistro) {
+          showResult("No pudimos continuar el registro", "Falta el registro pendiente. Volvé a ingresar tus datos para cotizar.", true);
+          return;
+        }
+        await iniciarAltaMembresiaV2(input.idCliente, idRegistro);
+        return;
       }
+      if (!input.idMembresia) {
+        showResult("No pudimos continuar el registro", "No encontramos la membresía para reactivar.", true);
+        return;
+      }
+      await iniciarReactivacionMembresiaV2(input.idCliente, input.idMembresia);
     }
 
     async function cambiarTarjetaMembresiaV2(
@@ -1867,22 +1955,29 @@ const providerSelectorEnabled =
     // No se muestra selector; se usa el día del mes de la fecha de activación (estilo Netflix)
 
     // ---- Plan metadata map (UUID → display info) ----
-    const PLAN_META: Record<string, { name: string; price: string }> = {
-      "a9ee77bc-96ce-4217-ad0f-c817b9e58687": { name: "Plan Fórmula",            price: "200.000" },
-      "7ad4bfae-b1f2-47c9-8c3c-d4615607ad04": { name: "Plan Premium",            price: "250.000" },
-      "5a9b7b48-2e37-45f2-8ba9-f1a234b85f80": { name: "Plan Gold",               price: "350.000" },
-      "ae949f1e-90c5-4d4e-879c-3e2724c89c79": { name: "Plan Lavado a Domicilio", price: "500.000" },
-    };
+    const PLAN_META: Record<string, { name: string; price: string }> =
+      Object.fromEntries(PUBLIC_PLANS.filter((plan) => plan.id).map((plan) => [
+        plan.id,
+        { name: plan.name, price: formatGuaranies(plan.monthlyPrice) },
+      ]));
+    // Solo para presentar contratos antiguos en flujos de socios existentes.
+    const LEGACY_PLAN_META: Record<string, { name: string; price: string }> =
+      Object.fromEntries(LEGACY_PLANS.filter((plan) => plan.id).map((plan) => [
+        plan.id,
+        { name: plan.name, price: formatGuaranies(plan.monthlyPrice) },
+      ]));
+    const metaPlan = (id: string) =>
+      PLAN_META[id] || LEGACY_PLAN_META[id] || { name: "tu plan", price: "—" };
 
     function currentPlanMeta() {
       const id = _pendingPlanId
         || (document.getElementById("idPlan") as HTMLInputElement)?.value
         || "";
-      return PLAN_META[id] || { name: "Plan Fórmula", price: "200.000" };
+      return metaPlan(id);
     }
 
     function updateModalHeader(planId?: string) {
-      const meta = planId ? (PLAN_META[planId] || { name: "Plan Fórmula", price: "200.000" }) : { name: "tu plan", price: "—" };
+      const meta = metaPlan(planId || "");
       const headerName  = document.getElementById("modal-plan-name");
       const headerPrice = document.getElementById("modal-plan-price");
       const headerBadge = document.getElementById("modal-plan-badge");
@@ -2265,17 +2360,18 @@ const providerSelectorEnabled =
 
     function getPublicPlanName(plan: any): string {
       const n = normalizeText(plan?.nombre);
-      if (n.includes("gold")) return "Plan Gold";
-      if (n.includes("domicilio")) return "Plan Lavado a Domicilio";
-      if (n.includes("premium") || n.includes("premiun")) return "Plan Premium";
-      if (n.includes("formula") || n.includes("fórmula")) return "Plan Fórmula";
+      if (n.includes("essential")) return "Fórmula Essential";
+      if (n.includes("plus")) return "Fórmula Plus";
+      if (n.includes("black")) return "Fórmula Black";
+      if (n.includes("domicilio")) return "Plan Domicilio";
       return String(plan?.nombre || "Plan");
     }
 
     function getPublicPlanDescription(plan: any): string {
       const planDescription = String(plan?.descripcion || "").trim();
+      const minimumTermMonths = PUBLIC_PLANS.find((publicPlan) => publicPlan.id === plan?.idPlan)?.minimumTermMonths;
       const contractDescription =
-        "Permanencia minima de 12 meses. Debito automatico obligatorio.";
+        `Los beneficios de valor agregado son bonificaciones sin costo adicional para el socio; requieren coordinación y están sujetos a disponibilidad operativa.${minimumTermMonths === 1 ? " Permanencia mínima de 1 mes." : ""}`;
 
       if (!planDescription) return contractDescription;
 
@@ -2407,9 +2503,18 @@ const providerSelectorEnabled =
         const allowedPlanIds = Object.keys(PLAN_META);
         const data = Array.isArray(rawPlans) ? rawPlans.filter((p: any) => allowedPlanIds.includes(p.idPlan)) : [];
 
+        if (planId && !data.some((plan: any) => plan.idPlan === planId)) {
+          container.innerHTML = '<div class="planes-loading">Este plan todavía no está disponible para contratar. Consultanos para conocer su fecha de habilitación.</div>';
+          (document.getElementById("idPlan") as HTMLInputElement).value = "";
+          planesLoaded = false;
+          return;
+        }
+
         if (data.length > 0) {
           // Determinar cuál card mostrar primero (el plan pre-seleccionado o el primero)
-          const selectedId = planId || data[0]?.idPlan || "";
+          const selectedId = planId && data.some((plan: any) => plan.idPlan === planId)
+            ? planId
+            : data[0]?.idPlan || "";
 
           const cardsHtml = data.map((plan: any) => {
             const isSelected = plan.idPlan === selectedId;
@@ -2487,7 +2592,7 @@ const providerSelectorEnabled =
           // Pre-seleccionar (siempre via preselectPlanById para evitar que el
           // click handler quite la clase .selected de todos primero)
           planesLoaded = true;
-          const toSelect = planId || selectedId;
+          const toSelect = selectedId;
           if (toSelect) preselectPlanById(toSelect);
         } else {
           container.innerHTML = '<div class="planes-loading">No hay planes disponibles en este momento.</div>';
@@ -3724,6 +3829,7 @@ const providerSelectorEnabled =
                 void continuarCatastroMembresiaV2({
                   idCliente: data.idCliente,
                   idCotizacion,
+                  idMembresia,
                   tipoOperacion:
                     btn.dataset.tipoOperacion === "ALTA"
                       ? "ALTA"
@@ -3820,7 +3926,7 @@ const providerSelectorEnabled =
             aviso.id = "rp-aviso-upgrade";
             aviso.style.cssText = "margin-top:0.5rem;padding:0.75rem;background:rgba(249,166,6,0.1);border:1px solid rgba(249,166,6,0.4);border-radius:8px;font-size:0.82rem;";
             const _avisoId    = (document.getElementById("idPlan") as HTMLInputElement)?.value || "";
-            const _avisoMeta  = PLAN_META[_avisoId] || { name: "Plan Fórmula", price: "200.000" };
+            const _avisoMeta  = metaPlan(_avisoId);
             aviso.innerHTML = `
               <p style="margin:0 0 0.4rem;font-weight:600;color:#f9a606;">⚠️ Tu plan pasará a Gs. ${_avisoMeta.price}/mes</p>
               <p style="margin:0 0 0.65rem;color:rgba(255,255,255,0.65);font-size:0.78rem;">Al activar el débito automático, tu membresía se migra al ${_avisoMeta.name} (Gs. ${_avisoMeta.price}/mes). El primer cobro se realizará el próximo ciclo.</p>

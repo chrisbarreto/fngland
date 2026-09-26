@@ -4,7 +4,6 @@ import logoDark from "@/assets/logos/logo-dark.svg";
 
 <div
   class="hero flex flex-col items-center justify-center mx-auto px-4 sm:px-6 lg:px-8"
-  style="min-height: calc(100vh + 40px);"
 >
   <div class="hero-content max-w-4xl text-center">
     <!-- Logo móvil -->
@@ -44,6 +43,8 @@ import logoDark from "@/assets/logos/logo-dark.svg";
 
 <style>
   .hero {
+    box-sizing: border-box;
+    min-height: calc(100vh + 40px);
     position: relative;
     z-index: 1;
   }
@@ -109,6 +110,9 @@ import logoDark from "@/assets/logos/logo-dark.svg";
   }
   
   .btn-outline-primary {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-height: 48px;
     background: transparent;
     color: white;
     padding: 1rem 2.5rem;
@@ -116,9 +120,20 @@ import logoDark from "@/assets/logos/logo-dark.svg";
     font-weight: 600;
     font-size: 1rem;
     text-decoration: none;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.3s ease;
     border: 2px solid rgba(249, 38, 6, 0.7);
+  }
+
+  .btn-outline-primary::before {
+    content: none;
+  }
+
+  .btn-outline-primary:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 4px;
   }
 
   .btn-outline-primary:hover {
@@ -153,29 +168,34 @@ import logoDark from "@/assets/logos/logo-dark.svg";
   
   @media (max-width: 800px) {
     .hero {
+      min-height: 100svh;
       justify-content: flex-start;
-      padding-top: 15vh;
+      padding-top: clamp(2rem, 6svh, 4rem);
+      /* La seccion siguiente se superpone 120px al hero. */
+      padding-bottom: calc(120px + 2rem);
     }
     
     .hero-content {
-      flex: 1;
+      flex: 0 1 auto;
+      width: 100%;
+      max-width: 100%;
     }
     
     .hero-logo-mobile {
       display: block;
       width: 77%;
       max-width: 286px;
-      margin: 0 auto 4rem;
-      margin-top: -3rem;
+      margin: 0 auto 1.5rem;
     }
     
     .hero-subtitle {
-      margin-top: 5rem;
+      margin-top: 0;
     }
 
     .hero-cta {
-      margin-top: auto;
-      padding-bottom: 10vh;
+      width: 100%;
+      margin-top: 0.5rem;
+      padding-bottom: 0;
     }
   }
   
@@ -185,12 +205,12 @@ import logoDark from "@/assets/logos/logo-dark.svg";
       line-height: 1.1;
       letter-spacing: -0.2px;
       gap: 0.35rem;
-      margin-top: -1rem;
+      margin-top: 0;
     }
 
     .hero-title-main,
     .hero-title-sub {
-      white-space: nowrap;
+      white-space: normal;
     }
 
     .hero-title-main {

@@ -44,3 +44,20 @@ All commands are run from the root of the project, from a terminal:
 ## 👀 Want to learn more?
 
 Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+
+## Planes públicos de membresía
+
+La presentación comercial se edita manualmente en src/lib/public-plans.ts. La API solo permite contratar los IDs incluidos allí y vigentes en el backend. Antes de compilar para producción, configurar en el entorno de Astro (directorio padre, según astro.config.mjs) los IDs reales del ambiente:
+
+- PUBLIC_ESSENTIAL_PLAN_ID
+- PUBLIC_PLUS_PLAN_ID
+- PUBLIC_BLACK_PLAN_ID
+- PUBLIC_DOMICILIO_PLAN_ID
+- PUBLIC_GOLD_PLAN_ID
+- PUBLIC_LEGACY_FORMULA_PLAN_ID
+- PUBLIC_LEGACY_PREMIUM_PLAN_ID
+- PUBLIC_LEGACY_GOLD_PLAN_ID
+
+Los UUID no se guardan en el código. Deben existir en el archivo `.env` del directorio padre tanto para desarrollo como para producción. Las tres variables `PUBLIC_LEGACY_*` solo conservan compatibilidad con contratos históricos y no publican esos planes. Gold nuevo usa PUBLIC_GOLD_PLAN_ID y se presenta con 15 cuotas de Gs. 400.000 para consulta; su contratación no pasa por el alta prepaga. Si falta un ID de membresía prepaga, la tarjeta correspondiente queda sin botón de contratación. Los precios y beneficios de Astro deben revisarse contra la ficha publicada en el panel antes de cada despliegue; el cobro efectivo siempre se calcula en el backend.
+
+Antes de publicar cambios en `/terminos-y-condiciones`, preparar y activar una versión legal nueva en `version_terminos` con documento archivado y hash verificable. El registro público guarda el ID de esa versión; conservar las anteriores para acreditar aceptaciones históricas. Para este lanzamiento, la permanencia es de 12 meses en Essential, Plus y Black, y de 1 mes en Domicilio.

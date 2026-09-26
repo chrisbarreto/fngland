@@ -4,13 +4,17 @@ export const prerender = true;
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Footer from "@/components/Footer.astro";
 import RegistroModal from "@/components/RegistroModal.astro";
+import RegistroFinanciadoModal from "@/components/RegistroFinanciadoModal.astro";
+import { PUBLIC_PLANS, formatGuaranies } from "@/lib/public-plans";
+import PricingCards from "@/components/PricingCards.astro";
 import logoDark from "@/assets/logos/logo-dark.svg";
 import reviews from "@/config/reviews.json" assert { type: "json" };
+const [essential, plus, black, domicilio] = PUBLIC_PLANS;
 ---
 
 <BaseLayout
   title="Planes de lavado automotriz | Fórmula NG"
-  description="Elegí el plan ideal para tu auto. Planes desde Gs. 200.000 al mes con lavados ilimitados, detailing profesional y servicio a domicilio en Asunción, Paraguay."
+  description="Conocé Essential, Plus, Black, Domicilio y Gold financiado con tratamiento nanocerámico. Planes de cuidado automotriz en Asunción y Gran Asunción."
   canonicalPath="/membresia"
 >
   <div class="membresia-page">
@@ -30,8 +34,8 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
           <p class="eyebrow">Membresía oficial · Asunción, Paraguay</p>
           <h1>Elegí el plan ideal<br />para tu auto.</h1>
           <p class="hero-sub">
-            Lavados ilimitados, protección profesional y beneficios exclusivos.
-            Desde Gs. 200.000 por mes. Sin sorpresas.
+            Lavados mensuales, protección profesional y la opción ilimitada de Black.
+            Desde Gs. 200.000 por mes.
           </p>
           <a href="#planes" class="btn-hero">Ver los planes</a>
           <p class="legal-note">
@@ -46,281 +50,51 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
       <!-- PLANES -->
       <section class="planes-section" id="planes">
         <h2>Nuestros planes</h2>
-        <p class="planes-sub">Todos los planes incluyen lavados ilimitados*, lavado exterior, aspirado, desinfección y revitalización de neumáticos.</p>
-        <div class="planes-grid">
-
-          <!-- Plan Fórmula -->
-          <div class="plan-card" data-plan-id="a9ee77bc-96ce-4217-ad0f-c817b9e58687">
-            <div class="plan-header">
-              <span class="plan-tag">Plan Fórmula</span>
-              <div class="plan-price-wrap">
-                <span class="plan-price">Gs. 200.000</span>
-                <span class="plan-price-mo">/mes</span>
-              </div>
-            </div>
-            <ul class="plan-features">
-              <li><span class="feat-check">✓</span><span>Lavados <strong>ilimitados</strong> (máx. 1/día)</span></li>
-              <li><span class="feat-check">✓</span><span>Lavado exterior completo</span></li>
-              <li><span class="feat-check">✓</span><span>Aspirado profundo</span></li>
-              <li><span class="feat-check">✓</span><span>Desinfección de interiores</span></li>
-              <li><span class="feat-check">✓</span><span>Revitalización de neumáticos</span></li>
-              <li><span class="feat-check">✓</span><span>Cera líquida (prot. 4 meses) <em class="feat-freq">— una vez al mes</em></span></li>
-              <li><span class="feat-check">✓</span><span>Lavado de motor profesional <em class="feat-freq">— una vez al mes</em></span></li>
-              <li><span class="feat-check">✓</span><span>Hidratación de plásticos interiores <em class="feat-freq">— una vez al mes</em></span></li>
-              <li><span class="feat-check">✓</span><span>Traslados GRATIS (retiro/entrega) <em class="feat-freq">— dos veces al mes</em></span></li>
-            </ul>
-            <button type="button" class="btn-plan" data-plan-id="a9ee77bc-96ce-4217-ad0f-c817b9e58687">Contratar Plan Fórmula</button>
-          </div>
-
-          <!-- Plan Premium -->
-          <div class="plan-card plan-card-popular" data-plan-id="7ad4bfae-b1f2-47c9-8c3c-d4615607ad04">
-            <div class="plan-badge">MÁS POPULAR</div>
-            <div class="plan-header">
-              <span class="plan-tag">Plan Premium</span>
-              <div class="plan-price-wrap">
-                <span class="plan-price">Gs. 250.000</span>
-                <span class="plan-price-mo">/mes</span>
-              </div>
-            </div>
-            <ul class="plan-features">
-              <li><span class="feat-check">✓</span><span>Lavados <strong>ilimitados</strong> (máx. 1/día)</span></li>
-              <li><span class="feat-check">✓</span><span>Lavado exterior completo</span></li>
-              <li><span class="feat-check">✓</span><span>Aspirado profundo</span></li>
-              <li><span class="feat-check">✓</span><span>Desinfección de interiores</span></li>
-              <li><span class="feat-check">✓</span><span>Revitalización de neumáticos</span></li>
-              <li><span class="feat-check">✓</span><span>Cera líquida (prot. 4 meses) <em class="feat-freq">— una vez al mes</em></span></li>
-              <li><span class="feat-check">✓</span><span>Lavado de motor profesional <em class="feat-freq">— una vez al mes</em></span></li>
-              <li><span class="feat-check">✓</span><span>Hidratación de plásticos interiores <em class="feat-freq">— una vez al mes</em></span></li>
-              <li><span class="feat-check">✓</span><span>Lavado a domicilio <em class="feat-freq">— dos veces al mes</em></span></li>
-            </ul>
-            <button type="button" class="btn-plan btn-plan-featured" data-plan-id="7ad4bfae-b1f2-47c9-8c3c-d4615607ad04">Contratar Plan Premium</button>
-          </div>
-
-          <!-- Plan Gold -->
-          <div class="plan-card plan-card-featured" data-plan-id="5a9b7b48-2e37-45f2-8ba9-f1a234b85f80">
-            <div class="plan-badge plan-badge-featured">RECOMENDADO</div>
-            <div class="plan-header">
-              <span class="plan-tag">Plan Gold</span>
-              <div class="plan-price-wrap">
-                <span class="plan-price">Gs. 350.000</span>
-                <span class="plan-price-mo">/mes</span>
-              </div>
-            </div>
-            <ul class="plan-features">
-              <li><span class="feat-check">✓</span><span>Aplicación de Nano Cerámico <em class="feat-freq feat-freq-annual">— una vez al año</em></span></li>
-              <li><span class="feat-check">✓</span><span>Lavados <strong>ilimitados</strong> (máx. 1/día)</span></li>
-              <li><span class="feat-check">✓</span><span>Lavado exterior completo</span></li>
-              <li><span class="feat-check">✓</span><span>Aspirado profundo</span></li>
-              <li><span class="feat-check">✓</span><span>Desinfección de interiores</span></li>
-              <li><span class="feat-check">✓</span><span>Revitalización de neumáticos</span></li>
-              <li><span class="feat-check">✓</span><span>Mantenimiento de nano cerámico <em class="feat-freq feat-freq-annual">— una vez al año</em></span></li>
-              <li><span class="feat-check">✓</span><span>Limpieza de Tapizado Superficial <em class="feat-freq feat-freq-annual">— una vez al año</em></span></li>
-              <li><span class="feat-check">✓</span><span>Hidratación de plásticos interiores <em class="feat-freq">— una vez al mes</em></span></li>
-              <li><span class="feat-check">✓</span><span>Traslado GRATIS (retiro/entrega) <em class="feat-freq">— una vez al mes</em></span></li>
-              <li><span class="feat-check">✓</span><span>Pulida comercial <em class="feat-freq feat-freq-annual">— una vez al año</em></span></li>
-            </ul>
-            <button type="button" class="btn-plan btn-plan-featured" data-plan-id="5a9b7b48-2e37-45f2-8ba9-f1a234b85f80">Contratar Plan Gold</button>
-          </div>
-
-          <!-- Plan Lavado a Domicilio -->
-          <div class="plan-card plan-card-domicilio" data-plan-id="ae949f1e-90c5-4d4e-879c-3e2724c89c79">
-            <div class="plan-header">
-              <span class="plan-tag">Plan Domicilio</span>
-              <div class="plan-price-wrap">
-                <span class="plan-price">Gs. 500.000</span>
-                <span class="plan-price-mo">/mes</span>
-              </div>
-            </div>
-            <ul class="plan-features">
-              <li><span class="feat-check">✓</span><span><strong>Detailing a domicilio</strong> <em class="feat-freq feat-freq-annual">— cuatro veces al mes</em></span></li>
-              <li><span class="feat-check">✓</span><span>Lavado exterior con shampoo pH neutro</span></li>
-              <li><span class="feat-check">✓</span><span>Aspirado profundo</span></li>
-              <li><span class="feat-check">✓</span><span>Desinfección de interiores</span></li>
-              <li><span class="feat-check">✓</span><span>Revitalización de neumáticos</span></li>
-              <li><span class="feat-check">✓</span><span>Hidratación de plásticos interiores</span></li>
-            </ul>
-            <p class="plan-domicilio-note">Todo el servicio se realiza en tu casa u oficina.</p>
-            <button type="button" class="btn-plan" data-plan-id="ae949f1e-90c5-4d4e-879c-3e2724c89c79">Contratar Plan Domicilio</button>
-          </div>
-
-        </div>
-        <p class="planes-footnote">* Máximo 1 lavado por día por vehículo durante el ciclo mensual activo. Los servicios con límite (1/mes, 2/mes, 1/año) se renuevan según el período indicado.</p>
+        <p class="planes-sub">Elegí entre lavados mensuales, lavados ilimitados, atención a domicilio o Gold financiado con nanocerámico.</p>
+        <PricingCards />
+        <p class="planes-footnote">En las membresías, el valor por día se calcula sobre 30 días y se abona mensualmente. Gold se paga en 15 cuotas de Gs. 400.000, sin prorrateo. El socio no paga un precio adicional por las bonificaciones; están sujetas a coordinación y disponibilidad operativa durante el ciclo vigente.</p>
       </section>
 
       <!-- COMPARATIVO -->
       <section class="comparativo-section" id="comparativo">
-        <h2>Comparativo de planes</h2>
-        <p class="comparativo-sub">¿No sabés cuál elegir? Compará todo lo que incluye cada plan.</p>
+        <h2>Comparativo de membresías</h2>
+        <p class="comparativo-sub">Compará las cuatro membresías mensuales. Gold, con nanocerámico, se ofrece como financiación de 15 cuotas y se detalla en su tarjeta.</p>
         <div class="table-wrap">
           <table class="comp-table">
             <thead>
               <tr>
                 <th class="comp-feature-col">Servicio</th>
-                <th>
-                  <span class="th-plan-name">Fórmula</span>
-                  <span class="th-plan-price">Gs. 200.000</span>
-                </th>
-                <th class="th-popular">
-                  <span class="th-plan-badge">Popular</span>
-                  <span class="th-plan-name">Premium</span>
-                  <span class="th-plan-price">Gs. 250.000</span>
-                </th>
-                <th class="th-featured">
-                  <span class="th-plan-badge th-plan-badge-featured">Recomendado</span>
-                  <span class="th-plan-name">Gold</span>
-                  <span class="th-plan-price">Gs. 350.000</span>
-                </th>
-                <th>
-                  <span class="th-plan-name">Domicilio</span>
-                  <span class="th-plan-price">Gs. 500.000</span>
-                </th>
+                <th><span class="th-plan-name">Essential</span><span class="th-plan-price">Gs. {formatGuaranies(essential.monthlyPrice)}/mes</span></th>
+                <th class="th-popular"><span class="th-plan-name">Plus</span><span class="th-plan-price">Gs. {formatGuaranies(plus.monthlyPrice)}/mes</span></th>
+                <th class="th-featured"><span class="th-plan-name">Black</span><span class="th-plan-price">Gs. {formatGuaranies(black.monthlyPrice)}/mes</span></th>
+                <th><span class="th-plan-name">Domicilio</span><span class="th-plan-price">Gs. {formatGuaranies(domicilio.monthlyPrice)}/mes</span></th>
               </tr>
             </thead>
             <tbody>
-              <tr class="comp-category-row">
-                <td colspan="5">Servicios base incluidos en todos los lavados</td>
-              </tr>
-              <tr>
-                <td>Lavado exterior completo</td>
-                <td><span class="comp-yes">✓</span></td>
-                <td class="td-popular"><span class="comp-yes">✓</span></td>
-                <td class="td-featured"><span class="comp-yes">✓</span></td>
-                <td><span class="comp-yes">✓</span></td>
-              </tr>
-              <tr>
-                <td>Aspirado profundo</td>
-                <td><span class="comp-yes">✓</span></td>
-                <td class="td-popular"><span class="comp-yes">✓</span></td>
-                <td class="td-featured"><span class="comp-yes">✓</span></td>
-                <td><span class="comp-yes">✓</span></td>
-              </tr>
-              <tr>
-                <td>Desinfección de interiores</td>
-                <td><span class="comp-yes">✓</span></td>
-                <td class="td-popular"><span class="comp-yes">✓</span></td>
-                <td class="td-featured"><span class="comp-yes">✓</span></td>
-                <td><span class="comp-yes">✓</span></td>
-              </tr>
-              <tr>
-                <td>Revitalización de neumáticos</td>
-                <td><span class="comp-yes">✓</span></td>
-                <td class="td-popular"><span class="comp-yes">✓</span></td>
-                <td class="td-featured"><span class="comp-yes">✓</span></td>
-                <td><span class="comp-yes">✓</span></td>
-              </tr>
-              <tr class="comp-category-row">
-                <td colspan="5">Lavados ilimitados</td>
-              </tr>
-              <tr>
-                <td>Lavados ilimitados en local (máx. 1/día)</td>
-                <td><span class="comp-yes">✓</span></td>
-                <td class="td-popular"><span class="comp-yes">✓</span></td>
-                <td class="td-featured"><span class="comp-yes">✓</span></td>
-                <td><span class="comp-no">—</span></td>
-              </tr>
-              <tr class="comp-category-row">
-                <td colspan="5">Servicios mensuales con límite</td>
-              </tr>
-              <tr>
-                <td>Hidratación de plásticos interiores <em class="comp-freq">— una vez al mes</em></td>
-                <td><span class="comp-yes">✓</span></td>
-                <td class="td-popular"><span class="comp-yes">✓</span></td>
-                <td class="td-featured"><span class="comp-yes">✓</span></td>
-                <td><span class="comp-yes">✓</span></td>
-              </tr>
-              <tr>
-                <td>Cera líquida (prot. 4 meses) <em class="comp-freq">— una vez al mes</em></td>
-                <td><span class="comp-yes">✓</span></td>
-                <td class="td-popular"><span class="comp-yes">✓</span></td>
-                <td class="td-featured"><span class="comp-no">—</span></td>
-                <td><span class="comp-no">—</span></td>
-              </tr>
-              <tr>
-                <td>Lavado de motor profesional <em class="comp-freq">— una vez al mes</em></td>
-                <td><span class="comp-yes">✓</span></td>
-                <td class="td-popular"><span class="comp-yes">✓</span></td>
-                <td class="td-featured"><span class="comp-no">—</span></td>
-                <td><span class="comp-no">—</span></td>
-              </tr>
-              <tr>
-                <td>Traslados GRATIS (retiro/entrega) <em class="comp-freq">— dos veces al mes</em></td>
-                <td><span class="comp-yes">✓</span></td>
-                <td class="td-popular"><span class="comp-no">—</span></td>
-                <td class="td-featured"><span class="comp-no">—</span></td>
-                <td><span class="comp-no">—</span></td>
-              </tr>
-              <tr>
-                <td>Traslado GRATIS (retiro/entrega) <em class="comp-freq">— una vez al mes</em></td>
-                <td><span class="comp-no">—</span></td>
-                <td class="td-popular"><span class="comp-no">—</span></td>
-                <td class="td-featured"><span class="comp-yes">✓</span></td>
-                <td><span class="comp-no">—</span></td>
-              </tr>
-              <tr>
-                <td>Lavado a domicilio <em class="comp-freq">— dos veces al mes</em></td>
-                <td><span class="comp-no">—</span></td>
-                <td class="td-popular"><span class="comp-yes">✓</span></td>
-                <td class="td-featured"><span class="comp-no">—</span></td>
-                <td><span class="comp-no">—</span></td>
-              </tr>
-              <tr>
-                <td>Limpieza de Tapizado Superficial <em class="comp-freq comp-freq-annual">— una vez al año</em></td>
-                <td><span class="comp-no">—</span></td>
-                <td class="td-popular"><span class="comp-no">—</span></td>
-                <td class="td-featured"><span class="comp-yes">✓</span></td>
-                <td><span class="comp-no">—</span></td>
-              </tr>
-              <tr>
-                <td>Mantenimiento de nano cerámico <em class="comp-freq comp-freq-annual">— una vez al año</em></td>
-                <td><span class="comp-no">—</span></td>
-                <td class="td-popular"><span class="comp-no">—</span></td>
-                <td class="td-featured"><span class="comp-yes">✓</span></td>
-                <td><span class="comp-no">—</span></td>
-              </tr>
-              <tr>
-                <td>Detailing completo a domicilio <em class="comp-freq">— cuatro veces al mes</em></td>
-                <td><span class="comp-no">—</span></td>
-                <td class="td-popular"><span class="comp-no">—</span></td>
-                <td class="td-featured"><span class="comp-no">—</span></td>
-                <td><span class="comp-yes">✓</span></td>
-              </tr>
-              <tr class="comp-category-row">
-                <td colspan="5">Servicios anuales con límite</td>
-              </tr>
-              <tr>
-                <td>Pulida comercial <em class="comp-freq comp-freq-annual">— una vez al año</em></td>
-                <td><span class="comp-no">—</span></td>
-                <td class="td-popular"><span class="comp-no">—</span></td>
-                <td class="td-featured"><span class="comp-yes">✓</span></td>
-                <td><span class="comp-no">—</span></td>
-              </tr>
-              <tr>
-                <td>Aplicación de Nano Cerámico <em class="comp-freq comp-freq-annual">— una vez al año</em></td>
-                <td><span class="comp-no">—</span></td>
-                <td class="td-popular"><span class="comp-no">—</span></td>
-                <td class="td-featured"><span class="comp-yes">✓</span></td>
-                <td><span class="comp-no">—</span></td>
-              </tr>
+              <tr class="comp-category-row"><td colspan="5">Lavados incluidos</td></tr>
+              <tr><td>Lavados por mes</td><td>4</td><td class="td-popular">6</td><td class="td-featured">Ilimitados</td><td>4 a domicilio</td></tr>
+              <tr><td>Prelavado</td><td>Incluido</td><td class="td-popular">—</td><td class="td-featured">—</td><td>—</td></tr>
+              <tr><td>Lavado pH neutro, aspirado, desinfección y neumáticos</td><td>Incluido</td><td class="td-popular">Incluido</td><td class="td-featured">Incluido</td><td>Incluido</td></tr>
+              <tr><td>Higienización de ventilación</td><td>—</td><td class="td-popular">Incluida</td><td class="td-featured">Incluida</td><td>—</td></tr>
+              <tr class="comp-category-row"><td colspan="5">Valor agregado incluido</td></tr>
+              <tr><td>Cera: duración de protección</td><td>Hasta 30 días</td><td class="td-popular">Hasta 60 días</td><td class="td-featured">Hasta 4 meses</td><td>—</td></tr>
+              <tr><td>Hidratación de plásticos interiores</td><td>1 tratamiento</td><td class="td-popular">1</td><td class="td-featured">1</td><td>Incluida</td></tr>
+              <tr><td>Lavado profesional de motor</td><td>—</td><td class="td-popular">1</td><td class="td-featured">1</td><td>—</td></tr>
+              <tr><td>Pick up en Asunción y Gran Asunción</td><td>—</td><td class="td-popular">1</td><td class="td-featured">Hasta 2 usos compartidos*</td><td>—</td></tr>
+              <tr><td>Lavado a domicilio</td><td>—</td><td class="td-popular">—</td><td class="td-featured">Hasta 2 usos compartidos*</td><td>4 servicios</td></tr>
             </tbody>
             <tfoot>
               <tr class="comp-cta-row">
                 <td></td>
-                <td>
-                  <button type="button" class="btn-table-cta" data-plan-id="a9ee77bc-96ce-4217-ad0f-c817b9e58687">Contratar</button>
-                </td>
-                <td class="td-popular">
-                  <button type="button" class="btn-table-cta btn-table-cta-featured" data-plan-id="7ad4bfae-b1f2-47c9-8c3c-d4615607ad04">Contratar</button>
-                </td>
-                <td class="td-featured">
-                  <button type="button" class="btn-table-cta btn-table-cta-featured" data-plan-id="5a9b7b48-2e37-45f2-8ba9-f1a234b85f80">Contratar</button>
-                </td>
-                <td>
-                  <button type="button" class="btn-table-cta" data-plan-id="ae949f1e-90c5-4d4e-879c-3e2724c89c79">Contratar</button>
-                </td>
+                <td><button type="button" class="btn-table-cta" data-plan-id={essential.id} disabled={!essential.id}>Elegir</button></td>
+                <td class="td-popular"><button type="button" class="btn-table-cta" data-plan-id={plus.id} disabled={!plus.id}>Elegir</button></td>
+                <td class="td-featured"><button type="button" class="btn-table-cta btn-table-cta-featured" data-plan-id={black.id} disabled={!black.id}>Elegir</button></td>
+                <td><button type="button" class="btn-table-cta" data-plan-id={domicilio.id} disabled={!domicilio.id}>Elegir</button></td>
               </tr>
             </tfoot>
           </table>
         </div>
+        <p class="planes-footnote">* En Black, pick up y lavado a domicilio comparten un máximo de dos usos totales por mes. Ambos son bonificaciones sin costo adicional para el socio, sujetas a coordinación y disponibilidad operativa.</p>
       </section>
 
       <!-- PRUEBA SOCIAL -->
@@ -384,6 +158,7 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
   </div>
 
   <RegistroModal />
+  <RegistroFinanciadoModal />
 </BaseLayout>
 
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
@@ -508,7 +283,7 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
   /* ─── PLANES SECTION ─── */
   .planes-section {
     padding: 4rem 1.5rem 2rem;
-    max-width: 1200px;
+    max-width: 1480px;
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
@@ -528,164 +303,12 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
     font-size: 0.92rem;
     margin: 0 0 2.5rem;
   }
-  .planes-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.1rem;
-    align-items: start;
-  }
-  .plan-card {
-    position: relative;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 18px;
-    padding: 1.75rem 1.25rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  .plan-card-popular {
-    border-color: rgba(249,38,6,0.4);
-  }
-  .plan-card-featured {
-    border-color: #f92606;
-    background: rgba(249,38,6,0.07);
-    box-shadow: 0 0 32px rgba(249,38,6,0.12);
-  }
-  .plan-card-domicilio {
-    border-color: rgba(255,255,255,0.15);
-    background: rgba(255,255,255,0.03);
-  }
-  .plan-badge {
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(249,38,6,0.85);
-    color: #fff;
-    font-size: 0.63rem;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    padding: 3px 14px;
-    border-radius: 99px;
-    white-space: nowrap;
-  }
-  .plan-badge-featured {
-    background: linear-gradient(135deg, #f92606, #ff6b3d);
-  }
-  .plan-header { display: grid; gap: 0.4rem; }
-  .plan-tag {
-    font-size: 0.72rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: rgba(255,255,255,0.45);
-  }
-  .plan-price-wrap {
-    display: flex;
-    align-items: baseline;
-    gap: 0.3rem;
-  }
-  .plan-price {
-    font-size: 1.55rem;
-    font-weight: 900;
-    color: #ff6b3d;
-  }
-  .plan-price-mo {
-    font-size: 0.8rem;
-    color: rgba(255,255,255,0.4);
-  }
-  .plan-features {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
-    flex: 1;
-  }
-  .plan-features li {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    font-size: 0.83rem;
-    color: rgba(255,255,255,0.7);
-    line-height: 1.4;
-  }
-  .feat-check {
-    flex-shrink: 0;
-    font-size: 0.75rem;
-    font-weight: 700;
-    min-width: 28px;
-    text-align: center;
-    color: #22c55e;
-    background: rgba(34,197,94,0.12);
-    border-radius: 5px;
-    padding: 1px 4px;
-    margin-top: 1px;
-  }
-  .feat-freq {
-    font-style: normal;
-    color: rgba(255,255,255,0.38);
-    font-size: 0.79em;
-  }
-  .feat-freq-annual {
-    color: rgba(167,139,250,0.65);
-  }
-  .feat-highlight-purple {
-    background: rgba(167,139,250,0.12);
-    border: 1px solid rgba(167,139,250,0.35);
-    border-radius: 8px;
-    padding: 0.5rem 0.55rem;
-    color: #c4b5fd !important;
-  }
-  .feat-highlight-purple strong { color: #ddd6fe; }
-  .feat-check-purple {
-    color: #a78bfa !important;
-    background: rgba(167,139,250,0.18) !important;
-  }
-  .feat-freq-purple {
-    color: rgba(196,181,253,0.85) !important;
-  }
-  .plan-domicilio-note {
-    margin: 0;
-    font-size: 0.78rem;
-    color: rgba(255,255,255,0.35);
-    font-style: italic;
-  }
-  .btn-plan {
-    background: rgba(249,38,6,0.15);
-    border: 1px solid rgba(249,38,6,0.4);
-    color: #ff6b3d;
-    border-radius: 10px;
-    padding: 0.75rem 1rem;
-    font-size: 0.9rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    width: 100%;
-  }
-  .btn-plan:hover {
-    background: rgba(249,38,6,0.25);
-    border-color: #f92606;
-  }
-  .btn-plan-featured {
-    background: linear-gradient(135deg, #f92606, #ff6b3d);
-    border-color: transparent;
-    color: #fff;
-    box-shadow: 0 6px 20px rgba(249,38,6,0.3);
-  }
-  .btn-plan-featured:hover {
-    background: linear-gradient(135deg, #d42005, #f55c2e);
-    box-shadow: 0 8px 28px rgba(249,38,6,0.5);
-    transform: translateY(-1px);
-  }
   .planes-footnote {
     margin: 1.75rem 0 0;
     text-align: center;
     font-size: 0.75rem;
-    color: rgba(255,255,255,0.3);
-    line-height: 1.55;
+    color: rgba(255,255,255,0.72);
+    line-height: 1.6;
   }
 
   /* ─── COMPARATIVO ─── */
@@ -949,13 +572,11 @@ import reviews from "@/config/reviews.json" assert { type: "json" };
 
   /* ─── RESPONSIVE ─── */
   @media (max-width: 1000px) {
-    .planes-grid { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 860px) {
     .reviews-grid { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 560px) {
-    .planes-grid { grid-template-columns: 1fr; }
     .reviews-grid { grid-template-columns: 1fr; }
     .hero { padding: 3rem 1.25rem 2.5rem; }
     .planes-section, .comparativo-section, .reviews-section { padding: 2.5rem 1.25rem; }

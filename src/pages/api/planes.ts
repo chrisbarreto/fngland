@@ -15,7 +15,7 @@ export const GET: APIRoute = async () => {
   }
 
   const plans = Array.isArray(data)
-    ? (data as any[]).filter((p) => PUBLIC_PLAN_IDS.has(p.idPlan))
+    ? (data as any[]).filter((p) => PUBLIC_PLAN_IDS.has(p.idPlan) && p.activo === true && p.vigenciaComercial === "VIGENTE")
     : [];
 
   return new Response(JSON.stringify(plans), {

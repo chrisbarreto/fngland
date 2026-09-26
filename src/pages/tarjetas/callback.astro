@@ -141,6 +141,7 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
 
 <script>
   import { logEvent } from "@/lib/telemetry";
+  import { solicitudFinanciada, type EstadoFinanciado } from "@/lib/membresias-financiadas";
   import {
     confirmarCallbackMembresiaV2,
     consultarEstadoObligacionMembresiaV2,
@@ -502,6 +503,44 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
       }
       if (!idCliente) {
         showError("Falta el parámetro idCliente en la URL.");
+        return;
+      }
+
+      if (purpose === "ALTA_FINANCIADA") {
+        try {
+          const result = await solicitudFinanciada<EstadoFinanciado>("catastro/finalizar", { token });
+          const idContrato = result.idContratoFinanciado;
+          const mostrar = (estado: EstadoFinanciado) => {
+            if (estado.estadoContrato === "ACTIVO") {
+              const title = $("exito-title");
+              const message = $("exito-message");
+              if (title) title.textContent = "Plan Gold activado";
+              if (message) message.textContent = `Primera cuota confirmada. El contrato tiene ${estado.numeroCuotas} cuotas en total.`;
+              showState("st-exito");
+              return true;
+            }
+            if (estado.estadoPrimeraCuota === "PAGADA") {
+              showSeguimientoPendiente("La primera cuota está confirmada, pero la activación aún requiere verificar la tarjeta y la autorización. Comunicate con nosotros.");
+              return true;
+            }
+            if (estado.estadoIntento === "RECHAZADO") {
+              showCobroFallido("El banco rechazó la primera cuota. Comunicate con nosotros para coordinar otro intento.");
+              return true;
+            }
+            showSeguimientoPendiente("La primera cuota de Gold sigue en proceso o conciliación. No intentes pagarla otra vez mientras se verifica.");
+            return false;
+          };
+          if (mostrar(result)) return;
+          for (let intento = 0; intento < 20; intento++) {
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            if (!pollingActive) return;
+            const estado = await solicitudFinanciada<EstadoFinanciado>("contratos/estado", { token, idContratoFinanciado: idContrato });
+            if (mostrar(estado)) return;
+          }
+          showSeguimientoPendiente("El pago aún se verifica. El sistema continuará la conciliación sin generar otro cobro.");
+        } catch (err) {
+          showError(err instanceof Error ? err.message : "No se pudo finalizar el registro de Gold.");
+        }
         return;
       }
 
