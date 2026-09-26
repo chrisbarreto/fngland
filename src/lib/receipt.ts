@@ -1,4 +1,4 @@
-interface ComprobanteData {
+export interface ComprobanteData {
   numeroComprobante: number;
   cliente: {
     nombre: string;
@@ -21,9 +21,14 @@ interface ComprobanteData {
     monto: number;
     moneda: string;
     fecha: string;
-    idTransaccion: string;
-    hashPedido: string;
+    idTransaccion: string | null;
+    hashPedido: string | null;
     numeroPedido: string;
+  };
+  financiacion?: {
+    numeroCuota: number;
+    numeroCuotas: number;
+    importeTotal: number;
   };
   tarjeta: {
     ultimos4: string;
@@ -156,6 +161,10 @@ export async function generateReceipt(data: ComprobanteData): Promise<void> {
   if (data.cliente.ci) row("RUC / CI", data.cliente.ci);
   row("Plan", data.membresia.plan);
   row("Membres\u00EDa", data.membresia.codigo);
+  if (data.financiacion) {
+    row("Cuota pagada", `${data.financiacion.numeroCuota} de ${data.financiacion.numeroCuotas}`, true);
+    row("Total del contrato", formatGuaranies(data.financiacion.importeTotal));
+  }
   row(
     "Vigencia",
     `${formatDateShort(data.membresia.fechaInicio)} \u2014 ${formatDateShort(data.membresia.fechaFin)}`
@@ -171,18 +180,19 @@ export async function generateReceipt(data: ComprobanteData): Promise<void> {
     row("Chapa", String(data.vehiculo.chapa || "").replace(/DP$/, ""));
   }
 
-  hLine();
-  sectionLabel("Servicios incluidos");
-
-  for (const s of data.serviciosIncluidos) {
-    row(s.nombre, s.cantidad != null ? String(s.cantidad) : "Ilimitado");
+  if (!data.financiacion) {
+    hLine();
+    sectionLabel("Servicios incluidos");
+    for (const s of data.serviciosIncluidos) {
+      row(s.nombre, s.cantidad != null ? String(s.cantidad) : "Ilimitado");
+    }
   }
 
   hLine();
 
-  row("Monto", formatGuaranies(data.pago.monto));
+  row(data.financiacion ? "Importe de esta cuota" : "Monto", formatGuaranies(data.pago.monto));
   if (data.pago.numeroPedido) row("N\u00B0 Pedido Pagopar", data.pago.numeroPedido);
-  row("Referencia", data.pago.hashPedido.slice(0, 20) + "...");
+  if (data.pago.hashPedido) row("Referencia", data.pago.hashPedido.slice(0, 20) + "...");
 
   hLine();
 
@@ -190,9 +200,17 @@ export async function generateReceipt(data: ComprobanteData): Promise<void> {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
   doc.setTextColor(30, 30, 30);
-  doc.text("TOTAL", ml, y);
+  doc.text(data.financiacion ? "TOTAL PAGADO EN ESTA CUOTA" : "TOTAL", ml, y);
   doc.text(formatGuaranies(data.pago.monto), rightEdge, y, { align: "right" });
   y += 10;
+
+  if (data.financiacion) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.text("Este comprobante acredita solo la cuota indicada, no el pago total del contrato.", ml, y);
+    y += 10;
+  }
 
   // Forma de pago
   if (data.tarjeta) {
@@ -225,5 +243,7 @@ export async function generateReceipt(data: ComprobanteData): Promise<void> {
   y += 4.5;
   doc.text(`Generado: ${formatDate(new Date().toISOString())}`, ml, y);
 
-  doc.save(`comprobante-${data.membresia.codigo}.pdf`);
+  doc.save(data.financiacion
+    ? `comprobante-${data.membresia.codigo}-cuota-${data.financiacion.numeroCuota}.pdf`
+    : `comprobante-${data.membresia.codigo}.pdf`);
 }

@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs/promises");
 const { chromium } = require("@playwright/test");
 const base = process.env.GOLD_UI_BASE_URL || "http://127.0.0.1:4321";
 const plan = "4091fa2a-091e-4126-ad08-a60946550db7";
@@ -92,14 +93,31 @@ const json = (body) => ({ status: 200, contentType: "application/json", body: JS
     await paused.locator("#gold-payment-section").waitFor({ state: "visible" });
     await paused.close();
     console.log("Gold F6 seguimiento con altas cerradas OK");
-    const callback = await browser.newPage();
+    const callback = await browser.newPage({ acceptDownloads: true });
     let finalizaciones = 0;
     let cobrosPrepagos = 0;
+    let comprobantesConsultados = 0;
     await callback.route("**/api/resolver-callback-catastro", (route) => route.fulfill(json({
       idCliente: "22222222-2222-4222-8222-222222222222", idMembresia: "66666666-6666-4666-8666-666666666666",
       token: "mct2.token-falso.firma", tokenVersion: "V2", purpose: "ALTA_FINANCIADA",
     })));
     await callback.route("**/api/membresias-financiadas?accion=*", (route) => {
+      const action = new URL(route.request().url()).searchParams.get("accion");
+      if (action === "contratos/comprobante-primera-cuota") {
+        comprobantesConsultados++;
+        assert.equal(route.request().postDataJSON().idContratoFinanciado, contract);
+        return route.fulfill(json({
+          numeroComprobante: 151,
+          cliente: { nombre: "Cliente de prueba", ci: "1234567", email: "", telefono: "" },
+          membresia: { codigo: "NG151", numeroMembresia: 151, plan: "Plan Gold",
+            fechaInicio: "2026-09-25", fechaFin: "2027-12-24" },
+          serviciosIncluidos: [],
+          pago: { monto: 400000, moneda: "PYG", fecha: "2026-09-25T22:00:00.000Z",
+            idTransaccion: "tx-1", hashPedido: "pedido-1", numeroPedido: "29452807" },
+          tarjeta: null, vehiculo: null,
+          financiacion: { numeroCuota: 1, numeroCuotas: 15, importeTotal: 6000000 },
+        }));
+      }
       finalizaciones++;
       return route.fulfill(json({ idContratoFinanciado: contract, estadoContrato: "ACTIVO",
         estadoPrimeraCuota: "PAGADA", estadoIntento: "CONFIRMADO", numeroCuotas: 15 }));
@@ -111,6 +129,18 @@ const json = (body) => ({ status: 200, contentType: "application/json", body: JS
     await callback.goto(base + "/tarjetas/callback?state=estado-falso&status=success", { waitUntil: "domcontentloaded" });
     await callback.locator("#st-exito").waitFor({ state: "visible" });
     assert((await callback.locator("#exito-title").innerText()).includes("Gold activado"));
+    const [download] = await Promise.all([
+      callback.waitForEvent("download"),
+      callback.locator("#gold-receipt-download").click(),
+    ]);
+    assert.equal(download.suggestedFilename(), "comprobante-NG151-cuota-1.pdf");
+    const pdfPath = await download.path();
+    const pdf = await fs.readFile(pdfPath);
+    assert.equal(pdf.subarray(0, 4).toString(), "%PDF");
+    if (process.env.GOLD_RECEIPT_TEST_OUTPUT) {
+      await download.saveAs(process.env.GOLD_RECEIPT_TEST_OUTPUT);
+    }
+    assert.equal(comprobantesConsultados, 1);
     assert.equal(finalizaciones, 1);
     assert.equal(cobrosPrepagos, 0);
     await callback.close();

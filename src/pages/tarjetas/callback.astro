@@ -93,6 +93,13 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
 
         <div id="comprobante" class="comprobante" hidden></div>
 
+        <div class="callback-actions">
+          <button type="button" id="gold-receipt-download" class="btn btn-primary" hidden>
+            Descargar comprobante de la primera cuota
+          </button>
+        </div>
+        <p id="gold-receipt-error" class="callback-error-msg" role="alert" hidden></p>
+
         <p class="callback-hint">Puedes cerrar esta ventana.</p>
       </div>
 
@@ -142,6 +149,7 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
 <script>
   import { logEvent } from "@/lib/telemetry";
   import { solicitudFinanciada, type EstadoFinanciado } from "@/lib/membresias-financiadas";
+  import type { ComprobanteData } from "@/lib/receipt";
   import {
     confirmarCallbackMembresiaV2,
     consultarEstadoObligacionMembresiaV2,
@@ -529,6 +537,36 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
               const message = $("exito-message");
               if (title) title.textContent = "Plan Gold activado";
               if (message) message.textContent = `Primera cuota confirmada. El contrato tiene ${estado.numeroCuotas} cuotas en total.`;
+              const download = $("gold-receipt-download") as HTMLButtonElement | null;
+              if (download) {
+                download.hidden = false;
+                download.onclick = async () => {
+                  if (download.disabled) return;
+                  const errorBox = $("gold-receipt-error");
+                  if (errorBox) errorBox.hidden = true;
+                  download.disabled = true;
+                  download.textContent = "Generando PDF...";
+                  try {
+                    const comprobante = await solicitudFinanciada<ComprobanteData>(
+                      "contratos/comprobante-primera-cuota",
+                      { token, idContratoFinanciado: idContrato },
+                    );
+                    const { generateReceipt } = await import("@/lib/receipt");
+                    await generateReceipt(comprobante);
+                    download.textContent = "Descargar de nuevo";
+                  } catch (error) {
+                    download.textContent = "Descargar comprobante de la primera cuota";
+                    if (errorBox) {
+                      errorBox.textContent = error instanceof Error
+                        ? `No pudimos descargar el comprobante: ${error.message}`
+                        : "No pudimos descargar el comprobante. Comunicate con nosotros.";
+                      errorBox.hidden = false;
+                    }
+                  } finally {
+                    download.disabled = false;
+                  }
+                };
+              }
               showState("st-exito");
               return true;
             }

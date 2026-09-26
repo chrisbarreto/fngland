@@ -11,6 +11,7 @@ const POST_ROUTES = new Map([
   ["catastro/preparar", "/membresias-financiadas/catastro/preparar"],
   ["catastro/finalizar", "/membresias-financiadas/catastro/finalizar"],
   ["contratos/estado", "/membresias-financiadas/contratos/estado"],
+  ["contratos/comprobante-primera-cuota", "/membresias-financiadas/contratos/comprobante-primera-cuota"],
 ]);
 function json(data: unknown, status: number) {
   return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
