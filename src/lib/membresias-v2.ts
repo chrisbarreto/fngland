@@ -1,3 +1,5 @@
+import type { ComprobanteData } from "./receipt";
+
 export type AccionFlujoMembresiaV2 =
   | "COTIZAR_ALTA"
   | "COTIZAR_REACTIVACION"
@@ -171,6 +173,7 @@ export interface SeguimientoCobroMembresiaV2 {
   definitivo: boolean;
   puedeReintentar: boolean;
   mensaje: string;
+  comprobante: ComprobanteData | null;
   totalCobrarAhora: string;
   membresia: {
     estadoCobertura: string | null;
