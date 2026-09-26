@@ -121,7 +121,7 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
-        <h1 class="callback-title">No se pudo registrar la tarjeta</h1>
+        <h1 id="error-title" class="callback-title">No se pudo registrar la tarjeta</h1>
         <p id="error-msg" class="callback-error-msg"></p>
         <p id="error-hint" class="callback-hint"></p>
         <div class="callback-actions">
@@ -234,19 +234,32 @@ const bancardDescription = Astro.url.searchParams.get("description") ?? "";
     }
 
     function showError(msg: string) {
+      const reintentarCobroGold = purpose === "ALTA_FINANCIADA" && !isTerminalFailure;
+      const title = $("error-title");
+      if (title && reintentarCobroGold)
+        title.textContent = "No se pudo completar la primera cuota";
       const el = $("error-msg");
       if (el) el.textContent = msg;
-      const canRetry = !!idCliente && !!token;
+      const canRetry = reintentarCobroGold
+        ? !!token
+        : !!idCliente && !!token;
       const hint = $("error-hint");
       if (hint)
         hint.textContent = canRetry
-          ? "Puedes intentar nuevamente con el mismo enlace."
+          ? reintentarCobroGold
+            ? "Tu tarjeta ya puede estar registrada. Volvé a verificar este mismo intento."
+            : "Puedes intentar nuevamente con el mismo enlace."
           : "Solicita un nuevo enlace a tu proveedor de servicio para intentar de nuevo.";
       const retry = $("retry-btn") as HTMLAnchorElement | null;
       if (retry && canRetry) {
-        const params = new URLSearchParams({ idCliente, token });
-        if (idMembresia) params.set("idMembresia", idMembresia);
-        retry.href = `/tarjetas/registrar?${params.toString()}`;
+        if (reintentarCobroGold) {
+          retry.href = window.location.href;
+          retry.textContent = "Verificar nuevamente";
+        } else {
+          const params = new URLSearchParams({ idCliente, token });
+          if (idMembresia) params.set("idMembresia", idMembresia);
+          retry.href = `/tarjetas/registrar?${params.toString()}`;
+        }
         retry.removeAttribute("hidden");
       }
       showState("st-error");
