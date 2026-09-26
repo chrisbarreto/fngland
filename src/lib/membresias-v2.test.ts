@@ -9,6 +9,7 @@ import {
   consultarEstadoCobroMembresiaV2,
   consultarEstadoObligacionMembresiaV2,
   cotizarAltaMembresiaV2,
+  cotizarAltaPendienteMembresiaV2,
   cotizarReactivacionMembresiaV2,
   guardarContextoMembresiaV2,
   idempotencyKeyAlta,
@@ -111,6 +112,31 @@ describe("membresias V2 landing", () => {
     expect(
       idempotencyKeyReactivacion("membresia-1", new Date(2026, 7, 7, 23, 30)),
     ).toBe("landing:reactivacion:membresia-1:2026-08-07");
+  });
+
+  it("retoma la misma adhesion pendiente sin depender del registro previo", async () => {
+    const cotizacion = { idCotizacion: "cotizacion-recuperada" };
+    const fetcher = vi.fn().mockResolvedValue(response({
+      success: true,
+      billingVersion: "V2",
+      cotizacion,
+    }));
+
+    await expect(cotizarAltaPendienteMembresiaV2({
+      idCliente: "cliente-1",
+      idMembresia: "membresia-1",
+    }, fetcher)).resolves.toEqual(cotizacion);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      "/api/membresias-v2?accion=altas%2Fcotizar-pendiente",
+      expect.objectContaining({ method: "POST" }),
+    );
+    const solicitud = JSON.parse(fetcher.mock.calls[0][1].body as string);
+    expect(solicitud).toEqual(expect.objectContaining({
+      idCliente: "cliente-1",
+      idMembresia: "membresia-1",
+    }));
+    expect(solicitud).not.toHaveProperty("idRegistroPendiente");
   });
 
   it("persiste y recupera el contexto que permite reanudar el modal", () => {

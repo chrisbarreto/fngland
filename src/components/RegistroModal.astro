@@ -1405,6 +1405,7 @@ const providerSelectorEnabled =
     cambiarPlanAltaPendienteMembresiaV2,
     consultarDisponibilidadMembresiasV2,
     cotizarAltaMembresiaV2,
+    cotizarAltaPendienteMembresiaV2,
     cotizarReactivacionMembresiaV2,
     guardarContextoMembresiaV2,
     limpiarContextoMembresiaV2,
@@ -1897,9 +1898,41 @@ const providerSelectorEnabled =
       // Recalcular la oferta para que el cliente revise el importe vigente.
       // La cotización previa puede haber vencido o cambiado de período.
       if (input.tipoOperacion === "ALTA") {
+        // Una adhesión V2 ya materializada puede no conservar el registro
+        // pendiente de la pestaña original. Recotizar la misma membresía evita
+        // crear otra adhesión y vuelve a mostrar el importe antes del catastro.
+        if (input.idMembresia) {
+          showProcessing();
+          try {
+            const cotizacion = await cotizarAltaPendienteMembresiaV2({
+              idCliente: input.idCliente,
+              idMembresia: input.idMembresia,
+            });
+            await redirigirACatastroV2({
+              idCliente: input.idCliente,
+              idCotizacion: cotizacion.idCotizacion,
+              tipoOperacion: "ALTA",
+              cotizacion,
+            });
+          } catch (error) {
+            logEvent({
+              paso: "confirmar",
+              severidad: "error",
+              codigo: "ALTA_PENDIENTE_REANUDACION_FALLIDA",
+              mensaje: error instanceof Error ? error.message : "No se pudo reanudar el alta pendiente",
+              contexto: { idMembresia: input.idMembresia },
+            });
+            showResult(
+              "No pudimos continuar el registro",
+              error instanceof Error ? error.message : "Intentá nuevamente.",
+              true,
+            );
+          }
+          return;
+        }
         const idRegistro = sessionStorage.getItem("formulang_idRegistroPendiente");
         if (!idRegistro) {
-          showResult("No pudimos continuar el registro", "Falta el registro pendiente. Volvé a ingresar tus datos para cotizar.", true);
+          showResult("No pudimos continuar el registro", "Volvé a ingresar tus datos para cotizar.", true);
           return;
         }
         await iniciarAltaMembresiaV2(input.idCliente, idRegistro);

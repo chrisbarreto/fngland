@@ -9,6 +9,7 @@ const GET_ROUTES = new Map([
 
 const POST_ROUTES = new Map([
   ["altas/cotizar", "/membresias-v2/altas/cotizar"],
+  ["altas/cotizar-pendiente", "/membresias-v2/altas/cotizar-pendiente"],
   ["altas/cambiar-plan", "/membresias-v2/altas/cambiar-plan"],
   ["reactivaciones/cotizar", "/membresias-v2/reactivaciones/cotizar"],
   ["catastro/preparar", "/membresias-v2/catastro/preparar"],

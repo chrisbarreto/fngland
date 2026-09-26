@@ -350,6 +350,26 @@ export async function cotizarAltaMembresiaV2(
   return result.cotizacion;
 }
 
+export async function cotizarAltaPendienteMembresiaV2(
+  input: { idCliente: string; idMembresia: string },
+  fetcher: FetchLike = fetch,
+): Promise<CotizacionPublicaMembresiaV2> {
+  const result = await requestV2<{
+    success: true;
+    billingVersion: "V2";
+    cotizacion: CotizacionPublicaMembresiaV2;
+  }>(
+    "altas/cotizar-pendiente",
+    {
+      ...input,
+      idempotencyKey: `landing:alta-pendiente:${input.idMembresia}:${fechaLocalIso()}`,
+      fechaInicio: fechaLocalIso(),
+    },
+    fetcher,
+  );
+  return result.cotizacion;
+}
+
 export async function cambiarPlanAltaPendienteMembresiaV2(
   input: {
     idCliente: string;
