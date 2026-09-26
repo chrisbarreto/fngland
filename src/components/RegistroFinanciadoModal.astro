@@ -63,6 +63,11 @@ const siteKey = import.meta.env.TURNSTILE_SITE_KEY;
   .gold-overlay[hidden], .gold-dialog [hidden], :global(.pricing-button[hidden]) { display: none !important; }
   .gold-overlay { position: fixed; inset: 0; z-index: 12000; background: rgba(0,0,0,.82); display: flex; align-items: center; justify-content: center; padding: 1rem; overflow-y: auto; }
   .gold-dialog { position: relative; width: min(100%, 720px); max-height: min(92vh, 900px); overflow-y: auto; background: #201e1b; border: 1px solid #b99252; border-radius: 20px; padding: clamp(1.2rem, 4vw, 2rem); color: #fff; box-shadow: 0 24px 90px #0009; }
+  .gold-overlay, .gold-dialog, .gold-calendar-wrap, .gold-document pre { scrollbar-width: thin; scrollbar-color: #858585 #201e1b; }
+  .gold-overlay::-webkit-scrollbar, .gold-dialog::-webkit-scrollbar, .gold-calendar-wrap::-webkit-scrollbar, .gold-document pre::-webkit-scrollbar { width: 8px; }
+  .gold-overlay::-webkit-scrollbar-track, .gold-dialog::-webkit-scrollbar-track, .gold-calendar-wrap::-webkit-scrollbar-track, .gold-document pre::-webkit-scrollbar-track { background: #201e1b; }
+  .gold-overlay::-webkit-scrollbar-thumb, .gold-dialog::-webkit-scrollbar-thumb, .gold-calendar-wrap::-webkit-scrollbar-thumb, .gold-document pre::-webkit-scrollbar-thumb { background: #858585; border-radius: 8px; }
+  .gold-overlay::-webkit-scrollbar-button, .gold-dialog::-webkit-scrollbar-button, .gold-calendar-wrap::-webkit-scrollbar-button, .gold-document pre::-webkit-scrollbar-button { background: #201e1b; }
   .gold-close { position: absolute; right: 1rem; top: .6rem; border: 0; background: none; color: #fff; font-size: 2rem; cursor: pointer; }
   .gold-eyebrow { color: #f0ce8b; font-size: .72rem; font-weight: 800; letter-spacing: .1em; margin: 0 0 .5rem; }
   .gold-dialog h2 { font-size: clamp(1.55rem, 5vw, 2.2rem); margin: 0 .8rem .4rem 0; }
