@@ -147,6 +147,20 @@ const providerSelectorEnabled =
             <p id="panel-error-msg" class="text-sm text-red-700"></p>
           </div>
 
+          <div id="consentimiento-debito" class="m-4 hidden rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <p class="text-sm font-semibold text-blue-950">Confirmá el pago y el débito automático</p>
+            <p class="mt-2 text-sm leading-relaxed text-blue-900">
+              Después de registrar la tarjeta se intentará cobrar el importe indicado arriba.
+              Los siguientes pagos del plan se debitarán automáticamente de la tarjeta registrada.
+            </p>
+            <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-blue-950">
+              <input id="acepto-debito" type="checkbox" class="mt-1 h-4 w-4 shrink-0" />
+              <span>Leí y acepto los <a id="enlace-terminos-debito" href="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer" class="font-semibold underline">términos y condiciones</a> y autorizo el débito automático de esta membresía.</span>
+            </label>
+            <button id="confirmar-debito" type="button" class="mt-4 w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700">
+              Aceptar y registrar tarjeta
+            </button>
+          </div>
           {/* Loading */}
           <div id="panel-loading" class="flex items-center justify-center py-12">
             <div class="text-center">
@@ -219,6 +233,16 @@ const providerSelectorEnabled =
     const hide = (id: string) => $(id)?.classList.add("hidden");
 
     let bancardFormRendered = false;
+
+    type ConsentimientoPendiente = {
+      processId: string;
+      proveedor: Proveedor;
+      idMembresia: string;
+      idCotizacion: string;
+      idVersionTerminos: string;
+      tokenCatastro: string;
+    };
+    let consentimientoPendiente: ConsentimientoPendiente | null = null;
 
     /**
      * Carga el script de Bancard sorteando el conflicto de babel-polyfill.
@@ -343,6 +367,14 @@ const providerSelectorEnabled =
       }
     }
 
+    async function mostrarFormulario(proveedor: Proveedor, processId: string) {
+      if (proveedor === "uPay") {
+        renderUpay(processId);
+      } else {
+        await renderBancard(processId);
+      }
+    }
+
     async function iniciar(proveedor: Proveedor) {
       // UI: pasar de selector a panel
       hide("selector");
@@ -385,16 +417,72 @@ const providerSelectorEnabled =
 
         const provResp: Proveedor =
           data.proveedor === "Bancard" ? "Bancard" : "uPay";
-        if (provResp === "uPay") {
-          renderUpay(data.processId);
-        } else {
-          await renderBancard(data.processId);
+        const contexto = (data.contexto ?? null) as ContextoCatastroPublico | null;
+        const requiereConsentimiento = contexto?.requiereConsentimientoDebito === true;
+        if (requiereConsentimiento) {
+          if (!contexto?.idMembresia || !contexto.idCotizacion ||
+              !contexto.tokenCatastro || !contexto.terminos?.idVersion ||
+              !contexto.terminos.urlDocumento) {
+            throw new Error("No se pudo mostrar la autorización de débito. Solicitá un enlace nuevo.");
+          }
+          consentimientoPendiente = {
+            processId: data.processId,
+            proveedor: provResp,
+            idMembresia: contexto.idMembresia,
+            idCotizacion: contexto.idCotizacion,
+            idVersionTerminos: contexto.terminos.idVersion,
+            tokenCatastro: contexto.tokenCatastro,
+          };
+          const enlace = $("enlace-terminos-debito") as HTMLAnchorElement | null;
+          if (enlace) enlace.href = contexto.terminos.urlDocumento;
+          hide("panel-loading");
+          show("consentimiento-debito");
+          return;
         }
+        await mostrarFormulario(provResp, data.processId);
       } catch (err) {
         const e = err as { message?: string };
         showError(e?.message ?? "Error al preparar el formulario.");
       }
     }
+
+    $("confirmar-debito")?.addEventListener("click", async () => {
+      const pendiente = consentimientoPendiente;
+      const casilla = $("acepto-debito") as HTMLInputElement | null;
+      if (!pendiente || !casilla?.checked) {
+        showError("Para continuar, leé los términos y autorizá el débito automático.");
+        return;
+      }
+      const boton = $("confirmar-debito") as HTMLButtonElement | null;
+      if (boton) boton.disabled = true;
+      try {
+        const response = await fetch("/api/membresias-v2?accion=catastro%2Fautorizar-enlace", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            idCliente,
+            idMembresia: pendiente.idMembresia,
+            idCotizacion: pendiente.idCotizacion,
+            idVersionTerminos: pendiente.idVersionTerminos,
+            token: pendiente.tokenCatastro,
+            autorizaDebitoAutomatico: true,
+          }),
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || data.message || "No se pudo registrar la autorización.");
+        }
+        hide("panel-error");
+        hide("consentimiento-debito");
+        show("panel-loading");
+        await mostrarFormulario(pendiente.proveedor, pendiente.processId);
+        consentimientoPendiente = null;
+      } catch (error) {
+        showError(error instanceof Error ? error.message : "No se pudo continuar.");
+      } finally {
+        if (boton) boton.disabled = false;
+      }
+    });
 
     document.querySelectorAll<HTMLButtonElement>(".prov-btn").forEach((btn) => {
       btn.addEventListener("click", () => {

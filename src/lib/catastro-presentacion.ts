@@ -10,6 +10,11 @@ export interface ContextoCatastroPublico {
   vigenciaCobroHasta: string | null;
   modo?: ModoCatastroMembresiaV2 | null;
   purpose?: string | null;
+  idMembresia?: string;
+  idCotizacion?: string | null;
+  tokenCatastro?: string;
+  terminos?: { idVersion: string; codigo: string; urlDocumento: string | null } | null;
+  requiereConsentimientoDebito?: boolean;
   cobraAhora?: boolean;
   requiereConciliacion?: boolean;
 }
